@@ -1,0 +1,13 @@
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.proteger_periodo_cerrado() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.validar_movimiento() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.mi_cooperadora() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.crear_cooperadora(text,text,text,text,integer,numeric) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.reclamar_rol_auditor() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.otorgar_rol_auditor(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.mi_cooperadora() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.crear_cooperadora(text,text,text,text,integer,numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reclamar_rol_auditor() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.otorgar_rol_auditor(text) TO authenticated;
