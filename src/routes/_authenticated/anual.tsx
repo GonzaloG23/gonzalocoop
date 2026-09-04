@@ -53,7 +53,10 @@ function AnualPage() {
   const coop = ctx?.cooperadora ?? null;
 
   return (
-    <AppShell titulo="Resumen anual" descripcion={coop ? `${coop.nombre} · Ejercicio ${coop.ejercicio}` : undefined}>
+    <AppShell
+      titulo="Resumen anual"
+      descripcion={coop ? `${coop.nombre} · Ejercicio ${coop.ejercicio}` : "Ejercicio en curso"}
+    >
       {isLoading && <p className="text-sm text-muted-foreground">Cargando…</p>}
       {!isLoading && !coop && (
         <p className="text-sm text-muted-foreground">
