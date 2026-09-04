@@ -10,11 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAnualRouteImport } from './routes/_authenticated/anual'
+import { Route as AuthenticatedLibroRouteImport } from './routes/_authenticated/libro'
+import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
+import { Route as AuthenticatedAuditoriaIndexRouteImport } from './routes/_authenticated/auditoria.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -22,30 +31,73 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAnualRoute = AuthenticatedAnualRouteImport.update({
+  id: '/anual',
+  path: '/anual',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLibroRoute = AuthenticatedLibroRouteImport.update({
+  id: '/libro',
+  path: '/libro',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPanelRoute = AuthenticatedPanelRouteImport.update({
+  id: '/panel',
+  path: '/panel',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditoriaIndexRoute =
+  AuthenticatedAuditoriaIndexRouteImport.update({
+    id: '/auditoria/',
+    path: '/auditoria/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/anual': typeof AuthenticatedAnualRoute
+  '/libro': typeof AuthenticatedLibroRoute
+  '/panel': typeof AuthenticatedPanelRoute
+  '/auditoria/': typeof AuthenticatedAuditoriaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/anual': typeof AuthenticatedAnualRoute
+  '/libro': typeof AuthenticatedLibroRoute
+  '/panel': typeof AuthenticatedPanelRoute
+  '/auditoria': typeof AuthenticatedAuditoriaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/anual': typeof AuthenticatedAnualRoute
+  '/_authenticated/libro': typeof AuthenticatedLibroRoute
+  '/_authenticated/panel': typeof AuthenticatedPanelRoute
+  '/_authenticated/auditoria/': typeof AuthenticatedAuditoriaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth'
+  fullPaths: '/' | '/auth' | '/anual' | '/libro' | '/panel' | '/auditoria/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth'
-  id: '__root__' | '/' | '/auth'
+  to: '/' | '/auth' | '/anual' | '/libro' | '/panel' | '/auditoria'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/anual'
+    | '/_authenticated/libro'
+    | '/_authenticated/panel'
+    | '/_authenticated/auditoria/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
 }
 
@@ -58,6 +110,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -65,11 +124,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/anual': {
+      id: '/_authenticated/anual'
+      path: '/anual'
+      fullPath: '/anual'
+      preLoaderRoute: typeof AuthenticatedAnualRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/libro': {
+      id: '/_authenticated/libro'
+      path: '/libro'
+      fullPath: '/libro'
+      preLoaderRoute: typeof AuthenticatedLibroRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/panel': {
+      id: '/_authenticated/panel'
+      path: '/panel'
+      fullPath: '/panel'
+      preLoaderRoute: typeof AuthenticatedPanelRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditoria/': {
+      id: '/_authenticated/auditoria/'
+      path: '/auditoria'
+      fullPath: '/auditoria/'
+      preLoaderRoute: typeof AuthenticatedAuditoriaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAnualRoute: typeof AuthenticatedAnualRoute
+  AuthenticatedLibroRoute: typeof AuthenticatedLibroRoute
+  AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
+  AuthenticatedAuditoriaIndexRoute: typeof AuthenticatedAuditoriaIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAnualRoute: AuthenticatedAnualRoute,
+  AuthenticatedLibroRoute: AuthenticatedLibroRoute,
+  AuthenticatedPanelRoute: AuthenticatedPanelRoute,
+  AuthenticatedAuditoriaIndexRoute: AuthenticatedAuditoriaIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
