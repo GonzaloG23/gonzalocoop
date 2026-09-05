@@ -78,9 +78,17 @@ function Portada() {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild size="lg">
-            <Link to="/auth">Crear cuenta o ingresar</Link>
+            <Link to="/auth" search={{ rol: "cooperadora" }}>
+              Ingreso de cooperadoras
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/auth" search={{ rol: "auditor" }}>
+              Ingreso de auditores
+            </Link>
           </Button>
         </div>
+
 
         <div className="mt-16 grid gap-4 sm:grid-cols-2">
           {puntos.map((p) => (
