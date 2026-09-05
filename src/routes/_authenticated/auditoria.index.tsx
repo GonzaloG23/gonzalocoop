@@ -196,7 +196,9 @@ function AuditoriaPage() {
         </Button>
       }
     >
+      <HabilitarAuditor />
       {filas.isLoading && <p className="text-sm text-muted-foreground">Cargando cooperadoras…</p>}
+
       {!filas.isLoading && datos.length === 0 && (
         <p className="text-sm text-muted-foreground">Todavía no hay cooperadoras registradas.</p>
       )}
