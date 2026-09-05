@@ -16,6 +16,7 @@ import { Route as AuthenticatedAnualRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedLibroRouteImport } from './routes/_authenticated/libro'
 import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
 import { Route as AuthenticatedAuditoriaIndexRouteImport } from './routes/_authenticated/auditoria.index'
+import { Route as AuthenticatedAuditoriaIdRouteImport } from './routes/_authenticated/auditoria.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,12 @@ const AuthenticatedAuditoriaIndexRoute =
     path: '/auditoria/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAuditoriaIdRoute =
+  AuthenticatedAuditoriaIdRouteImport.update({
+    id: '/auditoria/$id',
+    path: '/auditoria/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/anual': typeof AuthenticatedAnualRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/auditoria/$id': typeof AuthenticatedAuditoriaIdRoute
   '/auditoria/': typeof AuthenticatedAuditoriaIndexRoute
 }
 export interface FileRoutesByTo {
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
   '/anual': typeof AuthenticatedAnualRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/auditoria/$id': typeof AuthenticatedAuditoriaIdRoute
   '/auditoria': typeof AuthenticatedAuditoriaIndexRoute
 }
 export interface FileRoutesById {
@@ -77,13 +86,28 @@ export interface FileRoutesById {
   '/_authenticated/anual': typeof AuthenticatedAnualRoute
   '/_authenticated/libro': typeof AuthenticatedLibroRoute
   '/_authenticated/panel': typeof AuthenticatedPanelRoute
+  '/_authenticated/auditoria/$id': typeof AuthenticatedAuditoriaIdRoute
   '/_authenticated/auditoria/': typeof AuthenticatedAuditoriaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/anual' | '/libro' | '/panel' | '/auditoria/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/anual'
+    | '/libro'
+    | '/panel'
+    | '/auditoria/$id'
+    | '/auditoria/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/anual' | '/libro' | '/panel' | '/auditoria'
+  to:
+    | '/'
+    | '/auth'
+    | '/anual'
+    | '/libro'
+    | '/panel'
+    | '/auditoria/$id'
+    | '/auditoria'
   id:
     | '__root__'
     | '/'
@@ -92,6 +116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/anual'
     | '/_authenticated/libro'
     | '/_authenticated/panel'
+    | '/_authenticated/auditoria/$id'
     | '/_authenticated/auditoria/'
   fileRoutesById: FileRoutesById
 }
@@ -152,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditoriaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/auditoria/$id': {
+      id: '/_authenticated/auditoria/$id'
+      path: '/auditoria/$id'
+      fullPath: '/auditoria/$id'
+      preLoaderRoute: typeof AuthenticatedAuditoriaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -159,6 +191,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnualRoute: typeof AuthenticatedAnualRoute
   AuthenticatedLibroRoute: typeof AuthenticatedLibroRoute
   AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
+  AuthenticatedAuditoriaIdRoute: typeof AuthenticatedAuditoriaIdRoute
   AuthenticatedAuditoriaIndexRoute: typeof AuthenticatedAuditoriaIndexRoute
 }
 
@@ -166,6 +199,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnualRoute: AuthenticatedAnualRoute,
   AuthenticatedLibroRoute: AuthenticatedLibroRoute,
   AuthenticatedPanelRoute: AuthenticatedPanelRoute,
+  AuthenticatedAuditoriaIdRoute: AuthenticatedAuditoriaIdRoute,
   AuthenticatedAuditoriaIndexRoute: AuthenticatedAuditoriaIndexRoute,
 }
 
