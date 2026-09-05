@@ -78,6 +78,48 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
   );
 }
 
+function HabilitarAuditor() {
+  const [email, setEmail] = useState("");
+  const [cargando, setCargando] = useState(false);
+
+  async function habilitar(e: React.FormEvent) {
+    e.preventDefault();
+    setCargando(true);
+    const { error } = await supabase.rpc("otorgar_rol_auditor", { _email: email.trim() });
+    setCargando(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setEmail("");
+    toast.success("Auditor habilitado.");
+  }
+
+  return (
+    <Card className="mb-6 max-w-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 font-serif text-lg">
+          <ShieldCheck className="h-4 w-4 text-primary" /> Habilitar otro auditor
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={habilitar} className="flex flex-col gap-3 sm:flex-row">
+          <Input
+            type="email"
+            required
+            placeholder="email de la persona ya registrada"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Button type="submit" disabled={cargando}>
+            Habilitar
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 function AuditoriaPage() {
   const { data: ctx } = useContexto();
   const filas = useQuery({
@@ -89,11 +131,12 @@ function AuditoriaPage() {
   async function reclamar() {
     const { error } = await supabase.rpc("reclamar_rol_auditor");
     if (error) {
-      toast.error("No se pudo asignar el rol de auditor.");
+      toast.error(error.message);
       return;
     }
     toast.success("Rol de auditor asignado. Volvé a cargar la página.");
   }
+
 
   if (ctx && !ctx.esAuditor) {
     return (
