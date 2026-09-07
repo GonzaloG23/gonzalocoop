@@ -133,6 +133,30 @@ export type Database = {
           },
         ]
       }
+      parametros_control: {
+        Row: {
+          created_at: string
+          dia_limite_cierre: number
+          id: string
+          tope_egreso: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dia_limite_cierre?: number
+          id?: string
+          tope_egreso?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dia_limite_cierre?: number
+          id?: string
+          tope_egreso?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       perfiles: {
         Row: {
           cooperadora_id: string | null
