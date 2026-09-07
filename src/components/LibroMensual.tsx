@@ -62,7 +62,7 @@ export function LibroMensual({
 }: {
   cooperadora: Cooperadora;
   soloLectura?: boolean;
-  mesInicial?: number;
+  mesInicial?: number | undefined;
 }) {
   const qc = useQueryClient();
   const hoy = new Date();
