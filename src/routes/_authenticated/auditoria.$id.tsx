@@ -35,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/auditoria/$id")({
 
 function AuditoriaLibroPage() {
   const { id } = Route.useParams();
+  const { mes } = Route.useSearch();
   const { data: ctx } = useContexto();
 
   const coop = useQuery({
