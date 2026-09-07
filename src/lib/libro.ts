@@ -144,16 +144,74 @@ export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: 
   return data as Periodo;
 }
 
+/* ----------------------------- parámetros -------------------------------- */
+
+export type ParametrosControl = {
+  id: string;
+  dia_limite_cierre: number;
+  tope_egreso: number | string;
+};
+
+export const PARAMETROS_POR_DEFECTO: ParametrosControl = {
+  id: "",
+  dia_limite_cierre: 10,
+  tope_egreso: 500000,
+};
+
+export async function cargarParametros(): Promise<ParametrosControl> {
+  const { data, error } = await supabase
+    .from("parametros_control")
+    .select("id, dia_limite_cierre, tope_egreso")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as ParametrosControl | null) ?? PARAMETROS_POR_DEFECTO;
+}
+
+export async function guardarParametros(p: {
+  id: string;
+  dia_limite_cierre: number;
+  tope_egreso: number;
+}) {
+  if (p.id) {
+    const { error } = await supabase
+      .from("parametros_control")
+      .update({ dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso })
+      .eq("id", p.id);
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase
+    .from("parametros_control")
+    .insert({ dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso });
+  if (error) throw error;
+}
+
 /* ------------------------------- cálculos -------------------------------- */
+
+const clave = (c: string | null) => (c ?? "").trim().toLowerCase();
 
 export function calcularEjercicio(
   saldoInicialEjercicio: number,
   periodos: Periodo[],
   movimientos: Movimiento[],
+  parametros: ParametrosControl = PARAMETROS_POR_DEFECTO,
 ): ResumenMes[] {
   const hoy = new Date();
   const resumen: ResumenMes[] = [];
   let arrastre = saldoInicialEjercicio;
+
+  const diaLimite = Number(parametros.dia_limite_cierre) || 10;
+  const tope = num(parametros.tope_egreso);
+
+  // comprobantes repetidos dentro del ejercicio
+  const conteo = new Map<string, number>();
+  for (const m of movimientos) {
+    const k = clave(m.comprobante);
+    if (!k) continue;
+    conteo.set(k, (conteo.get(k) ?? 0) + 1);
+  }
 
   for (let mes = 1; mes <= 12; mes++) {
     const periodo = periodos.find((p) => p.mes === mes) ?? null;
@@ -180,6 +238,44 @@ export function calcularEjercicio(
       alertas.push("Hay egresos sin número de comprobante");
     }
 
+    // 1. cierre fuera de plazo
+    if (periodo?.estado === "cerrado" && periodo.cerrado_en) {
+      const limite = new Date(Date.UTC(anioResumen, mes, diaLimite, 23, 59, 59));
+      const cierre = new Date(periodo.cerrado_en);
+      if (cierre.getTime() > limite.getTime()) {
+        const dias = Math.ceil((cierre.getTime() - limite.getTime()) / 86_400_000);
+        alertas.push(
+          `Mes cerrado fuera de plazo (${dias} día${dias === 1 ? "" : "s"} después del ${diaLimite} del mes siguiente)`,
+        );
+      }
+    }
+
+    // 2. gastos por encima del tope
+    if (tope > 0) {
+      const excedidos = movs.filter((m) => m.tipo === "egreso" && num(m.monto) > tope);
+      for (const m of excedidos) {
+        alertas.push(`Gasto que supera el tope: ${m.concepto} por ${num(m.monto).toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 })}`);
+      }
+    }
+
+    // 3. comprobantes repetidos
+    const repetidos = Array.from(
+      new Set(
+        movs
+          .filter((m) => clave(m.comprobante) && (conteo.get(clave(m.comprobante)) ?? 0) > 1)
+          .map((m) => (m.comprobante ?? "").trim()),
+      ),
+    );
+    for (const c of repetidos) {
+      alertas.push(`Comprobante repetido: N° ${c} figura en más de un movimiento`);
+    }
+
+    // 4. ajustes contables del mes
+    const ajustes = movs.filter((m) => m.ajusta_movimiento_id).length;
+    if (ajustes > 0) {
+      alertas.push(`${ajustes} ajuste${ajustes === 1 ? "" : "s"} contable${ajustes === 1 ? "" : "s"} en el mes`);
+    }
+
     resumen.push({
       mes,
       periodo,
@@ -194,6 +290,7 @@ export function calcularEjercicio(
   }
   return resumen;
 }
+
 
 export function totalesAnuales(resumen: ResumenMes[]) {
   return {
