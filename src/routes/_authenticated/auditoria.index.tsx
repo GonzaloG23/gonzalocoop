@@ -78,7 +78,9 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
         ingresos: totales.ingresos,
         egresos: totales.egresos,
         mesesCerrados: resumen.filter((r) => r.periodo?.estado === "cerrado").length,
-        alertas: resumen.flatMap((r) => r.alertas.map((a) => `${nombreMes(r.mes)}: ${a}`)),
+        alertas: resumen.flatMap((r) =>
+          r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
+        ),
       };
     }),
   );
