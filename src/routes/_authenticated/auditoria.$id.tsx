@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/auditoria/$id")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    mes: search.mes ? Number(search.mes) : undefined,
+  }),
+
   head: () => ({
     meta: [
       { title: "Libro de la cooperadora | Auditoría" },
