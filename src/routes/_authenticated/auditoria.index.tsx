@@ -192,7 +192,7 @@ function AuditoriaPage() {
                 Ingresos: f.ingresos,
                 Egresos: f.egresos,
                 "Meses cerrados": f.mesesCerrados,
-                Observaciones: f.alertas.join(" / "),
+                Observaciones: f.alertas.map((a) => a.texto).join(" / "),
               })),
             )
           }
