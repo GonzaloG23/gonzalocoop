@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronDown, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { toast } from "sonner";
 
@@ -49,13 +50,15 @@ export const Route = createFileRoute("/_authenticated/auditoria/")({
   component: AuditoriaPage,
 });
 
+type Alerta = { mes: number; texto: string };
+
 type Fila = {
   coop: Cooperadora;
   saldoActual: number;
   ingresos: number;
   egresos: number;
   mesesCerrados: number;
-  alertas: string[];
+  alertas: Alerta[];
 };
 
 async function cargarPanelAuditor(): Promise<Fila[]> {
@@ -76,7 +79,9 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
         ingresos: totales.ingresos,
         egresos: totales.egresos,
         mesesCerrados: resumen.filter((r) => r.periodo?.estado === "cerrado").length,
-        alertas: resumen.flatMap((r) => r.alertas.map((a) => `${nombreMes(r.mes)}: ${a}`)),
+        alertas: resumen.flatMap((r) =>
+          r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
+        ),
       };
     }),
   );
@@ -187,7 +192,7 @@ function AuditoriaPage() {
                 Ingresos: f.ingresos,
                 Egresos: f.egresos,
                 "Meses cerrados": f.mesesCerrados,
-                Observaciones: f.alertas.join(" / "),
+                Observaciones: f.alertas.map((a) => a.texto).join(" / "),
               })),
             )
           }
@@ -236,17 +241,48 @@ function AuditoriaPage() {
                       {f.alertas.length === 0 ? (
                         <Badge variant="secondary">Sin observaciones</Badge>
                       ) : (
-                        <Badge variant="destructive" className="gap-1">
-                          <AlertTriangle className="h-3 w-3" /> {f.alertas.length}
-                        </Badge>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto p-0 hover:bg-transparent"
+                            >
+                              <Badge variant="destructive" className="cursor-pointer gap-1">
+                                <AlertTriangle className="h-3 w-3" /> {f.alertas.length}
+                                <ChevronDown className="h-3 w-3" />
+                              </Badge>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="center" className="w-80 p-2">
+                            <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">
+                              Observaciones de {f.coop.nombre}
+                            </p>
+                            <div className="max-h-72 space-y-1 overflow-y-auto">
+                              {f.alertas.map((a, i) => (
+                                <Link
+                                  key={`${a.mes}-${i}`}
+                                  to="/auditoria/$id"
+                                  params={{ id: f.coop.id }}
+                                  search={{ mes: a.mes }}
+                                  className="flex items-start gap-2 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent"
+                                >
+                                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                                  <span>{a.texto}</span>
+                                </Link>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm">
-                        <Link to="/auditoria/$id" params={{ id: f.coop.id }}>
+                        <Link to="/auditoria/$id" params={{ id: f.coop.id }} search={{ mes: undefined }}>
                           Ver libro
                         </Link>
                       </Button>
+
                     </TableCell>
                   </TableRow>
                 ))}

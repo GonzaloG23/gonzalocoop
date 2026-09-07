@@ -58,15 +58,21 @@ import {
 export function LibroMensual({
   cooperadora,
   soloLectura = false,
+  mesInicial,
 }: {
   cooperadora: Cooperadora;
   soloLectura?: boolean;
+  mesInicial?: number | undefined;
 }) {
   const qc = useQueryClient();
   const hoy = new Date();
   const [anio, setAnio] = useState(cooperadora.ejercicio);
   const [mes, setMes] = useState(
-    cooperadora.ejercicio === hoy.getFullYear() ? hoy.getMonth() + 1 : 1,
+    mesInicial && mesInicial >= 1 && mesInicial <= 12
+      ? mesInicial
+      : cooperadora.ejercicio === hoy.getFullYear()
+        ? hoy.getMonth() + 1
+        : 1,
   );
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
   const [ajustando, setAjustando] = useState<Movimiento | null>(null);

@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/auditoria/$id")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    mes: search["mes"] ? Number(search["mes"]) : undefined,
+  }),
+
   head: () => ({
     meta: [
       { title: "Libro de la cooperadora | Auditoría" },
@@ -31,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/auditoria/$id")({
 
 function AuditoriaLibroPage() {
   const { id } = Route.useParams();
+  const { mes } = Route.useSearch();
   const { data: ctx } = useContexto();
 
   const coop = useQuery({
@@ -98,7 +103,7 @@ function AuditoriaLibroPage() {
         .join(" · ")}
       acciones={volver}
     >
-      <LibroMensual cooperadora={c} soloLectura />
+      <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
 }
