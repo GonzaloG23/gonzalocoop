@@ -49,13 +49,15 @@ export const Route = createFileRoute("/_authenticated/auditoria/")({
   component: AuditoriaPage,
 });
 
+type Alerta = { mes: number; texto: string };
+
 type Fila = {
   coop: Cooperadora;
   saldoActual: number;
   ingresos: number;
   egresos: number;
   mesesCerrados: number;
-  alertas: string[];
+  alertas: Alerta[];
 };
 
 async function cargarPanelAuditor(): Promise<Fila[]> {
