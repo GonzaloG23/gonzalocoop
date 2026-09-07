@@ -103,7 +103,7 @@ function AuditoriaLibroPage() {
         .join(" · ")}
       acciones={volver}
     >
-      <LibroMensual cooperadora={c} soloLectura />
+      <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
 }
