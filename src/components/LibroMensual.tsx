@@ -312,6 +312,7 @@ export function LibroMensual({
             anio={anio}
             mes={mes}
             rubros={rubros.data ?? []}
+            movimientosEjercicio={ejercicio.data?.movimientos ?? []}
           />
           <FormularioMovimiento
             abierto={!!ajustando}
@@ -320,6 +321,7 @@ export function LibroMensual({
             anio={anio}
             mes={mes}
             rubros={rubros.data ?? []}
+            movimientosEjercicio={ejercicio.data?.movimientos ?? []}
             ajusta={ajustando}
           />
           <AlertDialog open={confirmarCierre} onOpenChange={setConfirmarCierre}>
@@ -387,6 +389,7 @@ function FormularioMovimiento({
   anio,
   mes,
   rubros,
+  movimientosEjercicio,
   ajusta,
 }: {
   abierto: boolean;
@@ -395,6 +398,7 @@ function FormularioMovimiento({
   anio: number;
   mes: number;
   rubros: Rubro[];
+  movimientosEjercicio: Movimiento[];
   ajusta?: Movimiento | null;
 }) {
   const qc = useQueryClient();
@@ -444,6 +448,18 @@ function FormularioMovimiento({
   });
 
   const disponibles = rubros.filter((r) => r.tipo === tipo);
+
+  const saldoDisponible = useMemo(() => {
+    const base = anio === cooperadora.ejercicio ? num(cooperadora.saldo_inicial_ejercicio) : 0;
+    return movimientosEjercicio
+      .filter((m) => m.fecha <= fecha)
+      .reduce((s, m) => s + (m.tipo === "ingreso" ? num(m.monto) : -num(m.monto)), base);
+  }, [movimientosEjercicio, fecha, anio, cooperadora]);
+
+  const montoNum = Number(monto) || 0;
+  const sinSaldo = tipo === "egreso" && saldoDisponible <= 0;
+  const excedeSaldo = tipo === "egreso" && !sinSaldo && montoNum > saldoDisponible;
+  const bloqueado = sinSaldo || excedeSaldo;
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
@@ -549,6 +565,15 @@ function FormularioMovimiento({
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
               />
+              {tipo === "egreso" && (
+                <p className={sinSaldo || excedeSaldo ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+                  {sinSaldo
+                    ? `No hay saldo disponible al ${fechaCorta(fecha)}: el saldo es ${money(saldoDisponible)}.`
+                    : excedeSaldo
+                      ? `El egreso supera el saldo disponible (${money(saldoDisponible)}): faltan ${money(montoNum - saldoDisponible)}.`
+                      : `Saldo disponible al ${fechaCorta(fecha)}: ${money(saldoDisponible)}.`}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="medio">Medio de pago</Label>
@@ -583,7 +608,7 @@ function FormularioMovimiento({
             <Button type="button" variant="outline" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardar.isPending}>
+            <Button type="submit" disabled={guardar.isPending || bloqueado}>
               Registrar
             </Button>
           </DialogFooter>
