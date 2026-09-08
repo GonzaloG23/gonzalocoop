@@ -174,14 +174,21 @@ function PanelCooperadora() {
     enabled: !!coop,
   });
 
+  const parametros = useQuery({
+    queryKey: ["parametros"],
+    queryFn: cargarParametros,
+    staleTime: 30_000,
+  });
+
   const resumen = useMemo(() => {
     if (!coop || !ejercicio.data) return null;
     return calcularEjercicio(
       num(coop.saldo_inicial_ejercicio),
       ejercicio.data.periodos,
       ejercicio.data.movimientos,
+      parametros.data,
     );
-  }, [coop, ejercicio.data]);
+  }, [coop, ejercicio.data, parametros.data]);
 
   const totales = resumen ? totalesAnuales(resumen) : null;
   const hoy = new Date();

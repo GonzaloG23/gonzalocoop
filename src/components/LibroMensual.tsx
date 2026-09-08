@@ -87,14 +87,21 @@ export function LibroMensual({
     queryFn: () => cargarRubros(cooperadora.id),
   });
 
+  const parametros = useQuery({
+    queryKey: ["parametros"],
+    queryFn: cargarParametros,
+    staleTime: 30_000,
+  });
+
   const resumen = useMemo(() => {
     if (!ejercicio.data) return null;
     return calcularEjercicio(
       anio === cooperadora.ejercicio ? num(cooperadora.saldo_inicial_ejercicio) : 0,
       ejercicio.data.periodos,
       ejercicio.data.movimientos,
+      parametros.data,
     );
-  }, [ejercicio.data, anio, cooperadora]);
+  }, [ejercicio.data, anio, cooperadora, parametros.data]);
 
   const mesActual = resumen?.find((r) => r.mes === mes) ?? null;
   const movimientos = (ejercicio.data?.movimientos ?? []).filter(
