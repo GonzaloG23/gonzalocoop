@@ -8,6 +8,7 @@ import {
   asegurarPeriodo,
   calcularEjercicio,
   cargarEjercicio,
+  cargarParametros,
   cargarRubros,
   type Cooperadora,
   type Movimiento,
