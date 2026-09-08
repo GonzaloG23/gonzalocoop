@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -63,14 +63,24 @@ export function AppShell({
               </Link>
             ))}
             {ctx?.esAuditor && (
-              <Link
-                to="/auditoria"
-                className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
-                activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Auditoría
-              </Link>
+              <>
+                <Link
+                  to="/auditoria"
+                  className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
+                  activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Auditoría
+                </Link>
+                <Link
+                  to="/parametros"
+                  className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
+                  activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Parámetros
+                </Link>
+              </>
             )}
           </nav>
 

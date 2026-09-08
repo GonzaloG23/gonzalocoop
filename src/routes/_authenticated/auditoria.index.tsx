@@ -11,6 +11,7 @@ import { AppShell, useContexto } from "@/components/AppShell";
 import {
   calcularEjercicio,
   cargarEjercicio,
+  cargarParametros,
   totalesAnuales,
   type Cooperadora,
 } from "@/lib/libro";
@@ -67,10 +68,12 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
   const coops = (data ?? []) as Cooperadora[];
   const hoy = new Date();
 
+  const parametros = await cargarParametros();
+
   return Promise.all(
     coops.map(async (coop) => {
       const { periodos, movimientos } = await cargarEjercicio(coop.id, coop.ejercicio);
-      const resumen = calcularEjercicio(num(coop.saldo_inicial_ejercicio), periodos, movimientos);
+      const resumen = calcularEjercicio(num(coop.saldo_inicial_ejercicio), periodos, movimientos, parametros);
       const totales = totalesAnuales(resumen);
       const mesTope = coop.ejercicio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
       return {

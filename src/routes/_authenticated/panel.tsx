@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, useContexto } from "@/components/AppShell";
-import { calcularEjercicio, cargarEjercicio, totalesAnuales } from "@/lib/libro";
+import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales } from "@/lib/libro";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -174,14 +174,21 @@ function PanelCooperadora() {
     enabled: !!coop,
   });
 
+  const parametros = useQuery({
+    queryKey: ["parametros"],
+    queryFn: cargarParametros,
+    staleTime: 30_000,
+  });
+
   const resumen = useMemo(() => {
     if (!coop || !ejercicio.data) return null;
     return calcularEjercicio(
       num(coop.saldo_inicial_ejercicio),
       ejercicio.data.periodos,
       ejercicio.data.movimientos,
+      parametros.data,
     );
-  }, [coop, ejercicio.data]);
+  }, [coop, ejercicio.data, parametros.data]);
 
   const totales = resumen ? totalesAnuales(resumen) : null;
   const hoy = new Date();

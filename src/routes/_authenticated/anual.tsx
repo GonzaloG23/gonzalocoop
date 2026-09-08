@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { AppShell, useContexto } from "@/components/AppShell";
-import { calcularEjercicio, cargarEjercicio, totalesAnuales, type Cooperadora } from "@/lib/libro";
+import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales, type Cooperadora } from "@/lib/libro";
 import { exportarAnualExcel, exportarAnualPDF } from "@/lib/exportar";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
@@ -75,14 +75,21 @@ export function Anual({ cooperadora }: { cooperadora: Cooperadora }) {
     queryFn: () => cargarEjercicio(cooperadora.id, anio),
   });
 
+  const parametros = useQuery({
+    queryKey: ["parametros"],
+    queryFn: cargarParametros,
+    staleTime: 30_000,
+  });
+
   const resumen = useMemo(() => {
     if (!ejercicio.data) return null;
     return calcularEjercicio(
       num(cooperadora.saldo_inicial_ejercicio),
       ejercicio.data.periodos,
       ejercicio.data.movimientos,
+      parametros.data,
     );
-  }, [ejercicio.data, cooperadora]);
+  }, [ejercicio.data, cooperadora, parametros.data]);
 
   if (!resumen) return <p className="text-sm text-muted-foreground">Cargando planilla…</p>;
   const totales = totalesAnuales(resumen);
