@@ -389,6 +389,7 @@ function FormularioMovimiento({
   anio,
   mes,
   rubros,
+  movimientosEjercicio,
   ajusta,
 }: {
   abierto: boolean;
@@ -397,6 +398,7 @@ function FormularioMovimiento({
   anio: number;
   mes: number;
   rubros: Rubro[];
+  movimientosEjercicio: Movimiento[];
   ajusta?: Movimiento | null;
 }) {
   const qc = useQueryClient();
