@@ -608,7 +608,7 @@ function FormularioMovimiento({
             <Button type="button" variant="outline" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardar.isPending}>
+            <Button type="submit" disabled={guardar.isPending || bloqueado}>
               Registrar
             </Button>
           </DialogFooter>
