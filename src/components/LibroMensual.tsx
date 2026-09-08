@@ -449,6 +449,18 @@ function FormularioMovimiento({
 
   const disponibles = rubros.filter((r) => r.tipo === tipo);
 
+  const saldoDisponible = useMemo(() => {
+    const base = anio === cooperadora.ejercicio ? num(cooperadora.saldo_inicial_ejercicio) : 0;
+    return movimientosEjercicio
+      .filter((m) => m.fecha <= fecha)
+      .reduce((s, m) => s + (m.tipo === "ingreso" ? num(m.monto) : -num(m.monto)), base);
+  }, [movimientosEjercicio, fecha, anio, cooperadora]);
+
+  const montoNum = Number(monto) || 0;
+  const sinSaldo = tipo === "egreso" && saldoDisponible <= 0;
+  const excedeSaldo = tipo === "egreso" && !sinSaldo && montoNum > saldoDisponible;
+  const bloqueado = sinSaldo || excedeSaldo;
+
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
