@@ -312,6 +312,7 @@ export function LibroMensual({
             anio={anio}
             mes={mes}
             rubros={rubros.data ?? []}
+            movimientosEjercicio={ejercicio.data?.movimientos ?? []}
           />
           <FormularioMovimiento
             abierto={!!ajustando}
@@ -320,6 +321,7 @@ export function LibroMensual({
             anio={anio}
             mes={mes}
             rubros={rubros.data ?? []}
+            movimientosEjercicio={ejercicio.data?.movimientos ?? []}
             ajusta={ajustando}
           />
           <AlertDialog open={confirmarCierre} onOpenChange={setConfirmarCierre}>
