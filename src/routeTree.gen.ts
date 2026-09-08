@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAnualRouteImport } from './routes/_authenticated/anual'
 import { Route as AuthenticatedLibroRouteImport } from './routes/_authenticated/libro'
 import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
+import { Route as AuthenticatedParametrosRouteImport } from './routes/_authenticated/parametros'
 import { Route as AuthenticatedAuditoriaIndexRouteImport } from './routes/_authenticated/auditoria.index'
 import { Route as AuthenticatedAuditoriaIdRouteImport } from './routes/_authenticated/auditoria.$id'
 
@@ -47,6 +48,11 @@ const AuthenticatedPanelRoute = AuthenticatedPanelRouteImport.update({
   path: '/panel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedParametrosRoute = AuthenticatedParametrosRouteImport.update({
+  id: '/parametros',
+  path: '/parametros',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAuditoriaIndexRoute =
   AuthenticatedAuditoriaIndexRouteImport.update({
     id: '/auditoria/',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/anual': typeof AuthenticatedAnualRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/parametros': typeof AuthenticatedParametrosRoute
   '/auditoria/$id': typeof AuthenticatedAuditoriaIdRoute
   '/auditoria/': typeof AuthenticatedAuditoriaIndexRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/anual': typeof AuthenticatedAnualRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/parametros': typeof AuthenticatedParametrosRoute
   '/auditoria/$id': typeof AuthenticatedAuditoriaIdRoute
   '/auditoria': typeof AuthenticatedAuditoriaIndexRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/anual': typeof AuthenticatedAnualRoute
   '/_authenticated/libro': typeof AuthenticatedLibroRoute
   '/_authenticated/panel': typeof AuthenticatedPanelRoute
+  '/_authenticated/parametros': typeof AuthenticatedParametrosRoute
   '/_authenticated/auditoria/$id': typeof AuthenticatedAuditoriaIdRoute
   '/_authenticated/auditoria/': typeof AuthenticatedAuditoriaIndexRoute
 }
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/anual'
     | '/libro'
     | '/panel'
+    | '/parametros'
     | '/auditoria/$id'
     | '/auditoria/'
   fileRoutesByTo: FileRoutesByTo
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/anual'
     | '/libro'
     | '/panel'
+    | '/parametros'
     | '/auditoria/$id'
     | '/auditoria'
   id:
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/anual'
     | '/_authenticated/libro'
     | '/_authenticated/panel'
+    | '/_authenticated/parametros'
     | '/_authenticated/auditoria/$id'
     | '/_authenticated/auditoria/'
   fileRoutesById: FileRoutesById
@@ -170,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPanelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/parametros': {
+      id: '/_authenticated/parametros'
+      path: '/parametros'
+      fullPath: '/parametros'
+      preLoaderRoute: typeof AuthenticatedParametrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/auditoria/': {
       id: '/_authenticated/auditoria/'
       path: '/auditoria'
@@ -191,6 +210,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnualRoute: typeof AuthenticatedAnualRoute
   AuthenticatedLibroRoute: typeof AuthenticatedLibroRoute
   AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
+  AuthenticatedParametrosRoute: typeof AuthenticatedParametrosRoute
   AuthenticatedAuditoriaIdRoute: typeof AuthenticatedAuditoriaIdRoute
   AuthenticatedAuditoriaIndexRoute: typeof AuthenticatedAuditoriaIndexRoute
 }
@@ -199,6 +219,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnualRoute: AuthenticatedAnualRoute,
   AuthenticatedLibroRoute: AuthenticatedLibroRoute,
   AuthenticatedPanelRoute: AuthenticatedPanelRoute,
+  AuthenticatedParametrosRoute: AuthenticatedParametrosRoute,
   AuthenticatedAuditoriaIdRoute: AuthenticatedAuditoriaIdRoute,
   AuthenticatedAuditoriaIndexRoute: AuthenticatedAuditoriaIndexRoute,
 }
