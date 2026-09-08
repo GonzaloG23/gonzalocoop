@@ -565,6 +565,15 @@ function FormularioMovimiento({
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
               />
+              {tipo === "egreso" && (
+                <p className={sinSaldo || excedeSaldo ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+                  {sinSaldo
+                    ? `No hay saldo disponible al ${fechaCorta(fecha)}: el saldo es ${money(saldoDisponible)}.`
+                    : excedeSaldo
+                      ? `El egreso supera el saldo disponible (${money(saldoDisponible)}): faltan ${money(montoNum - saldoDisponible)}.`
+                      : `Saldo disponible al ${fechaCorta(fecha)}: ${money(saldoDisponible)}.`}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="medio">Medio de pago</Label>
