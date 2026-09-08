@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, useContexto } from "@/components/AppShell";
-import { calcularEjercicio, cargarEjercicio, totalesAnuales } from "@/lib/libro";
+import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales } from "@/lib/libro";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

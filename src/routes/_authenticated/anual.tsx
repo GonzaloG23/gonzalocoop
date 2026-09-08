@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { AppShell, useContexto } from "@/components/AppShell";
-import { calcularEjercicio, cargarEjercicio, totalesAnuales, type Cooperadora } from "@/lib/libro";
+import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales, type Cooperadora } from "@/lib/libro";
 import { exportarAnualExcel, exportarAnualPDF } from "@/lib/exportar";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
