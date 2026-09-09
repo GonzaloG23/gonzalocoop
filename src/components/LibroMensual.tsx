@@ -481,7 +481,11 @@ function FormularioMovimiento({
   const montoNum = Number(monto) || 0;
   const sinSaldo = tipo === "egreso" && saldoDisponible <= 0;
   const excedeSaldo = tipo === "egreso" && !sinSaldo && montoNum > saldoDisponible;
-  const bloqueado = sinSaldo || excedeSaldo;
+  const cuitInvalido = tipo === "egreso" && cuitDigitos.length > 0 && cuitDigitos.length !== 11;
+  const faltanDatosProveedor =
+    tipo === "egreso" &&
+    (!comprobante.trim() || cuitDigitos.length !== 11 || !proveedorRazon.trim() || !tipoFactura);
+  const bloqueado = sinSaldo || excedeSaldo || faltanDatosProveedor;
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
