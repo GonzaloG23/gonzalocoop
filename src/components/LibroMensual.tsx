@@ -611,15 +611,68 @@ function FormularioMovimiento({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="comprobante">Comprobante</Label>
+              <Label htmlFor="comprobante">
+                N° Comprobante{tipo === "egreso" ? "" : " (opcional)"}
+              </Label>
               <Input
                 id="comprobante"
+                required={tipo === "egreso"}
                 value={comprobante}
                 onChange={(e) => setComprobante(e.target.value)}
                 placeholder="N° factura / recibo"
               />
             </div>
           </div>
+
+          {tipo === "egreso" && (
+            <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
+              <p className="text-sm font-medium">Datos del proveedor</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="razon">Razón social / Nombre del comercio</Label>
+                  <Input
+                    id="razon"
+                    required
+                    maxLength={150}
+                    value={proveedorRazon}
+                    onChange={(e) => setProveedorRazon(e.target.value)}
+                    placeholder="Ej. Ferretería San Martín S.R.L."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cuit">CUIT</Label>
+                  <Input
+                    id="cuit"
+                    required
+                    inputMode="numeric"
+                    maxLength={13}
+                    value={proveedorCuit}
+                    onChange={(e) => setProveedorCuit(e.target.value)}
+                    placeholder="20123456789"
+                  />
+                  {cuitInvalido && (
+                    <p className="text-xs text-destructive">El CUIT debe tener 11 dígitos.</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de factura</Label>
+                <Select value={tipoFactura} onValueChange={setTipoFactura}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Elegí el tipo de comprobante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIPOS_FACTURA.map((t) => (
+                      <SelectItem key={t.valor} value={t.valor}>
+                        {t.etiqueta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
 
           <div className="space-y-2">
             <Label htmlFor="obs">Observaciones</Label>
