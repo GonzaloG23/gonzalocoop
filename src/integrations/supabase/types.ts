@@ -65,8 +65,11 @@ export type Database = {
           motivo_ajuste: string | null
           observaciones: string | null
           periodo_id: string
+          proveedor_cuit: string | null
+          proveedor_razon_social: string | null
           rubro_id: string | null
           tipo: Database["public"]["Enums"]["tipo_movimiento"]
+          tipo_factura: string | null
         }
         Insert: {
           ajusta_movimiento_id?: string | null
@@ -82,8 +85,11 @@ export type Database = {
           motivo_ajuste?: string | null
           observaciones?: string | null
           periodo_id: string
+          proveedor_cuit?: string | null
+          proveedor_razon_social?: string | null
           rubro_id?: string | null
           tipo: Database["public"]["Enums"]["tipo_movimiento"]
+          tipo_factura?: string | null
         }
         Update: {
           ajusta_movimiento_id?: string | null
@@ -99,8 +105,11 @@ export type Database = {
           motivo_ajuste?: string | null
           observaciones?: string | null
           periodo_id?: string
+          proveedor_cuit?: string | null
+          proveedor_razon_social?: string | null
           rubro_id?: string | null
           tipo?: Database["public"]["Enums"]["tipo_movimiento"]
+          tipo_factura?: string | null
         }
         Relationships: [
           {
