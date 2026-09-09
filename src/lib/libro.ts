@@ -37,6 +37,9 @@ export type Movimiento = {
   monto: number | string;
   medio_pago: string | null;
   comprobante: string | null;
+  proveedor_cuit: string | null;
+  proveedor_razon_social: string | null;
+  tipo_factura: string | null;
   observaciones: string | null;
   ajusta_movimiento_id: string | null;
   motivo_ajuste: string | null;
