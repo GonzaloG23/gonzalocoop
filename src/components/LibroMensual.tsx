@@ -10,6 +10,8 @@ import {
   cargarEjercicio,
   cargarParametros,
   cargarRubros,
+  etiquetaFactura,
+  TIPOS_FACTURA,
   type Cooperadora,
   type Movimiento,
   type Rubro,
