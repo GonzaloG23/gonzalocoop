@@ -276,7 +276,16 @@ export function LibroMensual({
                         <p className="mt-0.5 text-xs text-muted-foreground">{m.observaciones}</p>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{m.comprobante ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {m.comprobante ?? "—"}
+                      {m.proveedor_razon_social && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {m.proveedor_razon_social}
+                          {m.proveedor_cuit ? ` · CUIT ${m.proveedor_cuit}` : ""}
+                          {etiquetaFactura(m.tipo_factura) ? ` · ${etiquetaFactura(m.tipo_factura)}` : ""}
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell className="tabular text-right">
                       {m.tipo === "ingreso" ? money(m.monto) : ""}
                     </TableCell>
