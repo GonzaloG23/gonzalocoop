@@ -427,6 +427,8 @@ function FormularioMovimiento({
   const [observaciones, setObservaciones] = useState("");
   const [motivo, setMotivo] = useState("");
 
+  const cuitDigitos = proveedorCuit.replace(/\D/g, "");
+
   const guardar = useMutation({
     mutationFn: async () => {
       const periodo = await asegurarPeriodo(cooperadora.id, anio, mes);
