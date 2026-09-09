@@ -421,6 +421,9 @@ function FormularioMovimiento({
   const [monto, setMonto] = useState("");
   const [medioPago, setMedioPago] = useState("Efectivo");
   const [comprobante, setComprobante] = useState("");
+  const [proveedorCuit, setProveedorCuit] = useState("");
+  const [proveedorRazon, setProveedorRazon] = useState("");
+  const [tipoFactura, setTipoFactura] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [motivo, setMotivo] = useState("");
 
