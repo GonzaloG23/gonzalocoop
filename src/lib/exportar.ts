@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { fechaCorta, money, nombreMes } from "./formato";
+import { etiquetaFactura } from "./libro";
 import type { Cooperadora, Movimiento, ResumenMes, Rubro } from "./libro";
 
 function encabezado(doc: jsPDF, titulo: string, coop: Cooperadora, subtitulo: string) {
