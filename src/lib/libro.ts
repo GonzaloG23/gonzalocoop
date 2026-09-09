@@ -3,6 +3,16 @@ import { num } from "./formato";
 
 export type Tipo = "ingreso" | "egreso";
 
+export const TIPOS_FACTURA = [
+  { valor: "B", etiqueta: "Factura B" },
+  { valor: "C", etiqueta: "Factura C" },
+  { valor: "ticket", etiqueta: "Ticket factura" },
+] as const;
+
+export function etiquetaFactura(valor: string | null | undefined) {
+  return TIPOS_FACTURA.find((t) => t.valor === valor)?.etiqueta ?? "";
+}
+
 export type Cooperadora = {
   id: string;
   nombre: string;
