@@ -459,6 +459,9 @@ function FormularioMovimiento({
       setConcepto("");
       setMonto("");
       setComprobante("");
+      setProveedorCuit("");
+      setProveedorRazon("");
+      setTipoFactura("");
       setObservaciones("");
       setMotivo("");
       onCerrar();
