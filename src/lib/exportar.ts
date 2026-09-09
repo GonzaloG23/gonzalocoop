@@ -39,13 +39,16 @@ export function exportarMesPDF(
   );
   autoTable(doc, {
     startY: 42,
-    head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Monto"]],
+    head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Proveedor", "CUIT", "Factura", "Monto"]],
     body: movimientos.map((m) => [
       fechaCorta(m.fecha),
       m.tipo === "ingreso" ? "Ingreso" : "Egreso",
       rubros.find((r) => r.id === m.rubro_id)?.nombre ?? "-",
       m.ajusta_movimiento_id ? `AJUSTE · ${m.concepto}` : m.concepto,
       m.comprobante ?? "-",
+      m.proveedor_razon_social ?? "-",
+      m.proveedor_cuit ?? "-",
+      etiquetaFactura(m.tipo_factura) || "-",
       money(m.monto),
     ]),
     styles: { fontSize: 8 },
