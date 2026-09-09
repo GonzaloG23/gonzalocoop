@@ -10,6 +10,8 @@ import {
   cargarEjercicio,
   cargarParametros,
   cargarRubros,
+  etiquetaFactura,
+  TIPOS_FACTURA,
   type Cooperadora,
   type Movimiento,
   type Rubro,
@@ -276,7 +278,16 @@ export function LibroMensual({
                         <p className="mt-0.5 text-xs text-muted-foreground">{m.observaciones}</p>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{m.comprobante ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {m.comprobante ?? "—"}
+                      {m.proveedor_razon_social && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {m.proveedor_razon_social}
+                          {m.proveedor_cuit ? ` · CUIT ${m.proveedor_cuit}` : ""}
+                          {etiquetaFactura(m.tipo_factura) ? ` · ${etiquetaFactura(m.tipo_factura)}` : ""}
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell className="tabular text-right">
                       {m.tipo === "ingreso" ? money(m.monto) : ""}
                     </TableCell>
@@ -410,8 +421,13 @@ function FormularioMovimiento({
   const [monto, setMonto] = useState("");
   const [medioPago, setMedioPago] = useState("Efectivo");
   const [comprobante, setComprobante] = useState("");
+  const [proveedorCuit, setProveedorCuit] = useState("");
+  const [proveedorRazon, setProveedorRazon] = useState("");
+  const [tipoFactura, setTipoFactura] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [motivo, setMotivo] = useState("");
+
+  const cuitDigitos = proveedorCuit.replace(/\D/g, "");
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -426,7 +442,10 @@ function FormularioMovimiento({
         concepto,
         monto: Number(monto),
         medio_pago: medioPago || null,
-        comprobante: comprobante || null,
+        comprobante: comprobante.trim() || null,
+        proveedor_cuit: tipo === "egreso" ? cuitDigitos : null,
+        proveedor_razon_social: tipo === "egreso" ? proveedorRazon.trim() : null,
+        tipo_factura: tipo === "egreso" ? tipoFactura : null,
         observaciones: observaciones || null,
         ajusta_movimiento_id: ajusta?.id ?? null,
         motivo_ajuste: ajusta ? motivo : null,
@@ -440,6 +459,9 @@ function FormularioMovimiento({
       setConcepto("");
       setMonto("");
       setComprobante("");
+      setProveedorCuit("");
+      setProveedorRazon("");
+      setTipoFactura("");
       setObservaciones("");
       setMotivo("");
       onCerrar();
@@ -459,7 +481,11 @@ function FormularioMovimiento({
   const montoNum = Number(monto) || 0;
   const sinSaldo = tipo === "egreso" && saldoDisponible <= 0;
   const excedeSaldo = tipo === "egreso" && !sinSaldo && montoNum > saldoDisponible;
-  const bloqueado = sinSaldo || excedeSaldo;
+  const cuitInvalido = tipo === "egreso" && cuitDigitos.length > 0 && cuitDigitos.length !== 11;
+  const faltanDatosProveedor =
+    tipo === "egreso" &&
+    (!comprobante.trim() || cuitDigitos.length !== 11 || !proveedorRazon.trim() || !tipoFactura);
+  const bloqueado = sinSaldo || excedeSaldo || faltanDatosProveedor;
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
@@ -585,15 +611,68 @@ function FormularioMovimiento({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="comprobante">Comprobante</Label>
+              <Label htmlFor="comprobante">
+                N° Comprobante{tipo === "egreso" ? "" : " (opcional)"}
+              </Label>
               <Input
                 id="comprobante"
+                required={tipo === "egreso"}
                 value={comprobante}
                 onChange={(e) => setComprobante(e.target.value)}
                 placeholder="N° factura / recibo"
               />
             </div>
           </div>
+
+          {tipo === "egreso" && (
+            <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
+              <p className="text-sm font-medium">Datos del proveedor</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="razon">Razón social / Nombre del comercio</Label>
+                  <Input
+                    id="razon"
+                    required
+                    maxLength={150}
+                    value={proveedorRazon}
+                    onChange={(e) => setProveedorRazon(e.target.value)}
+                    placeholder="Ej. Ferretería San Martín S.R.L."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cuit">CUIT</Label>
+                  <Input
+                    id="cuit"
+                    required
+                    inputMode="numeric"
+                    maxLength={13}
+                    value={proveedorCuit}
+                    onChange={(e) => setProveedorCuit(e.target.value)}
+                    placeholder="20123456789"
+                  />
+                  {cuitInvalido && (
+                    <p className="text-xs text-destructive">El CUIT debe tener 11 dígitos.</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de factura</Label>
+                <Select value={tipoFactura} onValueChange={setTipoFactura}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Elegí el tipo de comprobante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIPOS_FACTURA.map((t) => (
+                      <SelectItem key={t.valor} value={t.valor}>
+                        {t.etiqueta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
 
           <div className="space-y-2">
             <Label htmlFor="obs">Observaciones</Label>

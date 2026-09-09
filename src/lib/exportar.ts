@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { fechaCorta, money, nombreMes } from "./formato";
+import { etiquetaFactura } from "./libro";
 import type { Cooperadora, Movimiento, ResumenMes, Rubro } from "./libro";
 
 function encabezado(doc: jsPDF, titulo: string, coop: Cooperadora, subtitulo: string) {
@@ -39,13 +40,16 @@ export function exportarMesPDF(
   );
   autoTable(doc, {
     startY: 42,
-    head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Monto"]],
+    head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Proveedor", "CUIT", "Factura", "Monto"]],
     body: movimientos.map((m) => [
       fechaCorta(m.fecha),
       m.tipo === "ingreso" ? "Ingreso" : "Egreso",
       rubros.find((r) => r.id === m.rubro_id)?.nombre ?? "-",
       m.ajusta_movimiento_id ? `AJUSTE · ${m.concepto}` : m.concepto,
       m.comprobante ?? "-",
+      m.proveedor_razon_social ?? "-",
+      m.proveedor_cuit ?? "-",
+      etiquetaFactura(m.tipo_factura) || "-",
       money(m.monto),
     ]),
     styles: { fontSize: 8 },
@@ -74,6 +78,9 @@ export function exportarMesExcel(
     Concepto: m.concepto,
     "Medio de pago": m.medio_pago ?? "",
     Comprobante: m.comprobante ?? "",
+    "Razón social": m.proveedor_razon_social ?? "",
+    "CUIT proveedor": m.proveedor_cuit ?? "",
+    "Tipo de factura": etiquetaFactura(m.tipo_factura),
     Ajuste: m.ajusta_movimiento_id ? "Sí" : "",
     "Motivo del ajuste": m.motivo_ajuste ?? "",
     Monto: Number(m.monto),
