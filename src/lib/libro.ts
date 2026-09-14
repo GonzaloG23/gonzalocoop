@@ -54,6 +54,8 @@ export type Movimiento = {
   ajusta_movimiento_id: string | null;
   motivo_ajuste: string | null;
   creado_en: string;
+  carga_fuera_de_orden: boolean;
+  motivo_carga_tardia: string | null;
 };
 
 export type ResumenMes = {
@@ -66,8 +68,6 @@ export type ResumenMes = {
   cantidad: number;
   alertas: string[];
 };
-
-/* ------------------------------- consultas ------------------------------- */
 
 export async function getSesion() {
   const { data } = await supabase.auth.getUser();
@@ -157,7 +157,6 @@ export async function toggleRubro(rubroId: string, activo: boolean) {
   if (error) throw error;
 }
 
-/** Devuelve el periodo del mes, creándolo si todavía no existe. */
 export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: number): Promise<Periodo> {
   const existente = await supabase
     .from("periodos")
@@ -176,8 +175,6 @@ export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: 
   if (error) throw error;
   return data as Periodo;
 }
-
-/* ----------------------------- parámetros -------------------------------- */
 
 export type ParametrosControl = {
   id: string;
@@ -202,11 +199,7 @@ export async function cargarParametros(): Promise<ParametrosControl> {
   return (data as ParametrosControl | null) ?? PARAMETROS_POR_DEFECTO;
 }
 
-export async function guardarParametros(p: {
-  id: string;
-  dia_limite_cierre: number;
-  tope_egreso: number;
-}) {
+export async function guardarParametros(p: { id: string; dia_limite_cierre: number; tope_egreso: number }) {
   if (p.id) {
     const { error } = await supabase
       .from("parametros_control")
@@ -221,8 +214,6 @@ export async function guardarParametros(p: {
   if (error) throw error;
 }
 
-/* ------------------------------- cálculos -------------------------------- */
-
 const clave = (c: string | null) => (c ?? "").trim().toLowerCase();
 
 export function calcularEjercicio(
@@ -234,11 +225,9 @@ export function calcularEjercicio(
   const hoy = new Date();
   const resumen: ResumenMes[] = [];
   let arrastre = saldoInicialEjercicio;
-
   const diaLimite = Number(parametros.dia_limite_cierre) || 10;
   const tope = num(parametros.tope_egreso);
 
-  // comprobantes repetidos dentro del ejercicio
   const conteo = new Map<string, number>();
   for (const m of movimientos) {
     const k = clave(m.comprobante);
@@ -261,6 +250,7 @@ export function calcularEjercicio(
         alertas.push("El saldo inicial declarado no coincide con el saldo final del mes anterior");
       }
     }
+
     const anioResumen = periodos[0]?.anio ?? hoy.getFullYear();
     const mesYaTranscurrido =
       anioResumen < hoy.getFullYear() || (anioResumen === hoy.getFullYear() && mes <= hoy.getMonth() + 1);
@@ -271,29 +261,30 @@ export function calcularEjercicio(
       alertas.push("Hay egresos sin número de comprobante");
     }
 
-    // movimiento con fecha fuera del mes
-    const anioMov = anioResumen;
     const fueraDeMes = movs.filter((m) => {
       const [a, mo] = m.fecha.slice(0, 7).split("-").map(Number);
-      return a !== anioMov || mo !== mes;
+      return a !== anioResumen || mo !== mes;
     });
     for (const m of fueraDeMes) {
       alertas.push(`Movimiento con fecha fuera del mes: ${m.concepto} (${m.fecha.slice(0, 10).split("-").reverse().join("/")})`);
     }
 
-    // 1. cierre fuera de plazo
+    const cargasFueraDeOrden = movs.filter((m) => m.carga_fuera_de_orden);
+    for (const m of cargasFueraDeOrden) {
+      alertas.push(
+        `Carga fuera de orden cronológico: ${m.concepto} (${m.fecha.slice(0, 10).split("-").reverse().join("/")})${m.motivo_carga_tardia ? ` — Motivo: ${m.motivo_carga_tardia}` : ""}`,
+      );
+    }
+
     if (periodo?.estado === "cerrado" && periodo.cerrado_en) {
       const limite = new Date(Date.UTC(anioResumen, mes, diaLimite, 23, 59, 59));
       const cierre = new Date(periodo.cerrado_en);
       if (cierre.getTime() > limite.getTime()) {
         const dias = Math.ceil((cierre.getTime() - limite.getTime()) / 86_400_000);
-        alertas.push(
-          `Mes cerrado fuera de plazo (${dias} día${dias === 1 ? "" : "s"} después del ${diaLimite} del mes siguiente)`,
-        );
+        alertas.push(`Mes cerrado fuera de plazo (${dias} día${dias === 1 ? "" : "s"} después del ${diaLimite} del mes siguiente)`);
       }
     }
 
-    // 2. gastos por encima del tope
     if (tope > 0) {
       const excedidos = movs.filter((m) => m.tipo === "egreso" && num(m.monto) > tope);
       for (const m of excedidos) {
@@ -301,7 +292,6 @@ export function calcularEjercicio(
       }
     }
 
-    // 3. comprobantes repetidos
     const repetidos = Array.from(
       new Set(
         movs
@@ -313,27 +303,16 @@ export function calcularEjercicio(
       alertas.push(`Comprobante repetido: N° ${c} figura en más de un movimiento`);
     }
 
-    // 4. ajustes contables del mes
     const ajustes = movs.filter((m) => m.ajusta_movimiento_id).length;
     if (ajustes > 0) {
       alertas.push(`${ajustes} ajuste${ajustes === 1 ? "" : "s"} contable${ajustes === 1 ? "" : "s"} en el mes`);
     }
 
-    resumen.push({
-      mes,
-      periodo,
-      saldoInicial,
-      ingresos,
-      egresos,
-      saldoFinal,
-      cantidad: movs.length,
-      alertas,
-    });
+    resumen.push({ mes, periodo, saldoInicial, ingresos, egresos, saldoFinal, cantidad: movs.length, alertas });
     arrastre = saldoFinal;
   }
   return resumen;
 }
-
 
 export function totalesAnuales(resumen: ResumenMes[]) {
   return {
