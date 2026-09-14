@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, SlidersHorizontal, Tags } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ const nav = [
   { to: "/panel", label: "Panel", icon: LayoutDashboard },
   { to: "/libro", label: "Libro mensual", icon: BookOpenCheck },
   { to: "/anual", label: "Resumen anual", icon: CalendarRange },
+  { to: "/rubros", label: "Rubros", icon: Tags },
 ] as const;
 
 export function AppShell({

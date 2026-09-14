@@ -137,6 +137,26 @@ export async function cargarRubros(cooperadoraId: string | null) {
   ) as Rubro[];
 }
 
+export async function cargarTodosLosRubros(cooperadoraId: string | null) {
+  const { data, error } = await supabase.from("rubros").select("*").order("tipo").order("nombre");
+  if (error) throw error;
+  return (data ?? []).filter(
+    (r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId,
+  ) as Rubro[];
+}
+
+export async function crearRubro(cooperadoraId: string, nombre: string, tipo: Tipo) {
+  const { error } = await supabase
+    .from("rubros")
+    .insert({ cooperadora_id: cooperadoraId, nombre: nombre.trim(), tipo });
+  if (error) throw error;
+}
+
+export async function toggleRubro(rubroId: string, activo: boolean) {
+  const { error } = await supabase.from("rubros").update({ activo }).eq("id", rubroId);
+  if (error) throw error;
+}
+
 /** Devuelve el periodo del mes, creándolo si todavía no existe. */
 export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: number): Promise<Periodo> {
   const existente = await supabase
@@ -249,6 +269,16 @@ export function calcularEjercicio(
     }
     if (movs.some((m) => m.tipo === "egreso" && !m.comprobante?.trim())) {
       alertas.push("Hay egresos sin número de comprobante");
+    }
+
+    // movimiento con fecha fuera del mes
+    const anioMov = anioResumen;
+    const fueraDeMes = movs.filter((m) => {
+      const [a, mo] = m.fecha.slice(0, 7).split("-").map(Number);
+      return a !== anioMov || mo !== mes;
+    });
+    for (const m of fueraDeMes) {
+      alertas.push(`Movimiento con fecha fuera del mes: ${m.concepto} (${m.fecha.slice(0, 10).split("-").reverse().join("/")})`);
     }
 
     // 1. cierre fuera de plazo
