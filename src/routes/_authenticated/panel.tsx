@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { authData } from "@/lib/data/auth";
 import { AppShell, useContexto } from "@/components/AppShell";
 import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales } from "@/lib/libro";
 import { money, nombreMes, num } from "@/lib/formato";
@@ -81,13 +81,13 @@ function AltaCooperadora() {
 
   const crear = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("crear_cooperadora", {
-        _nombre: nombre.trim(),
-        _cue: cue.trim(),
-        _cuit: cuit.trim(),
-        _localidad: localidad.trim(),
-        _ejercicio: Number(ejercicio),
-        _saldo_inicial: num(saldo.replace(",", ".")),
+      const { error } = await authData.createCooperadora({
+        nombre: nombre.trim(),
+        cue: cue.trim(),
+        cuit: cuit.trim(),
+        localidad: localidad.trim(),
+        ejercicio: Number(ejercicio),
+        saldoInicial: num(saldo.replace(",", ".")),
       });
       if (error) throw error;
     },
