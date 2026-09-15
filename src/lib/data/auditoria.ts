@@ -1,4 +1,5 @@
 import { supabaseData } from "./supabase";
+import type { Cooperadora } from "@/lib/libro";
 
 const supabase = supabaseData.client;
 
@@ -10,6 +11,16 @@ export async function cargarCooperadorasAuditoria() {
   const { data, error } = await supabase.from("cooperadoras").select("*").order("nombre");
   if (error) throw error;
   return data ?? [];
+}
+
+export async function cargarCooperadoraAuditoria(id: string): Promise<Cooperadora | null> {
+  const { data, error } = await supabase
+    .from("cooperadoras")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Cooperadora | null) ?? null;
 }
 
 export async function otorgarRolAuditor(email: string) {
