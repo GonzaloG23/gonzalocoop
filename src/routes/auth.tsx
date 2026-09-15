@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { ArrowLeft, BookOpenCheck, Building2, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 
-import { supabase } from "@/integrations/supabase/client";
+import { authData } from "@/lib/data/auth";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +42,7 @@ function AuthPage() {
   const { rol } = Route.useSearch();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    authData.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/panel" });
     });
   }, [navigate]);
@@ -117,13 +117,9 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   const [nombre, setNombre] = useState("");
 
   async function avisarSiNoEsAuditor() {
-    const { data } = await supabase.auth.getUser();
+    const { data } = await authData.getUser();
     if (!data.user) return;
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id)
-      .eq("role", "auditor");
+    const { data: roles } = await authData.getAuditorRole(data.user.id);
     if (!roles || roles.length === 0) {
       toast.warning(
         "Tu cuenta todavía no tiene permisos de auditoría. Pedile a un auditor que te habilite con tu email.",
@@ -134,7 +130,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function ingresar(e: React.FormEvent) {
     e.preventDefault();
     setCargando(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await authData.signInWithPassword(email, password);
     if (error) {
       setCargando(false);
       toast.error(
@@ -152,21 +148,19 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function registrar(e: React.FormEvent) {
     e.preventDefault();
     setCargando(true);
-    const { error } = await supabase.auth.signUp({
+    const { error } = await authData.signUp(
       email,
       password,
-      options: {
-        data: { nombre },
-        emailRedirectTo: `${window.location.origin}${esAuditor ? "/auditoria" : "/panel"}`,
-      },
-    });
+      nombre,
+      `${window.location.origin}${esAuditor ? "/auditoria" : "/panel"}`,
+    );
     if (error) {
       setCargando(false);
       toast.error(`No se pudo crear la cuenta: ${error.message}`);
       return;
     }
 
-    const { data } = await supabase.auth.getSession();
+    const { data } = await authData.getSession();
     if (!data.session) {
       setCargando(false);
       toast.success("Cuenta creada. Revisá tu casilla para confirmar el email.");
@@ -174,7 +168,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
     }
 
     if (esAuditor) {
-      const { error: errRol } = await supabase.rpc("reclamar_rol_auditor");
+      const { error: errRol } = await authData.claimAuditorRole();
       setCargando(false);
       if (errRol) {
         toast.warning(
