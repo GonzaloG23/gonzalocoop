@@ -10,7 +10,7 @@ export async function cerrarPeriodo(periodoId: string) {
   if (error) throw error;
 }
 
-export async function insertarMovimiento(input: {
+export type NuevoMovimiento = {
   cooperadora_id: string;
   periodo_id: string;
   fecha: string;
@@ -27,7 +27,9 @@ export async function insertarMovimiento(input: {
   ajusta_movimiento_id: string | null;
   motivo_ajuste: string | null;
   creado_por: string;
-}) {
+};
+
+export async function insertarMovimiento(input: NuevoMovimiento) {
   const { error } = await supabase.from("movimientos").insert(input);
   if (error) throw error;
 }
