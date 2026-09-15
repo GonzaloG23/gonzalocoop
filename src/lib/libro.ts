@@ -1,5 +1,7 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseData } from "./data";
 import { num } from "./formato";
+
+const supabase = supabaseData.client;
 
 export type Tipo = "ingreso" | "egreso";
 
@@ -238,7 +240,6 @@ export function calcularEjercicio(
   const diaLimite = Number(parametros.dia_limite_cierre) || 10;
   const tope = num(parametros.tope_egreso);
 
-  // comprobantes repetidos dentro del ejercicio
   const conteo = new Map<string, number>();
   for (const m of movimientos) {
     const k = clave(m.comprobante);
@@ -271,7 +272,6 @@ export function calcularEjercicio(
       alertas.push("Hay egresos sin número de comprobante");
     }
 
-    // movimiento con fecha fuera del mes
     const anioMov = anioResumen;
     const fueraDeMes = movs.filter((m) => {
       const [a, mo] = m.fecha.slice(0, 7).split("-").map(Number);
@@ -281,7 +281,6 @@ export function calcularEjercicio(
       alertas.push(`Movimiento con fecha fuera del mes: ${m.concepto} (${m.fecha.slice(0, 10).split("-").reverse().join("/")})`);
     }
 
-    // 1. cierre fuera de plazo
     if (periodo?.estado === "cerrado" && periodo.cerrado_en) {
       const limite = new Date(Date.UTC(anioResumen, mes, diaLimite, 23, 59, 59));
       const cierre = new Date(periodo.cerrado_en);
@@ -293,7 +292,6 @@ export function calcularEjercicio(
       }
     }
 
-    // 2. gastos por encima del tope
     if (tope > 0) {
       const excedidos = movs.filter((m) => m.tipo === "egreso" && num(m.monto) > tope);
       for (const m of excedidos) {
@@ -301,7 +299,6 @@ export function calcularEjercicio(
       }
     }
 
-    // 3. comprobantes repetidos
     const repetidos = Array.from(
       new Set(
         movs
@@ -313,7 +310,6 @@ export function calcularEjercicio(
       alertas.push(`Comprobante repetido: N° ${c} figura en más de un movimiento`);
     }
 
-    // 4. ajustes contables del mes
     const ajustes = movs.filter((m) => m.ajusta_movimiento_id).length;
     if (ajustes > 0) {
       alertas.push(`${ajustes} ajuste${ajustes === 1 ? "" : "s"} contable${ajustes === 1 ? "" : "s"} en el mes`);
@@ -333,7 +329,6 @@ export function calcularEjercicio(
   }
   return resumen;
 }
-
 
 export function totalesAnuales(resumen: ResumenMes[]) {
   return {
