@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Download, FileSpreadsheet, Lock, Plus, Scale } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { authData } from "@/lib/data/auth";
+import { cerrarPeriodo } from "@/lib/data/operaciones";
+import { registrarMovimiento } from "@/lib/data/movimientos";
 import {
   asegurarPeriodo,
   calcularEjercicio,
@@ -118,11 +120,7 @@ export function LibroMensual({
   const cerrarMes = useMutation({
     mutationFn: async () => {
       const periodo = await asegurarPeriodo(cooperadora.id, anio, mes);
-      const { error } = await supabase
-        .from("periodos")
-        .update({ estado: "cerrado" })
-        .eq("id", periodo.id);
-      if (error) throw error;
+      await cerrarPeriodo(periodo.id);
     },
     onSuccess: () => {
       toast.success(`${nombreMes(mes)} quedó cerrado. Ya no admite nuevos movimientos.`);
@@ -432,8 +430,11 @@ function FormularioMovimiento({
   const guardar = useMutation({
     mutationFn: async () => {
       const periodo = await asegurarPeriodo(cooperadora.id, anio, mes);
-      const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase.from("movimientos").insert({
+      const { data: userData, error: userError } = await authData.getUser();
+      if (userError || !userData.user) {
+        throw userError ?? new Error("No hay un usuario autenticado.");
+      }
+      await registrarMovimiento({
         cooperadora_id: cooperadora.id,
         periodo_id: periodo.id,
         fecha,
@@ -449,9 +450,8 @@ function FormularioMovimiento({
         observaciones: observaciones || null,
         ajusta_movimiento_id: ajusta?.id ?? null,
         motivo_ajuste: ajusta ? motivo : null,
-        creado_por: userData.user!.id,
+        creado_por: userData.user.id,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       toast.success(ajusta ? "Ajuste contable registrado." : "Movimiento registrado.");
@@ -672,7 +672,6 @@ function FormularioMovimiento({
               </div>
             </div>
           )}
-
 
           <div className="space-y-2">
             <Label htmlFor="obs">Observaciones</Label>
