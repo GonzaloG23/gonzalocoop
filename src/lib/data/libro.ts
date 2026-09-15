@@ -5,38 +5,11 @@ const supabase = supabaseData.client;
 export type Tipo = "ingreso" | "egreso";
 export type Cooperadora = { id: string; nombre: string; cue: string | null; cuit: string | null; localidad: string | null; ejercicio: number; saldo_inicial_ejercicio: number | string; created_at: string };
 export type Periodo = { id: string; cooperadora_id: string; anio: number; mes: number; saldo_inicial_declarado: number | string; estado: string; cerrado_en: string | null };
-export type Rubro = { id: string; nombre: string; tipo: Tipo; cooperadora_id: string | null; activo: boolean };
+export type Rubro = { id: string; nombre: string; tipo: Tipo; cooperadora_id: string | null; activo: boolean; orden: number | null };
 export type Movimiento = { id: string; cooperadora_id: string; periodo_id: string; fecha: string; tipo: Tipo; rubro_id: string | null; concepto: string; monto: number | string; medio_pago: string | null; comprobante: string | null; proveedor_cuit: string | null; proveedor_razon_social: string | null; tipo_factura: string | null; observaciones: string | null; ajusta_movimiento_id: string | null; motivo_ajuste: string | null; creado_en: string };
 export type Contexto = { userId: string; email: string | null; nombre: string; cooperadoraId: string | null; esAuditor: boolean; cooperadora: Cooperadora | null };
 export type ParametrosControl = { id: string; dia_limite_cierre: number; tope_egreso: number | string };
 export const PARAMETROS_POR_DEFECTO: ParametrosControl = { id: "", dia_limite_cierre: 10, tope_egreso: 500000 };
-
-const ORDEN_RUBROS_INGRESOS = [
-  "Matrícula",
-  "Ayuda Escolar/Cooperadora",
-  "Beneficios: Loterías, Rifas, Ferias, etc.",
-  "Kiosco/Cantina",
-  "Venta de Pliegos",
-  "Donaciones",
-  "Acreditación de interés de cuenta",
-  "Certificados voluntarios: Alumno Regular, Permiso de Examen, etc.",
-  "Producido de Proyectos Profesionalizantes",
-  "Otros Ingresos",
-];
-
-function ordenarRubros(rubros: Rubro[]): Rubro[] {
-  return [...rubros].sort((a, b) => {
-    if (a.tipo !== b.tipo) return a.tipo === "ingreso" ? -1 : 1;
-    if (a.tipo === "ingreso") {
-      const ia = ORDEN_RUBROS_INGRESOS.indexOf(a.nombre);
-      const ib = ORDEN_RUBROS_INGRESOS.indexOf(b.nombre);
-      const pa = ia === -1 ? Number.MAX_SAFE_INTEGER : ia;
-      const pb = ib === -1 ? Number.MAX_SAFE_INTEGER : ib;
-      if (pa !== pb) return pa - pb;
-    }
-    return a.nombre.localeCompare(b.nombre, "es");
-  });
-}
 
 /** Adaptador de datos del libro. En la migración reemplazará Supabase por la API del Ministerio. */
 export async function getSesion() { const { data } = await supabase.auth.getUser(); return data.user ?? null; }
@@ -62,8 +35,8 @@ export async function cargarEjercicio(cooperadoraId: string, anio: number) {
   return { periodos: (periodos ?? []) as Periodo[], movimientos: (movimientos ?? []) as Movimiento[] };
 }
 
-export async function cargarRubros(cooperadoraId: string | null) { const { data, error } = await supabase.from("rubros").select("*").eq("activo", true); if (error) throw error; return ordenarRubros((data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[]); }
-export async function cargarTodosLosRubros(cooperadoraId: string | null) { const { data, error } = await supabase.from("rubros").select("*"); if (error) throw error; return ordenarRubros((data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[]); }
+export async function cargarRubros(cooperadoraId: string | null) { const { data, error } = await supabase.from("rubros").select("*").eq("activo", true).order("orden", { ascending: true }); if (error) throw error; return (data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[]; }
+export async function cargarTodosLosRubros(cooperadoraId: string | null) { const { data, error } = await supabase.from("rubros").select("*").order("orden", { ascending: true }); if (error) throw error; return (data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[]; }
 export async function crearRubro(cooperadoraId: string, nombre: string, tipo: Tipo) { const { error } = await supabase.from("rubros").insert({ cooperadora_id: cooperadoraId, nombre: nombre.trim(), tipo }); if (error) throw error; }
 export async function toggleRubro(rubroId: string, activo: boolean) { const { error } = await supabase.from("rubros").update({ activo }).eq("id", rubroId); if (error) throw error; }
 
