@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, SlidersHorizontal, Tags } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { authData } from "@/lib/data/auth";
 import { cargarContexto } from "@/lib/libro";
 import { Button } from "@/components/ui/button";
 
@@ -33,7 +33,7 @@ export function AppShell({
   const { data: ctx } = useContexto();
 
   async function salir() {
-    await supabase.auth.signOut();
+    await authData.signOut();
     navigate({ to: "/auth" });
   }
 
