@@ -20,4 +20,8 @@ export function usingMinisterioApi(): boolean {
 }
 
 export { supabaseData } from "./supabase";
-export { ministerioApiConfigured, ministerioRequest, MinisterioApiError } from "./ministerio-api";
+export {
+  ministerioApiConfigured,
+  ministerioRequest,
+  MinisterioApiError,
+} from "./ministerio-api";
