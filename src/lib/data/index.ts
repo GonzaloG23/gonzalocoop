@@ -1,18 +1,23 @@
 /**
  * Capa de acceso a datos de la aplicación.
  *
- * Durante la etapa de transición, el adaptador Supabase mantiene el sistema
- * funcionando sin cambios funcionales. En una etapa posterior se incorporará
- * un adaptador HTTP para la API del Ministerio, sin que las pantallas tengan
- * que conocer PostgreSQL ni Supabase.
+ * La aplicación sigue funcionando con Supabase durante la transición. La
+ * futura API del Ministerio se incorpora de forma paralela y podrá activarse
+ * cuando el backend PostgreSQL del Ministerio esté operativo.
  */
 
 export type DataBackend = "supabase" | "ministerio-api";
 
-export const DATA_BACKEND: DataBackend = "supabase";
+const configuredBackend = import.meta.env.VITE_DATA_BACKEND as string | undefined;
+
+// Por seguridad, cualquier valor desconocido mantiene Supabase y evita que
+// una configuración incompleta deje inutilizable la aplicación de prueba.
+export const DATA_BACKEND: DataBackend =
+  configuredBackend === "ministerio-api" ? "ministerio-api" : "supabase";
 
 export function usingMinisterioApi(): boolean {
   return DATA_BACKEND === "ministerio-api";
 }
 
 export { supabaseData } from "./supabase";
+export { ministerioApiConfigured, ministerioRequest, MinisterioApiError } from "./ministerio-api";
