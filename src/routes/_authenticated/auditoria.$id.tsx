@@ -2,10 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
 import { AppShell, useContexto } from "@/components/AppShell";
 import { LibroMensual } from "@/components/LibroMensual";
-import type { Cooperadora } from "@/lib/libro";
+import { cargarCooperadoraAuditoria } from "@/lib/data/auditoria";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -40,15 +39,7 @@ function AuditoriaLibroPage() {
 
   const coop = useQuery({
     queryKey: ["cooperadora", id],
-    queryFn: async (): Promise<Cooperadora | null> => {
-      const { data, error } = await supabase
-        .from("cooperadoras")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-      if (error) throw error;
-      return (data as Cooperadora | null) ?? null;
-    },
+    queryFn: () => cargarCooperadoraAuditoria(id),
     enabled: !!ctx?.esAuditor,
   });
 
