@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { cargarCooperadorasAuditoria, otorgarRolAuditor, reclamarRolAuditor } from "@/lib/data/auditoria";
 import { AppShell, useContexto } from "@/components/AppShell";
 import {
   calcularEjercicio,
@@ -63,8 +63,7 @@ type Fila = {
 };
 
 async function cargarPanelAuditor(): Promise<Fila[]> {
-  const { data, error } = await supabase.from("cooperadoras").select("*").order("nombre");
-  if (error) throw error;
+  const data = await cargarCooperadorasAuditoria();
   const coops = (data ?? []) as Cooperadora[];
   const hoy = new Date();
 
@@ -97,14 +96,15 @@ function HabilitarAuditor() {
   async function habilitar(e: React.FormEvent) {
     e.preventDefault();
     setCargando(true);
-    const { error } = await supabase.rpc("otorgar_rol_auditor", { _email: email.trim() });
-    setCargando(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await otorgarRolAuditor(email.trim());
+      setEmail("");
+      toast.success("Auditor habilitado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo habilitar el auditor.");
+    } finally {
+      setCargando(false);
     }
-    setEmail("");
-    toast.success("Auditor habilitado.");
   }
 
   return (
@@ -141,14 +141,13 @@ function AuditoriaPage() {
   });
 
   async function reclamar() {
-    const { error } = await supabase.rpc("reclamar_rol_auditor");
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await reclamarRolAuditor();
+      toast.success("Rol de auditor asignado. Volvé a cargar la página.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo asignar el rol de auditor.");
     }
-    toast.success("Rol de auditor asignado. Volvé a cargar la página.");
   }
-
 
   if (ctx && !ctx.esAuditor) {
     return (
@@ -285,7 +284,6 @@ function AuditoriaPage() {
                           Ver libro
                         </Link>
                       </Button>
-
                     </TableCell>
                   </TableRow>
                 ))}
