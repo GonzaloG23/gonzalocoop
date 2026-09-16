@@ -1,7 +1,7 @@
 /**
  * Adaptador de contexto de usuario/cooperadora.
  *
- * Durante la migración usa una cooperadora local de prueba cuando Supabase
+ * Durante la migración usa cuentas y datos locales de prueba cuando Supabase
  * no está configurado. Más adelante esta implementación será reemplazada
  * por la API del Ministerio sin modificar las pantallas.
  */
@@ -24,10 +24,24 @@ const DEMO_COOPERADORA = {
 export async function cargarContexto(): Promise<Contexto | null> {
   if (supabaseConfigured()) return cargarContextoActual();
 
+  let email: string | null = null;
   try {
-    if (!localStorage.getItem(DEMO_SESSION_KEY)) return null;
+    email = localStorage.getItem(DEMO_SESSION_KEY);
   } catch {
     return null;
+  }
+
+  if (!email) return null;
+
+  if (email === "auditor@demo.local") {
+    return {
+      userId: "demo-auditor",
+      email,
+      nombre: "Auditor de Prueba",
+      cooperadoraId: null,
+      esAuditor: true,
+      cooperadora: null,
+    };
   }
 
   return {
