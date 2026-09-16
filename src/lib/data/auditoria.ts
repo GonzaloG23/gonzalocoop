@@ -4,11 +4,17 @@ import type { Cooperadora } from "@/lib/libro";
 const supabase = supabaseData.client;
 
 /**
- * Operaciones de auditoría. Actualmente usan Supabase; en la migración
- * serán implementadas por la API del Ministerio.
+ * Operaciones de auditoría.
+ *
+ * Este módulo funciona como adaptador para que las pantallas de auditoría no
+ * dependan directamente de las tablas o RPC de Supabase. Más adelante, estas
+ * funciones podrán delegar en la API del Ministerio sin cambiar las pantallas.
  */
 export async function cargarCooperadorasAuditoria() {
-  const { data, error } = await supabase.from("cooperadoras").select("*").order("nombre");
+  const { data, error } = await supabase
+    .from("cooperadoras")
+    .select("*")
+    .order("nombre");
   if (error) throw error;
   return data ?? [];
 }
