@@ -37,6 +37,10 @@ Respuesta esperada:
 }
 ```
 
+`POST /api/auth/logout`
+
+Cierra la sesión institucional del usuario.
+
 La implementación definitiva de autenticación será definida con el Ministerio. No se debe asumir que continuará Google/Lovable/Supabase Auth.
 
 ## Contexto del usuario
@@ -66,7 +70,7 @@ Crea una cooperadora. La autorización debe verificarse en servidor.
 
 Devuelve períodos, saldo inicial, movimientos y parámetros necesarios para mostrar el libro.
 
-`POST /api/cooperadoras/:id/periodos/:periodoId/cerrar`
+`POST /api/periodos/:periodoId/cerrar`
 
 Cierra un período.
 
@@ -127,6 +131,14 @@ La inserción y actualización del saldo deben formar parte de la misma transacc
 `GET /api/auditoria/cooperadoras/:id`
 
 `GET /api/auditoria/eventos`
+
+`POST /api/auditoria/auditores`
+
+Habilita un usuario como auditor, sujeto a autorización institucional.
+
+`POST /api/auditoria/reclamar-rol`
+
+Solicita/reclama el rol de auditor según las reglas institucionales definidas por el Ministerio.
 
 Las consultas de auditoría nunca deben permitir que el navegador modifique directamente los registros históricos.
 
