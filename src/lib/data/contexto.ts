@@ -2,11 +2,12 @@
  * Adaptador de contexto de usuario/cooperadora.
  *
  * Durante la migración usa cuentas y datos locales de prueba cuando Supabase
- * no está configurado. Más adelante esta implementación será reemplazada
- * por la API del Ministerio sin modificar las pantallas.
+ * no está configurado. Cuando se active la API del Ministerio, el contexto
+ * se obtiene de GET /api/me sin modificar las pantallas.
  */
 import { cargarContexto as cargarContextoActual, type Contexto } from "@/lib/libro";
 import { supabaseConfigured } from "./supabase";
+import { usingMinisterioApi, ministerioRequest } from "./index";
 
 const DEMO_SESSION_KEY = "demo-auth-session";
 
@@ -22,6 +23,10 @@ const DEMO_COOPERADORA = {
 };
 
 export async function cargarContexto(): Promise<Contexto | null> {
+  if (usingMinisterioApi()) {
+    return ministerioRequest<Contexto | null>("/api/me");
+  }
+
   if (supabaseConfigured()) return cargarContextoActual();
 
   let email: string | null = null;
