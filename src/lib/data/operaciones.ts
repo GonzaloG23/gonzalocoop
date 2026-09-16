@@ -1,3 +1,4 @@
+import { usingMinisterioApi, ministerioRequest } from "./index";
 import { supabaseData, supabaseConfigured } from "./supabase";
 
 const supabase = supabaseData.client;
@@ -6,6 +7,13 @@ export const DEMO_MOVIMIENTOS_KEY = "demo-movimientos";
 export const DEMO_PERIODOS_CERRADOS_KEY = "demo-periodos-cerrados";
 
 export async function cerrarPeriodo(periodoId: string) {
+  if (usingMinisterioApi()) {
+    await ministerioRequest<void>(`/api/periodos/${periodoId}/cerrar`, {
+      method: "POST",
+    });
+    return;
+  }
+
   if (!supabaseConfigured() && periodoId.startsWith("demo-periodo-")) {
     const actuales = JSON.parse(
       localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]",
