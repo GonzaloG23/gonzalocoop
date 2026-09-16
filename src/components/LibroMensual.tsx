@@ -485,7 +485,13 @@ function FormularioMovimiento({
   const faltanDatosProveedor =
     tipo === "egreso" &&
     (!comprobante.trim() || cuitDigitos.length !== 11 || !proveedorRazon.trim() || !tipoFactura);
-  const bloqueado = sinSaldo || excedeSaldo || faltanDatosProveedor;
+  const fechaFueraDelMes =
+    !fecha ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(fecha) ||
+    Number(fecha.slice(0, 4)) !== anio ||
+    Number(fecha.slice(5, 7)) !== mes;
+  const bloqueado =
+    sinSaldo || excedeSaldo || faltanDatosProveedor || fechaFueraDelMes;
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
@@ -505,6 +511,7 @@ function FormularioMovimiento({
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            if (fechaFueraDelMes) return;
             guardar.mutate();
           }}
         >
@@ -531,6 +538,11 @@ function FormularioMovimiento({
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
               />
+              {fechaFueraDelMes && (
+                <p className="text-xs text-destructive">
+                  La fecha debe pertenecer a {nombreMes(mes)} de {anio}. El movimiento no puede registrarse en otro mes.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Tipo</Label>
