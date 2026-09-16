@@ -14,6 +14,7 @@ export const PARAMETROS_POR_DEFECTO: ParametrosControl = { id: "", dia_limite_ci
 
 const DEMO_COOPERADORA_ID = "demo-cooperadora-001";
 const DEMO_RUBROS_KEY = "demo-rubros";
+const DEMO_RUBROS_SEED_KEY = "demo-rubros-seed-v2";
 const DEMO_PARAMETROS_KEY = "demo-parametros";
 
 export async function getSesion() { const { data } = await supabase.auth.getUser(); return data.user ?? null; }
@@ -34,8 +35,35 @@ const RUBROS_DEMO: Rubro[] = [
   { id: "demo-rubro-ingreso-08", nombre: "Certificados voluntarios: Alumno Regular, Permiso de Examen, etc.", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 8 },
   { id: "demo-rubro-ingreso-09", nombre: "Producido de Proyectos Profesionalizantes", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 9 },
   { id: "demo-rubro-ingreso-10", nombre: "Otros Ingresos", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 10 },
+  { id: "demo-rubro-egreso-01", nombre: "Refacciones y mantenimiento", tipo: "egreso", cooperadora_id: null, activo: true, orden: 11 },
+  { id: "demo-rubro-egreso-02", nombre: "Útiles y material didáctico", tipo: "egreso", cooperadora_id: null, activo: true, orden: 12 },
+  { id: "demo-rubro-egreso-03", nombre: "Servicios", tipo: "egreso", cooperadora_id: null, activo: true, orden: 13 },
+  { id: "demo-rubro-egreso-04", nombre: "Limpieza", tipo: "egreso", cooperadora_id: null, activo: true, orden: 14 },
+  { id: "demo-rubro-egreso-05", nombre: "Equipamiento", tipo: "egreso", cooperadora_id: null, activo: true, orden: 15 },
+  { id: "demo-rubro-egreso-06", nombre: "Gastos bancarios", tipo: "egreso", cooperadora_id: null, activo: true, orden: 16 },
+  { id: "demo-rubro-egreso-07", nombre: "Otros Egresos", tipo: "egreso", cooperadora_id: null, activo: true, orden: 17 },
 ];
-function cargarRubrosDemoGuardados(): Rubro[] { try { const guardados = JSON.parse(localStorage.getItem(DEMO_RUBROS_KEY) ?? "null") as Rubro[] | null; return Array.isArray(guardados) ? guardados : RUBROS_DEMO; } catch { return RUBROS_DEMO; } }
+
+function cargarRubrosDemoGuardados(): Rubro[] {
+  try {
+    const guardados = JSON.parse(localStorage.getItem(DEMO_RUBROS_KEY) ?? "null") as Rubro[] | null;
+    if (!Array.isArray(guardados)) return RUBROS_DEMO;
+    if (localStorage.getItem(DEMO_RUBROS_SEED_KEY) !== "1") {
+      const idsExistentes = new Set(guardados.map((r) => r.id));
+      const faltantes = RUBROS_DEMO.filter((r) => !idsExistentes.has(r.id));
+      if (faltantes.length) {
+        const actualizados = [...guardados, ...faltantes];
+        localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actualizados));
+        localStorage.setItem(DEMO_RUBROS_SEED_KEY, "1");
+        return actualizados;
+      }
+      localStorage.setItem(DEMO_RUBROS_SEED_KEY, "1");
+    }
+    return guardados;
+  } catch {
+    return RUBROS_DEMO;
+  }
+}
 
 export async function cargarRubros(cooperadoraId: string | null) {
   if (usingMinisterioApi()) { if (!cooperadoraId) return []; return ministerioRequest<Rubro[]>(`/api/cooperadoras/${cooperadoraId}/rubros`); }
