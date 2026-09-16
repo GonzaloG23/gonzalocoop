@@ -1,4 +1,5 @@
 import { supabaseData, supabaseConfigured } from "./supabase";
+import { usingMinisterioApi, ministerioRequest } from "./index";
 import type { Cooperadora } from "@/lib/libro";
 
 const supabase = supabaseData.client;
@@ -22,6 +23,10 @@ const DEMO_COOPERADORA = {
  * funciones podrán delegar en la API del Ministerio sin cambiar las pantallas.
  */
 export async function cargarCooperadorasAuditoria() {
+  if (usingMinisterioApi()) {
+    return ministerioRequest<Cooperadora[]>("/api/auditoria/cooperadoras");
+  }
+
   if (!supabaseConfigured()) return [DEMO_COOPERADORA];
 
   const { data, error } = await supabase
@@ -33,6 +38,10 @@ export async function cargarCooperadorasAuditoria() {
 }
 
 export async function cargarCooperadoraAuditoria(id: string): Promise<Cooperadora | null> {
+  if (usingMinisterioApi()) {
+    return ministerioRequest<Cooperadora | null>(`/api/auditoria/cooperadoras/${id}`);
+  }
+
   if (!supabaseConfigured()) {
     return id === DEMO_COOPERADORA.id ? (DEMO_COOPERADORA as Cooperadora) : null;
   }
@@ -47,6 +56,13 @@ export async function cargarCooperadoraAuditoria(id: string): Promise<Cooperador
 }
 
 export async function otorgarRolAuditor(email: string) {
+  if (usingMinisterioApi()) {
+    return ministerioRequest<void>("/api/auditoria/auditores", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
   if (!supabaseConfigured()) {
     throw new Error("La habilitación de otros auditores se conectará al backend del Ministerio.");
   }
@@ -56,6 +72,12 @@ export async function otorgarRolAuditor(email: string) {
 }
 
 export async function reclamarRolAuditor() {
+  if (usingMinisterioApi()) {
+    return ministerioRequest<void>("/api/auditoria/reclamar-rol", {
+      method: "POST",
+    });
+  }
+
   if (!supabaseConfigured()) return;
 
   const { error } = await supabase.rpc("reclamar_rol_auditor");
