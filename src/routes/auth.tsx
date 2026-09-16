@@ -42,10 +42,6 @@ function AuthPage() {
   const { rol } = Route.useSearch();
 
   useEffect(() => {
-    // Durante la migración puede no existir conexión con un backend de autenticación.
-    // La pantalla de acceso no debe inicializar Supabase directamente.
-    if (!authData.isConfigured()) return;
-
     authData.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/panel" });
     });
@@ -134,14 +130,6 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function ingresar(e: React.FormEvent) {
     e.preventDefault();
     setCargando(true);
-
-    if (!authData.isConfigured()) {
-      setCargando(false);
-      toast.info(
-        "El acceso está preparado, pero la autenticación de prueba todavía no está conectada. La próxima etapa será reemplazarla por la API del Ministerio.",
-      );
-      return;
-    }
 
     const { error } = await authData.signInWithPassword(email, password);
     if (error) {
@@ -316,7 +304,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                />
+                  />
               </div>
               <Button type="submit" className="w-full" disabled={cargando}>
                 {esAuditor ? "Crear cuenta de auditoría" : "Crear cuenta de la cooperadora"}
