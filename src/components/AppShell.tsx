@@ -4,7 +4,7 @@ import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, Sli
 import type { ReactNode } from "react";
 
 import { authData } from "@/lib/data/auth";
-import { cargarContexto } from "@/lib/libro";
+import { cargarContexto } from "@/lib/data/contexto";
 import { Button } from "@/components/ui/button";
 
 export function useContexto() {
