@@ -143,7 +143,7 @@
   }
 }
 
-/* ==========================================================================
+/* ===========================================================================
    Identidad visual: Cooperadoras Escolares de Tucumán
    Verde institucional profundo + papel cálido + ámbar de acento.
    ========================================================================== */
@@ -229,5 +229,38 @@
   }
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Formulario de movimiento: ordenar los datos del proveedor sin amontonar campos. */
+@layer components {
+  div:has(> div > #razon) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 1rem;
+    row-gap: 1rem;
+  }
+
+  div:has(> div > #razon) > p {
+    grid-column: 1 / -1;
+  }
+
+  div:has(> div > #razon) > div:has(> #razon) {
+    display: contents;
+  }
+
+  div:has(> div > #razon) > div:has(> #razon) > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 640px) {
+    div:has(> div > #razon) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    div:has(> div > #razon) > p,
+    div:has(> div > #razon) > div:has(> #razon) > div:first-child {
+      grid-column: 1;
+    }
   }
 }
