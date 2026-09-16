@@ -3,8 +3,19 @@ import { supabaseData, supabaseConfigured } from "./supabase";
 const supabase = supabaseData.client;
 const DEMO_COOPERADORA_ID = "demo-cooperadora-001";
 export const DEMO_MOVIMIENTOS_KEY = "demo-movimientos";
+export const DEMO_PERIODOS_CERRADOS_KEY = "demo-periodos-cerrados";
 
 export async function cerrarPeriodo(periodoId: string) {
+  if (!supabaseConfigured() && periodoId.startsWith("demo-periodo-")) {
+    const actuales = JSON.parse(
+      localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]",
+    ) as string[];
+
+    if (!actuales.includes(periodoId)) actuales.push(periodoId);
+    localStorage.setItem(DEMO_PERIODOS_CERRADOS_KEY, JSON.stringify(actuales));
+    return;
+  }
+
   const { error } = await supabase
     .from("periodos")
     .update({ estado: "cerrado" })
