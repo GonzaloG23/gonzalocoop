@@ -42,8 +42,10 @@ function AuthPage() {
   const { rol } = Route.useSearch();
 
   useEffect(() => {
-    authData.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/panel" });
+    authData.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const esAuditor = await authData.hasAuditorRole(data.session.user.id);
+      navigate({ to: esAuditor ? "/auditoria" : "/panel" });
     });
   }, [navigate]);
 
@@ -141,7 +143,16 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
       );
       return;
     }
-    if (esAuditor) await avisarSiNoEsAuditor();
+    if (esAuditor) {
+      const { data } = await authData.getUser();
+      const tieneRol = data.user ? await authData.hasAuditorRole(data.user.id) : false;
+      if (!tieneRol) {
+        setCargando(false);
+        toast.error("Esta cuenta no tiene permisos de auditoría.");
+        await authData.signOut();
+        return;
+      }
+    }
     setCargando(false);
     navigate({ to: esAuditor ? "/auditoria" : "/panel" });
   }
@@ -304,7 +315,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  />
+                />
               </div>
               <Button type="submit" className="w-full" disabled={cargando}>
                 {esAuditor ? "Crear cuenta de auditoría" : "Crear cuenta de la cooperadora"}
