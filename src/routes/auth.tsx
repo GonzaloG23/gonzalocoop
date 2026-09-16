@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpenCheck, Building2, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 
 import { authData } from "@/lib/data/auth";
+import { supabaseConfigured } from "@/lib/data/supabase";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,11 @@ function AuthPage() {
   const { rol } = Route.useSearch();
 
   useEffect(() => {
+    // Durante la migración puede no existir conexión con Supabase en Lovable.
+    // No intentamos inicializar el cliente en ese caso: la pantalla de acceso
+    // debe seguir siendo navegable mientras preparamos la futura API del Ministerio.
+    if (!supabaseConfigured()) return;
+
     authData.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/panel" });
     });
@@ -119,8 +125,8 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function avisarSiNoEsAuditor() {
     const { data } = await authData.getUser();
     if (!data.user) return;
-    const { data: roles } = await authData.getAuditorRole(data.user.id);
-    if (!roles || roles.length === 0) {
+    const tieneRol = await authData.hasAuditorRole(data.user.id);
+    if (!tieneRol) {
       toast.warning(
         "Tu cuenta todavía no tiene permisos de auditoría. Pedile a un auditor que te habilite con tu email.",
       );
@@ -130,6 +136,15 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function ingresar(e: React.FormEvent) {
     e.preventDefault();
     setCargando(true);
+
+    if (!supabaseConfigured()) {
+      setCargando(false);
+      toast.info(
+        "El acceso está preparado, pero la autenticación de prueba todavía no está conectada. La próxima etapa será reemplazarla por la API del Ministerio.",
+      );
+      return;
+    }
+
     const { error } = await authData.signInWithPassword(email, password);
     if (error) {
       setCargando(false);
@@ -148,6 +163,15 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function registrar(e: React.FormEvent) {
     e.preventDefault();
     setCargando(true);
+
+    if (!supabaseConfigured()) {
+      setCargando(false);
+      toast.info(
+        "La creación de cuentas está preparada, pero todavía no hay un backend de autenticación conectado. Se conectará al backend del Ministerio durante la migración.",
+      );
+      return;
+    }
+
     const { error } = await authData.signUp(
       email,
       password,
@@ -188,6 +212,15 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
 
   async function conGoogle() {
     setCargando(true);
+
+    if (!supabaseConfigured()) {
+      setCargando(false);
+      toast.info(
+        "El acceso con Google queda pendiente de conectar al backend de autenticación del Ministerio.",
+      );
+      return;
+    }
+
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
