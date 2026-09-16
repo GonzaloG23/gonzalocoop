@@ -2,21 +2,32 @@ import { supabaseData, supabaseConfigured } from "./supabase";
 
 const supabase = supabaseData.client;
 
-const DEMO_EMAIL = "cooperadora@demo.local";
 const DEMO_PASSWORD = "123456";
 const DEMO_SESSION_KEY = "demo-auth-session";
 
-const DEMO_USER = {
-  id: "demo-cooperadora",
-  email: DEMO_EMAIL,
-  user_metadata: { nombre: "Cooperadora de Prueba" },
-};
+const DEMO_ACCOUNTS = [
+  {
+    id: "demo-cooperadora",
+    email: "cooperadora@demo.local",
+    role: "cooperadora" as const,
+    user_metadata: { nombre: "Cooperadora de Prueba", rol: "cooperadora" },
+  },
+  {
+    id: "demo-auditor",
+    email: "auditor@demo.local",
+    role: "auditor" as const,
+    user_metadata: { nombre: "Auditor de Prueba", rol: "auditor" },
+  },
+];
 
-type DemoSession = { user: typeof DEMO_USER };
+type DemoUser = (typeof DEMO_ACCOUNTS)[number];
+type DemoSession = { user: DemoUser };
 
 function getDemoSession(): DemoSession | null {
   try {
-    return localStorage.getItem(DEMO_SESSION_KEY) ? { user: DEMO_USER } : null;
+    const email = localStorage.getItem(DEMO_SESSION_KEY);
+    const user = DEMO_ACCOUNTS.find((account) => account.email === email);
+    return user ? { user } : null;
   } catch {
     return null;
   }
@@ -26,7 +37,7 @@ function getDemoSession(): DemoSession | null {
  * Authentication seam for the future Ministerio API.
  *
  * During the transition this adapter talks to Supabase when available. If
- * Supabase is not configured, a temporary local demo account is used so the
+ * Supabase is not configured, temporary local demo accounts are used so the
  * application flow can be tested without an external backend.
  */
 export const authData = {
@@ -44,15 +55,16 @@ export const authData = {
 
   signInWithPassword: (email: string, password: string) => {
     if (!supabaseConfigured()) {
-      if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+      const account = DEMO_ACCOUNTS.find((item) => item.email === email);
+      if (!account || password !== DEMO_PASSWORD) {
         return Promise.resolve({
           data: { user: null, session: null },
           error: { message: "Invalid login credentials" },
         });
       }
-      localStorage.setItem(DEMO_SESSION_KEY, "1");
-      const session = { user: DEMO_USER };
-      return Promise.resolve({ data: { user: DEMO_USER, session }, error: null });
+      localStorage.setItem(DEMO_SESSION_KEY, account.email);
+      const session = { user: account };
+      return Promise.resolve({ data: { user: account, session }, error: null });
     }
     return supabase.auth.signInWithPassword({ email, password });
   },
@@ -76,7 +88,9 @@ export const authData = {
   },
 
   hasAuditorRole: async (userId: string) => {
-    if (!supabaseConfigured()) return false;
+    if (!supabaseConfigured()) {
+      return DEMO_ACCOUNTS.some((account) => account.id === userId && account.role === "auditor");
+    }
     const { data, error } = await supabase
       .from("user_roles")
       .select("role")
