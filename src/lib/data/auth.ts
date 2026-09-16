@@ -1,4 +1,4 @@
-import { supabaseData } from "./supabase";
+import { supabaseData, supabaseConfigured } from "./supabase";
 
 const supabase = supabaseData.client;
 
@@ -10,6 +10,9 @@ const supabase = supabaseData.client;
  * Later this implementation can be replaced by the Ministry backend API.
  */
 export const authData = {
+  /** Indicates whether the current test authentication backend is available. */
+  isConfigured: () => supabaseConfigured(),
+
   getSession: () => supabase.auth.getSession(),
   getUser: () => supabase.auth.getUser(),
 
