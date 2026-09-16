@@ -5,7 +5,6 @@ import { ArrowLeft, BookOpenCheck, Building2, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 
 import { authData } from "@/lib/data/auth";
-import { supabaseConfigured } from "@/lib/data/supabase";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,10 +42,9 @@ function AuthPage() {
   const { rol } = Route.useSearch();
 
   useEffect(() => {
-    // Durante la migración puede no existir conexión con Supabase en Lovable.
-    // No intentamos inicializar el cliente en ese caso: la pantalla de acceso
-    // debe seguir siendo navegable mientras preparamos la futura API del Ministerio.
-    if (!supabaseConfigured()) return;
+    // Durante la migración puede no existir conexión con un backend de autenticación.
+    // La pantalla de acceso no debe inicializar Supabase directamente.
+    if (!authData.isConfigured()) return;
 
     authData.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/panel" });
@@ -137,7 +135,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
     e.preventDefault();
     setCargando(true);
 
-    if (!supabaseConfigured()) {
+    if (!authData.isConfigured()) {
       setCargando(false);
       toast.info(
         "El acceso está preparado, pero la autenticación de prueba todavía no está conectada. La próxima etapa será reemplazarla por la API del Ministerio.",
@@ -164,7 +162,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
     e.preventDefault();
     setCargando(true);
 
-    if (!supabaseConfigured()) {
+    if (!authData.isConfigured()) {
       setCargando(false);
       toast.info(
         "La creación de cuentas está preparada, pero todavía no hay un backend de autenticación conectado. Se conectará al backend del Ministerio durante la migración.",
@@ -213,7 +211,7 @@ function Acceso({ rol }: { rol: "cooperadora" | "auditor" }) {
   async function conGoogle() {
     setCargando(true);
 
-    if (!supabaseConfigured()) {
+    if (!authData.isConfigured()) {
       setCargando(false);
       toast.info(
         "El acceso con Google queda pendiente de conectar al backend de autenticación del Ministerio.",
