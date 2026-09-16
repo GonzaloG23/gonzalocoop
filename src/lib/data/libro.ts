@@ -36,7 +36,7 @@ export async function cargarEjercicio(cooperadoraId: string, anio: number) {
       cooperadora_id: DEMO_COOPERADORA_ID,
       anio,
       mes: index + 1,
-      saldo_inicial_declarado: index === 0 ? saldoInicial : saldoInicial,
+      saldo_inicial_declarado: saldoInicial,
       estado: "abierto",
       cerrado_en: null,
     }));
@@ -52,8 +52,16 @@ export async function cargarEjercicio(cooperadoraId: string, anio: number) {
 }
 
 const RUBROS_DEMO: Rubro[] = [
-  { id: "demo-rubro-ingreso", nombre: "Cuotas y aportes", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 1 },
-  { id: "demo-rubro-egreso", nombre: "Gastos generales", tipo: "egreso", cooperadora_id: null, activo: true, orden: 2 },
+  { id: "demo-rubro-ingreso-01", nombre: "Matrícula", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 1 },
+  { id: "demo-rubro-ingreso-02", nombre: "Ayuda Escolar/Cooperadora", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 2 },
+  { id: "demo-rubro-ingreso-03", nombre: "Beneficios: Loterías, Rifas, Ferias, etc.", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 3 },
+  { id: "demo-rubro-ingreso-04", nombre: "Kiosco/Cantina", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 4 },
+  { id: "demo-rubro-ingreso-05", nombre: "Venta de Pliegos", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 5 },
+  { id: "demo-rubro-ingreso-06", nombre: "Donaciones", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 6 },
+  { id: "demo-rubro-ingreso-07", nombre: "Acreditación de interés de cuenta", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 7 },
+  { id: "demo-rubro-ingreso-08", nombre: "Certificados voluntarios: Alumno Regular, Permiso de Examen, etc.", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 8 },
+  { id: "demo-rubro-ingreso-09", nombre: "Producido de Proyectos Profesionalizantes", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 9 },
+  { id: "demo-rubro-ingreso-10", nombre: "Otros Ingresos", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 10 },
 ];
 
 export async function cargarRubros(cooperadoraId: string | null) {
