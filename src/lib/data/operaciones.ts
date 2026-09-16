@@ -52,6 +52,18 @@ export async function insertarMovimiento(input: NuevoMovimiento) {
       throw new Error("El período está cerrado y no admite nuevos movimientos.");
     }
 
+    // El movimiento debe tener una fecha correspondiente al mes seleccionado.
+    const match = input.periodo_id.match(/^demo-periodo-(\d+)$/);
+    if (match) {
+      const mesPeriodo = Number(match[1]);
+      const mesFecha = Number(input.fecha.slice(5, 7));
+      if (mesFecha !== mesPeriodo) {
+        throw new Error(
+          "La fecha del movimiento debe pertenecer al mes seleccionado.",
+        );
+      }
+    }
+
     const movimiento = {
       ...input,
       id: `demo-movimiento-${Date.now()}`,
