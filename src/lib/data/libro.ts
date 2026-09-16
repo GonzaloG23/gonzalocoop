@@ -25,7 +25,7 @@ export async function cargarContexto(): Promise<Contexto | null> {
   const cooperadoraId = perfil?.cooperadora_id ?? null;
   let cooperadora: Cooperadora | null = null;
   if (cooperadoraId) { const { data } = await supabase.from("cooperadoras").select("*").eq("id", cooperadoraId).maybeSingle(); cooperadora = (data as Cooperadora | null) ?? null; }
-  return { userId: user.id, email: perfil?.email ?? user.email ?? null, nombre: perfil?.nombre || (user.email ?? ""), cooperadoraId, esAuditor: (roles ?? []).some((r) => r.role === "auditor"), cooperadora };
+  return { userId: user.id, email: perfil?.email ?? user.email ?? null, nombre: perfil?.nombre || (user.email ?? ""), cooperadoraId, nombre: perfil?.nombre || (user.email ?? ""), esAuditor: (roles ?? []).some((r) => r.role === "auditor"), cooperadora };
 }
 
 export async function cargarEjercicio(cooperadoraId: string, anio: number) {
@@ -59,44 +59,15 @@ const RUBROS_DEMO: Rubro[] = [
   { id: "demo-rubro-ingreso-10", nombre: "Otros Ingresos", tipo: "ingreso", cooperadora_id: null, activo: true, orden: 10 },
 ];
 
-function cargarRubrosDemoGuardados(): Rubro[] {
-  try {
-    const guardados = JSON.parse(localStorage.getItem(DEMO_RUBROS_KEY) ?? "null") as Rubro[] | null;
-    return Array.isArray(guardados) ? guardados : RUBROS_DEMO;
-  } catch {
-    return RUBROS_DEMO;
-  }
-}
+function cargarRubrosDemoGuardados(): Rubro[] { try { const guardados = JSON.parse(localStorage.getItem(DEMO_RUBROS_KEY) ?? "null") as Rubro[] | null; return Array.isArray(guardados) ? guardados : RUBROS_DEMO; } catch { return RUBROS_DEMO; } }
 
-export async function cargarRubros(cooperadoraId: string | null) {
-  if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) return cargarRubrosDemoGuardados();
-  const { data, error } = await supabase.from("rubros").select("*").eq("activo", true).order("orden", { ascending: true }); if (error) throw error; return (data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[];
-}
+export async function cargarRubros(cooperadoraId: string | null) { if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) return cargarRubrosDemoGuardados().filter((r) => r.activo); const { data, error } = await supabase.from("rubros").select("*").eq("activo", true).order("orden", { ascending: true }); if (error) throw error; return (data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[]; }
 export async function cargarTodosLosRubros(cooperadoraId: string | null) { if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) return cargarRubrosDemoGuardados(); const { data, error } = await supabase.from("rubros").select("*").order("orden", { ascending: true }); if (error) throw error; return (data ?? []).filter((r) => r.cooperadora_id === null || r.cooperadora_id === cooperadoraId) as Rubro[]; }
-export async function crearRubro(cooperadoraId: string, nombre: string, tipo: Tipo) {
-  if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) {
-    const actuales = cargarRubrosDemoGuardados();
-    const nuevo: Rubro = { id: `demo-rubro-${Date.now()}`, nombre: nombre.trim(), tipo, cooperadora_id: cooperadoraId, activo: true, orden: actuales.length + 1 };
-    actuales.push(nuevo);
-    localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actuales));
-    return nuevo;
-  }
-  const { error } = await supabase.from("rubros").insert({ cooperadora_id: cooperadoraId, nombre: nombre.trim(), tipo }); if (error) throw error;
-}
-export async function toggleRubro(rubroId: string, activo: boolean) {
-  if (!supabaseConfigured() && rubroId.startsWith("demo-rubro-")) {
-    const actuales = cargarRubrosDemoGuardados();
-    const actualizados = actuales.map((rubro) => rubro.id === rubroId ? { ...rubro, activo } : rubro);
-    localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actualizados));
-    return;
-  }
-  const { error } = await supabase.from("rubros").update({ activo }).eq("id", rubroId); if (error) throw error;
-}
+export async function crearRubro(cooperadoraId: string, nombre: string, tipo: Tipo) { if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) { const actuales = cargarRubrosDemoGuardados(); const nuevo: Rubro = { id: `demo-rubro-${Date.now()}`, nombre: nombre.trim(), tipo, cooperadora_id: cooperadoraId, activo: true, orden: actuales.length + 1 }; actuales.push(nuevo); localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actuales)); return nuevo; } const { error } = await supabase.from("rubros").insert({ cooperadora_id: cooperadoraId, nombre: nombre.trim(), tipo }); if (error) throw error; }
+export async function actualizarRubro(rubroId: string, nombre: string, tipo: Tipo) { const nombreLimpio = nombre.trim(); if (!nombreLimpio) throw new Error("El nombre del rubro no puede estar vacío."); if (!supabaseConfigured() && rubroId.startsWith("demo-rubro-")) { const actuales = cargarRubrosDemoGuardados(); const actualizados = actuales.map((rubro) => rubro.id === rubroId ? { ...rubro, nombre: nombreLimpio, tipo } : rubro); localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actualizados)); return; } const { error } = await supabase.from("rubros").update({ nombre: nombreLimpio, tipo }).eq("id", rubroId); if (error) throw error; }
+export async function eliminarRubro(rubroId: string) { if (!supabaseConfigured() && rubroId.startsWith("demo-rubro-")) { const actuales = cargarRubrosDemoGuardados(); localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actuales.filter((rubro) => rubro.id !== rubroId))); return; } const { error } = await supabase.from("rubros").delete().eq("id", rubroId); if (error) throw error; }
+export async function toggleRubro(rubroId: string, activo: boolean) { if (!supabaseConfigured() && rubroId.startsWith("demo-rubro-")) { const actuales = cargarRubrosDemoGuardados(); const actualizados = actuales.map((rubro) => rubro.id === rubroId ? { ...rubro, activo } : rubro); localStorage.setItem(DEMO_RUBROS_KEY, JSON.stringify(actualizados)); return; } const { error } = await supabase.from("rubros").update({ activo }).eq("id", rubroId); if (error) throw error; }
 
-export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: number): Promise<Periodo> {
-  if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) { let cerrados: string[] = []; try { cerrados = JSON.parse(localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]") as string[]; } catch { cerrados = []; } const id = `demo-periodo-${mes}`; const estaCerrado = cerrados.includes(id); return { id, cooperadora_id: DEMO_COOPERADORA_ID, anio, mes, saldo_inicial_declarado: 250000, estado: estaCerrado ? "cerrado" : "abierto", cerrado_en: estaCerrado ? new Date().toISOString() : null }; }
-  const existente = await supabase.from("periodos").select("*").eq("cooperadora_id", cooperadoraId).eq("anio", anio).eq("mes", mes).maybeSingle(); if (existente.data) return existente.data as Periodo;
-  const { data, error } = await supabase.from("periodos").insert({ cooperadora_id: cooperadoraId, anio, mes }).select("*").single(); if (error) throw error; return data as Periodo;
-}
+export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: number): Promise<Periodo> { if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) { let cerrados: string[] = []; try { cerrados = JSON.parse(localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]") as string[]; } catch { cerrados = []; } const id = `demo-periodo-${mes}`; const estaCerrado = cerrados.includes(id); return { id, cooperadora_id: DEMO_COOPERADORA_ID, anio, mes, saldo_inicial_declarado: 250000, estado: estaCerrado ? "cerrado" : "abierto", cerrado_en: estaCerrado ? new Date().toISOString() : null }; } const existente = await supabase.from("periodos").select("*").eq("cooperadora_id", cooperadoraId).eq("anio", anio).eq("mes", mes).maybeSingle(); if (existente.data) return existente.data as Periodo; const { data, error } = await supabase.from("periodos").insert({ cooperadora_id: cooperadoraId, anio, mes }).select("*").single(); if (error) throw error; return data as Periodo; }
 export async function cargarParametros(): Promise<ParametrosControl> { if (!supabaseConfigured()) return PARAMETROS_POR_DEFECTO; const { data, error } = await supabase.from("parametros_control").select("id, dia_limite_cierre, tope_egreso").order("created_at").limit(1).maybeSingle(); if (error) throw error; return (data as ParametrosControl | null) ?? PARAMETROS_POR_DEFECTO; }
 export async function guardarParametros(p: { id: string; dia_limite_cierre: number; tope_egreso: number }) { if (!supabaseConfigured()) return; if (p.id) { const { error } = await supabase.from("parametros_control").update({ dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso }).eq("id", p.id); if (error) throw error; return; } const { error } = await supabase.from("parametros_control").insert({ dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso }); if (error) throw error; }
