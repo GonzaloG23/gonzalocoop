@@ -668,7 +668,7 @@ function FormularioMovimiento({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Tipo de factura</Label>
+                <Label>Tipo de comprobante</Label>
                 <Select value={tipoFactura} onValueChange={setTipoFactura}>
                   <SelectTrigger>
                     <SelectValue placeholder="Elegí el tipo de comprobante" />
@@ -699,7 +699,7 @@ function FormularioMovimiento({
               Cancelar
             </Button>
             <Button type="submit" disabled={guardar.isPending || bloqueado}>
-              Registrar
+              {guardar.isPending ? "Guardando…" : ajusta ? "Registrar ajuste" : "Registrar movimiento"}
             </Button>
           </DialogFooter>
         </form>
