@@ -47,6 +47,8 @@ export const TIPOS_FACTURA = [
   { valor: "B", etiqueta: "Factura B" },
   { valor: "C", etiqueta: "Factura C" },
   { valor: "ticket", etiqueta: "Ticket factura" },
+  { valor: "recibo_gastos_varios", etiqueta: "Recibo de gastos varios" },
+  { valor: "acta", etiqueta: "Acta" },
 ] as const;
 
 export function etiquetaFactura(valor: string | null | undefined) {
