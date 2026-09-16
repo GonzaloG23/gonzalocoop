@@ -1,6 +1,8 @@
-import { supabaseData } from "./supabase";
+import { supabaseData, supabaseConfigured } from "./supabase";
 
 const supabase = supabaseData.client;
+const DEMO_COOPERADORA_ID = "demo-cooperadora-001";
+export const DEMO_MOVIMIENTOS_KEY = "demo-movimientos";
 
 export async function cerrarPeriodo(periodoId: string) {
   const { error } = await supabase
@@ -30,6 +32,19 @@ export type NuevoMovimiento = {
 };
 
 export async function insertarMovimiento(input: NuevoMovimiento) {
+  if (!supabaseConfigured() && input.cooperadora_id === DEMO_COOPERADORA_ID) {
+    const movimiento = {
+      ...input,
+      id: `demo-movimiento-${Date.now()}`,
+      creado_en: new Date().toISOString(),
+    };
+
+    const actuales = JSON.parse(localStorage.getItem(DEMO_MOVIMIENTOS_KEY) ?? "[]") as unknown[];
+    actuales.push(movimiento);
+    localStorage.setItem(DEMO_MOVIMIENTOS_KEY, JSON.stringify(actuales));
+    return movimiento;
+  }
+
   const { error } = await supabase.from("movimientos").insert(input);
   if (error) throw error;
 }
