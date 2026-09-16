@@ -44,6 +44,14 @@ export type NuevoMovimiento = {
 
 export async function insertarMovimiento(input: NuevoMovimiento) {
   if (!supabaseConfigured() && input.cooperadora_id === DEMO_COOPERADORA_ID) {
+    const cerrados = JSON.parse(
+      localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]",
+    ) as string[];
+
+    if (cerrados.includes(input.periodo_id)) {
+      throw new Error("El período está cerrado y no admite nuevos movimientos.");
+    }
+
     const movimiento = {
       ...input,
       id: `demo-movimiento-${Date.now()}`,
