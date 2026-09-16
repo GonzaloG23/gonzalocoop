@@ -51,6 +51,16 @@ export type NuevoMovimiento = {
 };
 
 export async function insertarMovimiento(input: NuevoMovimiento) {
+  if (usingMinisterioApi()) {
+    return ministerioRequest<NuevoMovimiento & { id?: string; creado_en?: string }>(
+      "/api/movimientos",
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      },
+    );
+  }
+
   if (!supabaseConfigured() && input.cooperadora_id === DEMO_COOPERADORA_ID) {
     const cerrados = JSON.parse(
       localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]",
