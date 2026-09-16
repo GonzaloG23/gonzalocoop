@@ -1,5 +1,5 @@
 import { supabaseData, supabaseConfigured } from "./supabase";
-import { DEMO_MOVIMIENTOS_KEY } from "./operaciones";
+import { DEMO_MOVIMIENTOS_KEY, DEMO_PERIODOS_CERRADOS_KEY } from "./operaciones";
 
 const supabase = supabaseData.client;
 
@@ -32,15 +32,26 @@ export async function cargarContexto(): Promise<Contexto | null> {
 export async function cargarEjercicio(cooperadoraId: string, anio: number) {
   if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) {
     const saldoInicial = 250000;
-    const periodos: Periodo[] = Array.from({ length: 12 }, (_, index) => ({
-      id: `demo-periodo-${index + 1}`,
-      cooperadora_id: DEMO_COOPERADORA_ID,
-      anio,
-      mes: index + 1,
-      saldo_inicial_declarado: saldoInicial,
-      estado: "abierto",
-      cerrado_en: null,
-    }));
+    let cerrados: string[] = [];
+    try {
+      cerrados = JSON.parse(localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]") as string[];
+    } catch {
+      cerrados = [];
+    }
+
+    const periodos: Periodo[] = Array.from({ length: 12 }, (_, index) => {
+      const id = `demo-periodo-${index + 1}`;
+      const estaCerrado = cerrados.includes(id);
+      return {
+        id,
+        cooperadora_id: DEMO_COOPERADORA_ID,
+        anio,
+        mes: index + 1,
+        saldo_inicial_declarado: saldoInicial,
+        estado: estaCerrado ? "cerrado" : "abierto",
+        cerrado_en: estaCerrado ? new Date().toISOString() : null,
+      };
+    });
 
     let movimientos: Movimiento[] = [];
     try {
@@ -84,7 +95,11 @@ export async function toggleRubro(rubroId: string, activo: boolean) { const { er
 
 export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: number): Promise<Periodo> {
   if (!supabaseConfigured() && cooperadoraId === DEMO_COOPERADORA_ID) {
-    return { id: `demo-periodo-${mes}`, cooperadora_id: DEMO_COOPERADORA_ID, anio, mes, saldo_inicial_declarado: 250000, estado: "abierto", cerrado_en: null };
+    let cerrados: string[] = [];
+    try { cerrados = JSON.parse(localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]") as string[]; } catch { cerrados = []; }
+    const id = `demo-periodo-${mes}`;
+    const estaCerrado = cerrados.includes(id);
+    return { id, cooperadora_id: DEMO_COOPERADORA_ID, anio, mes, saldo_inicial_declarado: 250000, estado: estaCerrado ? "cerrado" : "abierto", cerrado_en: estaCerrado ? new Date().toISOString() : null };
   }
   const existente = await supabase.from("periodos").select("*").eq("cooperadora_id", cooperadoraId).eq("anio", anio).eq("mes", mes).maybeSingle();
   if (existente.data) return existente.data as Periodo;
