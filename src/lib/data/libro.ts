@@ -1,4 +1,5 @@
 import { supabaseData, supabaseConfigured } from "./supabase";
+import { DEMO_MOVIMIENTOS_KEY } from "./operaciones";
 
 const supabase = supabaseData.client;
 
@@ -40,7 +41,16 @@ export async function cargarEjercicio(cooperadoraId: string, anio: number) {
       estado: "abierto",
       cerrado_en: null,
     }));
-    return { periodos, movimientos: [] as Movimiento[] };
+
+    let movimientos: Movimiento[] = [];
+    try {
+      const guardados = JSON.parse(localStorage.getItem(DEMO_MOVIMIENTOS_KEY) ?? "[]") as Movimiento[];
+      movimientos = guardados.filter((movimiento) => movimiento.cooperadora_id === cooperadoraId && movimiento.fecha.startsWith(`${anio}-`));
+    } catch {
+      movimientos = [];
+    }
+
+    return { periodos, movimientos };
   }
 
   const [{ data: periodos, error: e1 }, { data: movimientos, error: e2 }] = await Promise.all([
