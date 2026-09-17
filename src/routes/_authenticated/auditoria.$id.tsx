@@ -1,15 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Building2, Users } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { AppShell, useContexto } from "@/components/AppShell";
 import { LibroMensual } from "@/components/LibroMensual";
-import { cargarCooperadoraAuditoria } from "@/lib/data/auditoria";
+import {
+  actualizarDatosIdentificatoriosCooperadora,
+  cargarCooperadoraAuditoria,
+} from "@/lib/data/auditoria";
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
 import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/auditoria/$id")({
   ssr: false,
@@ -49,6 +56,10 @@ function AuditoriaLibroPage() {
   const { id } = Route.useParams();
   const { mes } = Route.useSearch();
   const { data: ctx } = useContexto();
+  const qc = useQueryClient();
+  const [editandoIdentificacion, setEditandoIdentificacion] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [cue, setCue] = useState("");
 
   const coop = useQuery({
     queryKey: ["cooperadora", id],
@@ -78,6 +89,16 @@ function AuditoriaLibroPage() {
     queryKey: ["historial-comision-directiva", id],
     queryFn: () => cargarHistorialComisionDirectiva(id),
     enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const actualizarIdentificacion = useMutation({
+    mutationFn: () => actualizarDatosIdentificatoriosCooperadora(id, { nombre, cue }),
+    onSuccess: () => {
+      setEditandoIdentificacion(false);
+      qc.invalidateQueries({ queryKey: ["cooperadora", id] });
+      toast.success("Nombre de la escuela y CUE actualizados por auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   if (ctx && !ctx.esAuditor) {
@@ -127,6 +148,17 @@ function AuditoriaLibroPage() {
   const autoridades = comision.data ?? [];
   const historialAutoridades = historialComision.data ?? [];
 
+  if (editandoIdentificacion && nombre === "" && cue === "") {
+    setNombre(c.nombre ?? "");
+    setCue(c.cue ?? "");
+  }
+
+  const iniciarEdicionIdentificacion = () => {
+    setNombre(c.nombre ?? "");
+    setCue(c.cue ?? "");
+    setEditandoIdentificacion(true);
+  };
+
   return (
     <AppShell
       titulo={c.nombre}
@@ -150,14 +182,35 @@ function AuditoriaLibroPage() {
             <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <DatoInstitucional titulo="Nombre de la escuela" valor={c.nombre} className="lg:col-span-3" />
-              <DatoInstitucional titulo="CUE" valor={datos.cue} />
+              {editandoIdentificacion ? (
+                <>
+                  <div className="space-y-2 lg:col-span-3"><Label htmlFor="auditoria-nombre">Nombre de la escuela</Label><Input id="auditoria-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="auditoria-cue">CUE</Label><Input id="auditoria-cue" inputMode="numeric" value={cue} onChange={(e) => setCue(e.target.value.replace(/\D/g, ""))} /></div>
+                  <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
+                    <Button onClick={() => actualizarIdentificacion.mutate()} disabled={actualizarIdentificacion.isPending}>
+                      {actualizarIdentificacion.isPending ? "Guardando…" : "Autorizar y guardar"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setEditandoIdentificacion(false)} disabled={actualizarIdentificacion.isPending}>Cancelar</Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <DatoInstitucional titulo="Nombre de la escuela" valor={c.nombre} className="lg:col-span-3" />
+                  <DatoInstitucional titulo="CUE" valor={c.cue ?? ""} />
+                </>
+              )}
               <DatoInstitucional titulo="Nivel" valor={datos.nivel} />
               <DatoInstitucional titulo="Turno" valor={datos.turno} />
               <DatoInstitucional titulo="Localidad" valor={datos.localidad} />
               <DatoInstitucional titulo="Director/a" valor={datos.director_nombre} className="sm:col-span-2" />
               <DatoInstitucional titulo="Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
               <DatoInstitucional titulo="Email oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
+              {!editandoIdentificacion && (
+                <div className="flex items-center justify-between border-t border-border pt-3 sm:col-span-2 lg:col-span-4">
+                  <p className="text-xs text-muted-foreground">Nombre y CUE: solo modificables por auditoría.</p>
+                  <Button variant="outline" size="sm" onClick={iniciarEdicionIdentificacion}>Autorizar modificación</Button>
+                </div>
+              )}
             </div>
           )}
         </div>
