@@ -99,7 +99,7 @@ function ComisionPage() {
   const subirActa = useMutation({
     mutationFn: async () => {
       if (!cooperadora || !archivo) throw new Error("Seleccioná un archivo PDF.");
-      if (archivo.size > 10 * 1024 * 1024) throw new Error("El PDF no puede superar los 10 MB.");
+      if (archivo.size > 3 * 1024 * 1024) throw new Error("El PDF no puede superar los 3 MB.");
       return guardarActaConstitucion(cooperadora.id, archivo);
     },
     onSuccess: () => {
@@ -201,7 +201,7 @@ function ComisionPage() {
                 accept="application/pdf,.pdf"
                 onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
               />
-              <p className="mt-2 text-xs text-muted-foreground">Tamaño máximo: 10 MB.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Tamaño máximo: 3 MB.</p>
             </div>
 
             {archivo && (
