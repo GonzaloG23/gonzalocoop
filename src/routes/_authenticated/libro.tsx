@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { AppShell, useContexto } from "@/components/AppShell";
 import { LibroMensual } from "@/components/LibroMensual";
@@ -25,6 +26,35 @@ export const Route = createFileRoute("/_authenticated/libro")({
 
 function LibroPage() {
   const { data: ctx, isLoading } = useContexto();
+  const tipo = new URLSearchParams(window.location.search).get("tipo");
+  const tipoDirecto = tipo === "ingreso" || tipo === "egreso" ? tipo : null;
+
+  useEffect(() => {
+    if (!tipoDirecto || !ctx?.cooperadora) return;
+
+    const abrirFormulario = window.setTimeout(() => {
+      const boton = Array.from(document.querySelectorAll("button")).find(
+        (elemento) => elemento.textContent?.trim().includes("Nuevo movimiento"),
+      ) as HTMLButtonElement | undefined;
+
+      boton?.click();
+
+      window.setTimeout(() => {
+        const dialogo = document.querySelector('[role="dialog"]');
+        const select = dialogo?.querySelector('[role="combobox"]') as HTMLButtonElement | null;
+        select?.click();
+
+        window.setTimeout(() => {
+          const opcion = Array.from(document.querySelectorAll('[role="option"]')).find(
+            (elemento) => elemento.textContent?.trim().toLowerCase() === tipoDirecto,
+          ) as HTMLElement | undefined;
+          opcion?.click();
+        }, 100);
+      }, 150);
+    }, 150);
+
+    return () => window.clearTimeout(abrirFormulario);
+  }, [tipoDirecto, ctx?.cooperadora?.id]);
 
   return (
     <AppShell
