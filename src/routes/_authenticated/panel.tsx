@@ -138,7 +138,7 @@ function PanelCooperadora() {
         id: ctx.userId,
         nombre: ctx.nombre || "Usuario",
         email: ctx.email,
-      });
+      }, coop.nombre);
     },
     onSuccess: (guardados) => {
       setDatos(guardados);
@@ -182,15 +182,15 @@ function PanelCooperadora() {
             <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
           ) : editando ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2 lg:col-span-3"><Label htmlFor="panel-nombre">Nombre de la escuela</Label><Input id="panel-nombre" value={coop?.nombre ?? ""} readOnly /></div>
-              <div className="space-y-2"><Label htmlFor="panel-cue">CUE</Label><Input id="panel-cue" inputMode="numeric" value={datos.cue} onChange={(e) => actualizarDato("cue", e.target.value.replace(/\D/g, ""))} placeholder="Número CUE" /></div>
-              <div className="space-y-2"><Label htmlFor="panel-nivel">Nivel de la escuela</Label><Input id="panel-nivel" value={datos.nivel} onChange={(e) => actualizarDato("nivel", e.target.value)} placeholder="Nivel" /></div>
-              <div className="space-y-2"><Label htmlFor="panel-turno">Turno</Label><Input id="panel-turno" value={datos.turno} onChange={(e) => actualizarDato("turno", e.target.value)} placeholder="Turno" /></div>
-              <div className="space-y-2"><Label htmlFor="panel-localidad">Localidad</Label><Input id="panel-localidad" value={datos.localidad} onChange={(e) => actualizarDato("localidad", e.target.value)} placeholder="Localidad" /></div>
-              <div className="space-y-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
-              <div className="space-y-2"><Label htmlFor="panel-director-dni">DNI de Director/a</Label><Input id="panel-director-dni" inputMode="numeric" maxLength={8} value={datos.director_dni} onChange={(e) => actualizarDato("director_dni", e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="Número de DNI" /></div>
+              <div className="space-y-2 lg:col-span-3"><Label htmlFor="panel-nombre">Nombre de la escuela *</Label><Input id="panel-nombre" value={coop?.nombre ?? ""} readOnly required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-cue">CUE *</Label><Input id="panel-cue" inputMode="numeric" value={datos.cue} onChange={(e) => actualizarDato("cue", e.target.value.replace(/\D/g, ""))} placeholder="Número CUE" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-nivel">Nivel de la escuela *</Label><Input id="panel-nivel" value={datos.nivel} onChange={(e) => actualizarDato("nivel", e.target.value)} placeholder="Nivel" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-turno">Turno *</Label><Input id="panel-turno" value={datos.turno} onChange={(e) => actualizarDato("turno", e.target.value)} placeholder="Turno" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-localidad">Localidad *</Label><Input id="panel-localidad" value={datos.localidad} onChange={(e) => actualizarDato("localidad", e.target.value)} placeholder="Localidad" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a *</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-director-dni">DNI de Director/a *</Label><Input id="panel-director-dni" inputMode="numeric" maxLength={8} value={datos.director_dni} onChange={(e) => actualizarDato("director_dni", e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="Número de DNI" required /></div>
               <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-supervisor">Nombre y Apellido de Supervisor/a</Label><Input id="panel-supervisor" value={datos.supervisor_nombre} onChange={(e) => actualizarDato("supervisor_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
-              <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." /></div>
+              <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora *</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." required /></div>
               <div className="flex flex-wrap gap-2 md:col-span-2 lg:col-span-4">
                 <Button onClick={() => guardarDatos.mutate()} disabled={guardarDatos.isPending}>{guardarDatos.isPending ? "Guardando…" : "Guardar información"}</Button>
                 {historialInstitucional.data?.length ? <Button type="button" variant="outline" onClick={() => setEditando(false)} disabled={guardarDatos.isPending}>Cancelar</Button> : null}
