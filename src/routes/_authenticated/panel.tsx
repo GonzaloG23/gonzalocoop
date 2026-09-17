@@ -211,12 +211,14 @@ function PanelCooperadora() {
       </Card>
 
       {historialInstitucional.data && historialInstitucional.data.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="font-serif text-lg">Historial de modificaciones</CardTitle>
-            <CardDescription>Registro de las personas que modificaron la información institucional.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <details className="mt-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones</span>
+              <span className="text-xs font-normal text-muted-foreground">{historialInstitucional.data.length} registro{historialInstitucional.data.length === 1 ? "" : "s"}</span>
+            </span>
+          </summary>
+          <div className="border-t border-border p-4 space-y-2">
             {historialInstitucional.data.map((registro) => (
               <div key={registro.id} className="flex flex-col gap-1 rounded-sm border border-border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -226,8 +228,8 @@ function PanelCooperadora() {
                 <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </details>
       )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -270,7 +272,7 @@ function PanelCooperadora() {
         </CardContent></Card>
       </div>
 
-      <Card className="mt-6"><CardHeader><CardTitle className="flex items-center gap-2 font-serif text-lg"><ClipboardList className="h-4 w-4" /> Próximamente</CardTitle><CardDescription>La siguiente etapa puede ampliar este panel sin cambiar la estructura de datos actual.</CardDescription></CardHeader><CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2"><p>• Comprobantes y documentación respaldatoria</p><p>• Presupuesto y seguimiento de ejecución</p><p>• Proveedores</p><p>• Historial de modificaciones</p></CardContent></Card>
+      <Card className="mt-6"><CardHeader><CardTitle className="flex items-center gap-2 font-serif text-lg"><ClipboardList className="h-4 w-4" /> Próximamente</CardTitle><CardDescription>La siguiente etapa puede ampliar este panel sin cambiar la estructura de datos actual.</CardDescription></CardHeader><CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2"><p>• Comprobantes y documentación respaldatoria</p><p>• Presupuesto y seguimiento de ejecución</p><p>• Proveedores</p></CardContent></Card>
     </AppShell>
   );
 }
