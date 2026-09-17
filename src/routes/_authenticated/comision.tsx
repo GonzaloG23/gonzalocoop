@@ -14,6 +14,10 @@ import {
   type CargoComision,
   type MiembroComision,
 } from "@/lib/data/comision";
+import {
+  cargarHistorialComisionDirectiva,
+  registrarModificacionComisionDirectiva,
+} from "@/lib/data/comision-historial";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,6 +72,12 @@ function ComisionPage() {
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
+  const historialComision = useQuery({
+    queryKey: ["historial-comision-directiva", cooperadora?.id],
+    queryFn: () => cargarHistorialComisionDirectiva(cooperadora!.id),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
   const acta = useQuery({
     queryKey: ["acta-constitucion", cooperadora?.id],
     queryFn: () => cargarActaConstitucion(cooperadora!.id),
@@ -91,15 +101,23 @@ function ComisionPage() {
   const guardar = useMutation({
     mutationFn: async () => {
       if (!cooperadora) throw new Error("No hay una cooperadora registrada.");
+      if (!ctx) throw new Error("No se pudo identificar al usuario que realiza la modificación.");
       const datos: MiembroComision[] = CARGOS.map(({ cargo }) => ({
         cargo,
         nombre: miembros[cargo].nombre.trim(),
         dni: miembros[cargo].dni.trim(),
       }));
-      await guardarComisionDirectiva(cooperadora.id, datos);
+      const guardados = await guardarComisionDirectiva(cooperadora.id, datos);
+      await registrarModificacionComisionDirectiva(cooperadora.id, guardados, {
+        id: ctx.userId,
+        nombre: ctx.nombre || "Usuario",
+        email: ctx.email,
+      });
+      return guardados;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["comision-directiva", cooperadora?.id] });
+      qc.invalidateQueries({ queryKey: ["historial-comision-directiva", cooperadora?.id] });
       toast.success("Datos de la comisión directiva guardados.");
     },
     onError: (error: Error) => toast.error(error.message),
@@ -156,6 +174,39 @@ function ComisionPage() {
       titulo="Comisión directiva"
       descripcion={`${cooperadora.nombre}${cooperadora.localidad ? ` · ${cooperadora.localidad}` : ""}`}
     >
+      {historialComision.data && historialComision.data.length > 0 && (
+        <details className="mb-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones de la Comisión Directiva</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {historialComision.data.length} registro{historialComision.data.length === 1 ? "" : "s"}
+              </span>
+            </span>
+          </summary>
+          <div className="space-y-2 border-t border-border p-4">
+            {historialComision.data.map((registro) => (
+              <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
+                <summary className="cursor-pointer list-none text-sm">
+                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-medium">{registro.usuario_nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+                  </span>
+                </summary>
+                <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs sm:grid-cols-2">
+                  {registro.miembros.map((miembro) => (
+                    <div key={miembro.cargo} className="rounded-sm bg-secondary/40 px-2 py-1.5">
+                      <span className="font-medium">{CARGOS.find((item) => item.cargo === miembro.cargo)?.etiqueta ?? miembro.cargo}:</span>{" "}
+                      {miembro.nombre}{miembro.dni ? ` · DNI ${miembro.dni}` : ""}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </details>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <Card>
           <CardHeader>
