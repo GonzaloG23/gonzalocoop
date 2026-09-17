@@ -218,23 +218,23 @@ function ComisionPage() {
     >
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <details open={editando} className="rounded-sm border border-border bg-card">
-          <summary className="cursor-pointer list-none px-4 py-4 hover:bg-secondary/50">
-            <span className="flex items-center justify-between gap-3">
-              <span>
-                <span className="flex items-center gap-2 font-serif text-lg">
-                  <Users className="h-5 w-5 text-primary" />
+          <summary className={`cursor-pointer list-none hover:bg-secondary/50 ${editando ? "px-4 py-4" : "px-3 py-2"}`}>
+            <span className="flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-2">
+                <Users className={`${editando ? "h-5 w-5" : "h-4 w-4"} shrink-0 text-primary`} />
+                <span className={`${editando ? "font-serif text-lg" : "text-sm font-medium"} truncate`}>
                   Comisión Directiva
                 </span>
-                <span className="mt-1 block text-sm text-muted-foreground">
-                  {editando
-                    ? "Completá o actualizá las autoridades de la cooperadora."
-                    : "Información oficial registrada de la Comisión Directiva."}
-                </span>
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
+              <span className="shrink-0 text-[11px] text-muted-foreground">
                 {editando ? "Edición" : "Ver información"}
               </span>
             </span>
+            {editando && (
+              <span className="mt-1 block text-sm text-muted-foreground">
+                Completá o actualizá las autoridades de la cooperadora.
+              </span>
+            )}
           </summary>
 
           <div className="border-t border-border p-6">
