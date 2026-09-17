@@ -8,9 +8,9 @@ import {
   Building2,
   ClipboardList,
   FileBarChart,
-  ListChecks,
-  Settings2,
   Wallet,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -238,37 +238,85 @@ function PanelCooperadora() {
       <div className="mt-6">
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-lg">Gestión de la cooperadora</CardTitle>
+            <CardTitle className="font-serif text-lg">Registrar movimiento</CardTitle>
             <CardDescription>
-              Accesos directos para registrar, consultar y controlar la documentación contable.
+              Accesos directos para registrar ingresos y egresos en el libro mensual.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <AccesoPanel
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Link
               to="/libro"
-              icon={Wallet}
-              titulo="Ingresos y egresos"
-              descripcion="Registrar movimientos, consultar comprobantes y cerrar meses."
-              principal
-            />
-            <AccesoPanel
-              to="/rubros"
-              icon={ListChecks}
-              titulo="Rubros"
-              descripcion="Administrar las categorías de ingresos y egresos."
-            />
-            <AccesoPanel
+              className="group flex min-h-24 items-center gap-4 rounded-sm border border-green-600/40 bg-green-50 p-4 transition-colors hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/35"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-600 text-white shadow-sm">
+                <TrendingUp className="h-6 w-6" />
+              </span>
+              <div>
+                <p className="text-lg font-semibold text-green-700 dark:text-green-400">Registrar ingreso</p>
+                <p className="mt-1 text-sm text-green-800/70 dark:text-green-300/70">
+                  Cargar un nuevo ingreso de la cooperadora.
+                </p>
+              </div>
+            </Link>
+            <Link
+              to="/libro"
+              className="group flex min-h-24 items-center gap-4 rounded-sm border border-red-600/40 bg-red-50 p-4 transition-colors hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/35"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-600 text-white shadow-sm">
+                <TrendingDown className="h-6 w-6" />
+              </span>
+              <div>
+                <p className="text-lg font-semibold text-red-700 dark:text-red-400">Registrar egreso</p>
+                <p className="mt-1 text-sm text-red-800/70 dark:text-red-300/70">
+                  Cargar un nuevo egreso de la cooperadora.
+                </p>
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Consultas y control</CardTitle>
+            <CardDescription>
+              Accesos para consultar la información registrada y controlar el ejercicio.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Link
+              to="/libro"
+              className="group rounded-sm border border-border bg-card p-4 transition-colors hover:bg-secondary"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary">
+                  <Wallet className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-medium">Libro mensual</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Consultar movimientos, comprobantes y cierres mensuales.
+                  </p>
+                </div>
+              </div>
+            </Link>
+            <Link
               to="/anual"
-              icon={FileBarChart}
-              titulo="Reportes"
-              descripcion="Consultar el resumen anual y sus resultados."
-            />
-            <AccesoPanel
-              to="/parametros"
-              icon={Settings2}
-              titulo="Parámetros"
-              descripcion="Consultar la configuración de controles del sistema."
-            />
+              className="group rounded-sm border border-border bg-card p-4 transition-colors hover:bg-secondary"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary">
+                  <FileBarChart className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-medium">Resumen anual</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Consultar el resumen del ejercicio y sus resultados.
+                  </p>
+                </div>
+              </div>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -335,39 +383,6 @@ function PanelCooperadora() {
         </CardContent>
       </Card>
     </AppShell>
-  );
-}
-
-function AccesoPanel({
-  to,
-  icon: Icon,
-  titulo,
-  descripcion,
-  principal = false,
-}: {
-  to: "/libro" | "/rubros" | "/anual" | "/parametros";
-  icon: typeof Wallet;
-  titulo: string;
-  descripcion: string;
-  principal?: boolean;
-}) {
-  return (
-    <Link
-      to={to}
-      className={`group rounded-sm border p-4 transition-colors hover:bg-secondary ${
-        principal ? "border-primary/40 bg-primary/5" : "border-border bg-card"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary group-hover:bg-background">
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="font-medium">{titulo}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{descripcion}</p>
-        </div>
-      </div>
-    </Link>
   );
 }
 
