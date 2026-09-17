@@ -148,11 +148,6 @@ function AuditoriaLibroPage() {
   const autoridades = comision.data ?? [];
   const historialAutoridades = historialComision.data ?? [];
 
-  if (editandoIdentificacion && nombre === "" && cue === "") {
-    setNombre(c.nombre ?? "");
-    setCue(c.cue ?? "");
-  }
-
   const iniciarEdicionIdentificacion = () => {
     setNombre(c.nombre ?? "");
     setCue(c.cue ?? "");
