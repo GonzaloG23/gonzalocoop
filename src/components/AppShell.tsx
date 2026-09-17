@@ -15,7 +15,6 @@ const nav = [
   { to: "/panel", label: "Panel", icon: LayoutDashboard },
   { to: "/libro", label: "Libro mensual", icon: BookOpenCheck },
   { to: "/anual", label: "Resumen anual", icon: CalendarRange },
-  { to: "/comision", label: "Comisión Directiva", icon: Users },
 ] as const;
 
 export function AppShell({
@@ -63,6 +62,16 @@ export function AppShell({
                 {item.label}
               </Link>
             ))}
+            {ctx?.cooperadora && !ctx.esAuditor && (
+              <Link
+                to="/comision"
+                className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
+                activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
+              >
+                <Users className="h-4 w-4" />
+                Comisión Directiva
+              </Link>
+            )}
             {ctx?.esAuditor && (
               <>
                 <Link
