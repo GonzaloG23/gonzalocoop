@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, SlidersHorizontal, Tags, Users } from "lucide-react";
+import { BookOpenCheck, CalendarRange, LayoutDashboard, LogOut, ShieldCheck, SlidersHorizontal, Store, Tags, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { authData } from "@/lib/data/auth";
@@ -63,14 +63,24 @@ export function AppShell({
               </Link>
             ))}
             {ctx?.cooperadora && !ctx.esAuditor && (
-              <Link
-                to="/comision"
-                className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
-                activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
-              >
-                <Users className="h-4 w-4" />
-                Comisión Directiva
-              </Link>
+              <>
+                <Link
+                  to="/comision"
+                  className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
+                  activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
+                >
+                  <Users className="h-4 w-4" />
+                  Comisión Directiva
+                </Link>
+                <Link
+                  to="/concesion"
+                  className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm opacity-80 transition-colors hover:bg-sidebar-accent hover:opacity-100"
+                  activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
+                >
+                  <Store className="h-4 w-4" />
+                  Concesión Kiosco/Cantina
+                </Link>
+              </>
             )}
             {ctx?.esAuditor && (
               <>
