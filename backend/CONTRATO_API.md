@@ -1,166 +1,141 @@
-# Contrato inicial de la API institucional
-
-Este contrato define la futura API de `gonzalocoop` para que el frontend pueda dejar de depender de Supabase y conectarse al PostgreSQL del Ministerio.
-
-La aplicación continúa utilizando Supabase durante esta etapa. Este archivo no cambia el funcionamiento actual.
+# Contrato de API del Ministerio
 
 ## Principios
 
-- El navegador nunca recibe credenciales de PostgreSQL.
-- La API autentica al usuario en cada operación protegida.
-- La API determina el rol y la cooperadora autorizada.
-- Las operaciones contables críticas se ejecutan dentro de una transacción.
-- Los cierres, ajustes y operaciones sensibles generan auditoría.
-- Los importes se manejan como valores decimales; no se debe depender de cálculos monetarios con `float` en PostgreSQL.
+La implementación definitiva de autenticación será definida con el Ministerio. No se debe asumir que continuará Google/Lovable/Supabase Auth.
+
+La aplicación web no se conecta directamente a PostgreSQL. La comunicación será siempre a través de la API institucional.
 
 ## Autenticación
 
-`POST /api/auth/login`
+### `POST /api/auth/login`
 
-```json
-{
-  "email": "usuario@ejemplo.gob.ar",
-  "password": "..."
-}
-```
+Inicia sesión con las credenciales institucionales.
 
 Respuesta esperada:
-
 ```json
 {
-  "user": {
-    "id": "uuid",
-    "email": "usuario@ejemplo.gob.ar",
-    "nombre": "Nombre Apellido"
-  },
+  "user": { "id": "...", "email": "...", "nombre": "..." },
   "role": "cooperadora"
 }
 ```
 
-`POST /api/auth/logout`
+Roles previstos: `cooperadora`, `auditor`.
 
-Cierra la sesión institucional del usuario.
+### `POST /api/auth/logout`
 
-La implementación definitiva de autenticación será definida con el Ministerio. No se debe asumir que continuará Google/Lovable/Supabase Auth.
+Cierra la sesión institucional. El frontend acepta también un `404` durante la etapa de transición para no bloquear el cierre de sesión si el backend todavía no implementó este endpoint.
 
-## Contexto del usuario
-
-`GET /api/me`
+### `GET /api/me`
 
 Devuelve usuario, rol, cooperadora asociada y permisos efectivos.
 
-## Cooperadoras
+## Usuario y cooperadora
 
-`GET /api/cooperadoras`
+### `GET /api/cooperadoras`
 
-- Auditor: puede consultar las cooperadoras permitidas.
-- Usuario de cooperadora: recibe únicamente su cooperadora.
+Lista cooperadoras disponibles según permisos del usuario.
 
-`GET /api/cooperadoras/:id`
+### `GET /api/cooperadoras/:id`
 
-Devuelve los datos de una cooperadora si el usuario tiene autorización.
+Obtiene una cooperadora.
 
-`POST /api/cooperadoras`
+### `POST /api/cooperadoras`
 
-Crea una cooperadora. La autorización debe verificarse en servidor.
+Crea una cooperadora.
 
-## Ejercicio y períodos
+## Ejercicio
 
-`GET /api/cooperadoras/:id/ejercicio/:anio`
+### `GET /api/cooperadoras/:id/ejercicio/:anio`
 
-Devuelve períodos, saldo inicial, movimientos y parámetros necesarios para mostrar el libro.
+Devuelve períodos y movimientos del ejercicio.
 
-`POST /api/periodos/:periodoId/cerrar`
+### `POST /api/cooperadoras/:id/periodos/:periodoId/cerrar`
 
 Cierra un período.
 
-El servidor debe verificar fecha límite, estado actual, permisos y consistencia del saldo antes de confirmar la operación.
-
 ## Rubros
 
-`GET /api/cooperadoras/:id/rubros`
+### `GET /api/cooperadoras/:id/rubros`
 
-`POST /api/cooperadoras/:id/rubros`
+Obtiene los rubros de una cooperadora.
 
-`PATCH /api/rubros/:id`
+### `POST /api/cooperadoras/:id/rubros`
+
+Crea un rubro.
+
+### `PATCH /api/rubros/:id`
+
+Modifica un rubro, incluyendo su estado activo/inactivo.
 
 ## Movimientos
 
-`POST /api/movimientos`
+### `POST /api/movimientos`
 
-Payload equivalente al modelo actual:
+Registra un movimiento.
 
-```json
-{
-  "cooperadora_id": "uuid",
-  "periodo_id": "uuid",
-  "fecha": "2026-09-15",
-  "tipo": "egreso",
-  "rubro_id": "uuid",
-  "concepto": "Compra de útiles",
-  "monto": 150000,
-  "medio_pago": "transferencia",
-  "comprobante": "0001-00001234",
-  "proveedor_cuit": "20123456789",
-  "proveedor_razon_social": "Proveedor SA",
-  "tipo_factura": "B",
-  "observaciones": null,
-  "ajusta_movimiento_id": null,
-  "motivo_ajuste": null
-}
-```
-
-Antes de confirmar un egreso, el backend debe validar como mínimo:
-
-1. usuario autenticado;
-2. permiso sobre la cooperadora;
-3. período existente y abierto;
-4. fecha perteneciente al período;
-5. monto mayor que cero;
-6. comprobante y datos del proveedor según las reglas vigentes;
-7. saldo disponible suficiente;
-8. reglas de tope de egreso;
-9. consistencia de ajustes.
-
-La inserción y actualización del saldo deben formar parte de la misma transacción.
+Validaciones mínimas:
+- autenticación;
+- permisos;
+- período abierto;
+- fecha perteneciente al período;
+- importe mayor a cero;
+- reglas de comprobante/proveedor;
+- saldo suficiente cuando corresponda;
+- tope de egreso;
+- consistencia de ajustes contables;
+- inserción y actualización de saldo dentro de una misma transacción.
 
 ## Auditoría
 
-`GET /api/auditoria/cooperadoras`
+### `GET /api/auditoria/cooperadoras`
 
-`GET /api/auditoria/cooperadoras/:id`
+Lista cooperadoras para auditoría.
 
-`GET /api/auditoria/eventos`
+### `GET /api/auditoria/cooperadoras/:id`
 
-`POST /api/auditoria/auditores`
+Obtiene información de una cooperadora para auditoría.
 
-Habilita un usuario como auditor, sujeto a autorización institucional.
+### `GET /api/auditoria/eventos`
 
-`POST /api/auditoria/reclamar-rol`
+Obtiene eventos de auditoría según permisos.
 
-Solicita/reclama el rol de auditor según las reglas institucionales definidas por el Ministerio.
+### `POST /api/auditoria/auditores`
 
-Las consultas de auditoría nunca deben permitir que el navegador modifique directamente los registros históricos.
+Otorga el rol de auditor a un usuario autorizado.
+
+Body:
+```json
+{ "email": "usuario@dominio.gob.ar" }
+```
+
+### `POST /api/auditoria/reclamar-rol`
+
+Permite ejecutar el mecanismo institucional definido para reclamar/habilitar el rol de auditor.
 
 ## Parámetros de control
 
-`GET /api/parametros-control`
+### `GET /api/parametros-control`
 
-`PATCH /api/parametros-control`
+Obtiene los parámetros vigentes.
 
-Solo usuarios con rol institucional autorizado pueden modificar parámetros de control.
+### `PATCH /api/parametros-control`
 
-## Migración
+Actualiza los parámetros de control según permisos institucionales.
 
-El adaptador frontend futuro tendrá una interfaz equivalente a estas operaciones. Mientras `DATA_BACKEND` permanezca en `supabase`, ninguna pantalla utilizará estos endpoints.
+## Cierre de período
 
-La migración se realizará en este orden:
+El frontend utiliza el endpoint institucional:
+`POST /api/cooperadoras/:id/periodos/:periodoId/cerrar`.
 
-1. implementar API;
-2. probar API contra PostgreSQL institucional;
-3. implementar autenticación institucional;
-4. crear adaptador `ministerio-api`;
-5. ejecutar pruebas funcionales comparando resultados con Supabase;
-6. cambiar `DATA_BACKEND` a `ministerio-api`;
-7. retirar Supabase del frontend;
-8. eliminar la dependencia de Supabase cuando el Ministerio confirme la operación estable.
+## Orden de migración
+
+1. Implementar la API institucional.
+2. Probar la API contra PostgreSQL del Ministerio.
+3. Definir e implementar autenticación institucional.
+4. Implementar los adaptadores `ministerio-api` del frontend.
+5. Comparar resultados funcionales con el modo actual.
+6. Activar `DATA_BACKEND=ministerio-api` en un entorno de prueba.
+7. Validar todas las funciones.
+8. Retirar progresivamente la dependencia de Supabase del frontend.
+9. Eliminar Supabase una vez estable la solución institucional.
