@@ -41,8 +41,15 @@ function LibroPage() {
 
       window.setTimeout(() => {
         const dialogo = document.querySelector('[role="dialog"]');
-        const select = dialogo?.querySelector('[role="combobox"]') as HTMLButtonElement | null;
-        select?.click();
+        if (!dialogo) return;
+
+        const etiquetaTipo = Array.from(dialogo.querySelectorAll("label")).find(
+          (elemento) => elemento.textContent?.trim() === "Tipo",
+        );
+        const campoTipo = etiquetaTipo?.parentElement as HTMLElement | null;
+        const selectTipo = campoTipo?.querySelector('[role="combobox"]') as HTMLButtonElement | null;
+
+        selectTipo?.click();
 
         window.setTimeout(() => {
           const opcion = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -50,13 +57,11 @@ function LibroPage() {
           ) as HTMLElement | undefined;
           opcion?.click();
 
-          const etiquetaTipo = Array.from(dialogo?.querySelectorAll("label") ?? []).find(
-            (elemento) => elemento.textContent?.trim() === "Tipo",
-          );
-          const campoTipo = etiquetaTipo?.parentElement as HTMLElement | null;
-          if (campoTipo) campoTipo.style.display = "none";
+          window.setTimeout(() => {
+            if (campoTipo) campoTipo.style.display = "none";
+          }, 50);
         }, 100);
-      }, 150);
+      }, 200);
     }, 150);
 
     return () => window.clearTimeout(abrirFormulario);
