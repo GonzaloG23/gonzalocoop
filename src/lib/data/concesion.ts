@@ -63,10 +63,13 @@ export async function guardarConcesionKiosco(
   cooperadoraId: string,
   datos: ConcesionKiosco,
 ): Promise<ConcesionKiosco> {
+  const canonTexto = String(datos.canon).trim().replace(",", ".");
+  if (!canonTexto) throw new Error("Debés completar el canon.");
+
   const normalizados: ConcesionKiosco = {
     apellido: datos.apellido.trim(),
     nombre: datos.nombre.trim(),
-    canon: Number(String(datos.canon).replace(",", ".")),
+    canon: Number(canonTexto),
   };
 
   if (!normalizados.apellido) throw new Error("Debés completar el apellido del concesionario.");
