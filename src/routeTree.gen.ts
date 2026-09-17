@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAnualRouteImport } from './routes/_authenticated/anual'
+import { Route as AuthenticatedComisionRouteImport } from './routes/_authenticated/comision'
 import { Route as AuthenticatedLibroRouteImport } from './routes/_authenticated/libro'
 import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
 import { Route as AuthenticatedParametrosRouteImport } from './routes/_authenticated/parametros'
@@ -36,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedAnualRoute = AuthenticatedAnualRouteImport.update({
   id: '/anual',
   path: '/anual',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedComisionRoute = AuthenticatedComisionRouteImport.update({
+  id: '/comision',
+  path: '/comision',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLibroRoute = AuthenticatedLibroRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/anual': typeof AuthenticatedAnualRoute
+  '/comision': typeof AuthenticatedComisionRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
   '/parametros': typeof AuthenticatedParametrosRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/anual': typeof AuthenticatedAnualRoute
+  '/comision': typeof AuthenticatedComisionRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
   '/parametros': typeof AuthenticatedParametrosRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/anual': typeof AuthenticatedAnualRoute
+  '/_authenticated/comision': typeof AuthenticatedComisionRoute
   '/_authenticated/libro': typeof AuthenticatedLibroRoute
   '/_authenticated/panel': typeof AuthenticatedPanelRoute
   '/_authenticated/parametros': typeof AuthenticatedParametrosRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/anual'
+    | '/comision'
     | '/libro'
     | '/panel'
     | '/parametros'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/anual'
+    | '/comision'
     | '/libro'
     | '/panel'
     | '/parametros'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/anual'
+    | '/_authenticated/comision'
     | '/_authenticated/libro'
     | '/_authenticated/panel'
     | '/_authenticated/parametros'
@@ -168,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnualRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/comision': {
+      id: '/_authenticated/comision'
+      path: '/comision'
+      fullPath: '/comision'
+      preLoaderRoute: typeof AuthenticatedComisionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/libro': {
       id: '/_authenticated/libro'
       path: '/libro'
@@ -208,6 +227,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnualRoute: typeof AuthenticatedAnualRoute
+  AuthenticatedComisionRoute: typeof AuthenticatedComisionRoute
   AuthenticatedLibroRoute: typeof AuthenticatedLibroRoute
   AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
   AuthenticatedParametrosRoute: typeof AuthenticatedParametrosRoute
@@ -217,6 +237,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnualRoute: AuthenticatedAnualRoute,
+  AuthenticatedComisionRoute: AuthenticatedComisionRoute,
   AuthenticatedLibroRoute: AuthenticatedLibroRoute,
   AuthenticatedPanelRoute: AuthenticatedPanelRoute,
   AuthenticatedParametrosRoute: AuthenticatedParametrosRoute,
