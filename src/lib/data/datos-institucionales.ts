@@ -7,6 +7,7 @@ export type DatosInstitucionales = {
   turno: string;
   localidad: string;
   director_nombre: string;
+  director_dni: string;
   supervisor_nombre: string;
   email_oficial: string;
 };
@@ -44,6 +45,7 @@ export async function cargarDatosInstitucionales(cooperadora: Cooperadora): Prom
     turno: "",
     localidad: cooperadora.localidad ?? "",
     director_nombre: "",
+    director_dni: "",
     supervisor_nombre: "",
     email_oficial: "",
   };
@@ -94,6 +96,7 @@ export async function guardarDatosInstitucionales(
     turno: datos.turno.trim(),
     localidad: datos.localidad.trim(),
     director_nombre: datos.director_nombre.trim(),
+    director_dni: datos.director_dni.replace(/\D/g, "").slice(0, 8),
     supervisor_nombre: datos.supervisor_nombre.trim(),
     email_oficial: datos.email_oficial.trim(),
   };
