@@ -12,6 +12,7 @@ export type CargoComision =
 export type MiembroComision = {
   cargo: CargoComision;
   nombre: string;
+  dni: string;
 };
 
 export type ActaConstitucion = {
@@ -71,7 +72,11 @@ export async function guardarComisionDirectiva(
   miembros: MiembroComision[],
 ) {
   const datos = miembros
-    .map((miembro) => ({ cargo: miembro.cargo, nombre: miembro.nombre.trim() }))
+    .map((miembro) => ({
+      cargo: miembro.cargo,
+      nombre: miembro.nombre.trim(),
+      dni: miembro.dni.trim(),
+    }))
     .filter((miembro) => miembro.nombre);
 
   if (usingMinisterioApi()) {
