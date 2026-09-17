@@ -242,7 +242,7 @@ function ComisionPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {CARGOS.map(({ cargo, etiqueta }, index) => {
                   const asesor = cargo === "asesor_director";
-                  const nombreAsesor = directorNombre || miembros[cargo].nombre;
+                  const nombreCampo = asesor ? (directorNombre || miembros[cargo].nombre) : miembros[cargo].nombre;
                   return (
                     <div key={cargo} className="space-y-3 rounded-md border border-border p-3">
                       <p className="text-sm font-medium">
@@ -252,7 +252,7 @@ function ComisionPage() {
                         <Label htmlFor={`cargo-${cargo}-nombre`}>Nombre y apellido</Label>
                         <Input
                           id={`cargo-${cargo}-nombre`}
-                          value={nombreAsesor}
+                          value={nombreCampo}
                           readOnly={asesor}
                           placeholder="Nombre y apellido"
                           onChange={(e) => {
