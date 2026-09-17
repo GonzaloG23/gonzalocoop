@@ -217,7 +217,7 @@ function ComisionPage() {
       descripcion={`${cooperadora.nombre}${cooperadora.localidad ? ` · ${cooperadora.localidad}` : ""}`}
     >
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <details open={editando} className="rounded-sm border border-border bg-card">
+        <details open={editando} className="self-start rounded-sm border border-border bg-card">
           <summary className={`cursor-pointer list-none hover:bg-secondary/50 ${editando ? "px-4 py-4" : "px-3 py-2"}`}>
             <span className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 items-center gap-2">
