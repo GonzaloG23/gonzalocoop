@@ -187,7 +187,8 @@ function PanelCooperadora() {
               <div className="space-y-2"><Label htmlFor="panel-nivel">Nivel de la escuela</Label><Input id="panel-nivel" value={datos.nivel} onChange={(e) => actualizarDato("nivel", e.target.value)} placeholder="Nivel" /></div>
               <div className="space-y-2"><Label htmlFor="panel-turno">Turno</Label><Input id="panel-turno" value={datos.turno} onChange={(e) => actualizarDato("turno", e.target.value)} placeholder="Turno" /></div>
               <div className="space-y-2"><Label htmlFor="panel-localidad">Localidad</Label><Input id="panel-localidad" value={datos.localidad} onChange={(e) => actualizarDato("localidad", e.target.value)} placeholder="Localidad" /></div>
-              <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
+              <div className="space-y-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
+              <div className="space-y-2"><Label htmlFor="panel-director-dni">DNI de Director/a</Label><Input id="panel-director-dni" inputMode="numeric" maxLength={8} value={datos.director_dni} onChange={(e) => actualizarDato("director_dni", e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="Número de DNI" /></div>
               <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-supervisor">Nombre y Apellido de Supervisor/a</Label><Input id="panel-supervisor" value={datos.supervisor_nombre} onChange={(e) => actualizarDato("supervisor_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
               <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." /></div>
               <div className="flex flex-wrap gap-2 md:col-span-2 lg:col-span-4">
@@ -203,7 +204,8 @@ function PanelCooperadora() {
                 <DatoInstitucional titulo="Nivel de la escuela" valor={datos.nivel} />
                 <DatoInstitucional titulo="Turno" valor={datos.turno} />
                 <DatoInstitucional titulo="Localidad" valor={datos.localidad} />
-                <DatoInstitucional titulo="Nombre y Apellido de Director/a" valor={datos.director_nombre} className="sm:col-span-2" />
+                <DatoInstitucional titulo="Nombre y Apellido de Director/a" valor={datos.director_nombre} />
+                <DatoInstitucional titulo="DNI de Director/a" valor={datos.director_dni} />
                 <DatoInstitucional titulo="Nombre y Apellido de Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
                 <DatoInstitucional titulo="Email Oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
               </div>
@@ -250,10 +252,7 @@ function PanelCooperadora() {
       </div>
 
       <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="font-serif text-lg">Registrar movimiento</CardTitle>
-          <CardDescription>Accesos directos para registrar ingresos y egresos en el libro mensual.</CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle className="font-serif text-lg">Registrar movimiento</CardTitle><CardDescription>Accesos directos para registrar ingresos y egresos en el libro mensual.</CardDescription></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <Link to="/libro" search={{ tipo: "ingreso" }} className="group flex min-h-24 items-center gap-4 rounded-sm border border-green-600/40 bg-green-50 p-4 transition-colors hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/35">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-600 text-white shadow-sm"><TrendingUp className="h-6 w-6" /></span>
