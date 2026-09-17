@@ -55,6 +55,37 @@ export async function cargarCooperadoraAuditoria(id: string): Promise<Cooperador
   return (data as Cooperadora | null) ?? null;
 }
 
+export async function actualizarDatosIdentificatoriosCooperadora(
+  id: string,
+  datos: Pick<Cooperadora, "nombre" | "cue">,
+): Promise<Cooperadora> {
+  const nombre = datos.nombre.trim();
+  const cue = (datos.cue ?? "").replace(/\D/g, "");
+  if (!nombre) throw new Error("El nombre de la escuela es obligatorio.");
+  if (!cue) throw new Error("El CUE es obligatorio.");
+
+  if (usingMinisterioApi()) {
+    return ministerioRequest<Cooperadora>(`/api/auditoria/cooperadoras/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ nombre, cue }),
+    });
+  }
+
+  if (!supabaseConfigured()) {
+    if (id === DEMO_COOPERADORA.id) throw new Error("La edición del nombre y CUE del entorno de prueba queda reservada a auditoría en el backend institucional.");
+    throw new Error("No se puede modificar esta cooperadora desde el entorno de prueba.");
+  }
+
+  const { data, error } = await supabase
+    .from("cooperadoras")
+    .update({ nombre, cue })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as Cooperadora;
+}
+
 export async function otorgarRolAuditor(email: string) {
   if (usingMinisterioApi()) {
     return ministerioRequest<void>("/api/auditoria/auditores", {
