@@ -183,7 +183,7 @@ function PanelCooperadora() {
           ) : editando ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2 lg:col-span-3"><Label htmlFor="panel-nombre">Nombre de la escuela *</Label><Input id="panel-nombre" value={coop?.nombre ?? ""} readOnly required /></div>
-              <div className="space-y-2"><Label htmlFor="panel-cue">CUE *</Label><Input id="panel-cue" inputMode="numeric" value={datos.cue} onChange={(e) => actualizarDato("cue", e.target.value.replace(/\D/g, ""))} placeholder="Número CUE" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-cue">CUE *</Label><Input id="panel-cue" inputMode="numeric" value={datos.cue} readOnly required /><p className="text-xs text-muted-foreground">Solo modificable por auditoría.</p></div>
               <div className="space-y-2"><Label htmlFor="panel-nivel">Nivel de la escuela *</Label><Input id="panel-nivel" value={datos.nivel} onChange={(e) => actualizarDato("nivel", e.target.value)} placeholder="Nivel" required /></div>
               <div className="space-y-2"><Label htmlFor="panel-turno">Turno *</Label><Input id="panel-turno" value={datos.turno} onChange={(e) => actualizarDato("turno", e.target.value)} placeholder="Turno" required /></div>
               <div className="space-y-2"><Label htmlFor="panel-localidad">Localidad *</Label><Input id="panel-localidad" value={datos.localidad} onChange={(e) => actualizarDato("localidad", e.target.value)} placeholder="Localidad" required /></div>
