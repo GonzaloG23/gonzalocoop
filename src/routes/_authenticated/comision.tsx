@@ -93,6 +93,7 @@ function ComisionPage() {
   });
 
   const directorNombre = datosInstitucionales.data?.director_nombre?.trim() ?? "";
+  const directorDni = datosInstitucionales.data?.director_dni?.trim() ?? "";
 
   useEffect(() => {
     setMiembros((actual) => {
@@ -103,15 +104,16 @@ function ComisionPage() {
           dni: miembro.dni ?? "",
         };
       }
-      if (directorNombre) {
+      if (directorNombre || directorDni) {
         siguiente.asesor_director = {
           ...siguiente.asesor_director,
           nombre: directorNombre,
+          dni: directorDni,
         };
       }
       return siguiente;
     });
-  }, [comision.data, directorNombre]);
+  }, [comision.data, directorNombre, directorDni]);
 
   useEffect(() => {
     if (!historialComision.data) return;
@@ -128,7 +130,9 @@ function ComisionPage() {
         nombre: cargo === "asesor_director" && directorNombre
           ? directorNombre
           : miembros[cargo].nombre.trim(),
-        dni: miembros[cargo].dni.trim(),
+        dni: cargo === "asesor_director"
+          ? directorDni
+          : miembros[cargo].dni.trim(),
       }));
 
       const guardados = await guardarComisionDirectiva(cooperadora.id, datos);
@@ -148,9 +152,11 @@ function ComisionPage() {
             dni: miembro.dni ?? "",
           };
         }
-        if (directorNombre) {
-          siguiente.asesor_director.nombre = directorNombre;
-        }
+        siguiente.asesor_director = {
+          ...siguiente.asesor_director,
+          nombre: directorNombre,
+          dni: directorDni,
+        };
         return siguiente;
       });
       setEditando(false);
@@ -242,7 +248,8 @@ function ComisionPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {CARGOS.map(({ cargo, etiqueta }, index) => {
                   const asesor = cargo === "asesor_director";
-                  const nombreCampo = asesor ? (directorNombre || miembros[cargo].nombre) : miembros[cargo].nombre;
+                  const nombreCampo = asesor ? directorNombre : miembros[cargo].nombre;
+                  const dniCampo = asesor ? directorDni : miembros[cargo].dni;
                   return (
                     <div key={cargo} className="space-y-3 rounded-md border border-border p-3">
                       <p className="text-sm font-medium">
@@ -265,7 +272,7 @@ function ComisionPage() {
                         />
                         {asesor && (
                           <p className="text-xs text-muted-foreground">
-                            Se completa automáticamente con el nombre del Director/a registrado en Datos institucionales.
+                            Se completa automáticamente con el Director/a registrado en Datos institucionales.
                           </p>
                         )}
                       </div>
@@ -273,16 +280,22 @@ function ComisionPage() {
                         <Label htmlFor={`cargo-${cargo}-dni`}>DNI</Label>
                         <Input
                           id={`cargo-${cargo}-dni`}
-                          value={miembros[cargo].dni}
+                          value={dniCampo}
                           inputMode="numeric"
+                          maxLength={8}
+                          readOnly={asesor}
                           placeholder="Número de DNI"
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (asesor) return;
                             setMiembros((actual) => ({
                               ...actual,
-                              [cargo]: { ...actual[cargo], dni: e.target.value.replace(/\D/g, "") },
-                            }))
-                          }
+                              [cargo]: { ...actual[cargo], dni: e.target.value.replace(/\D/g, "").slice(0, 8) },
+                            }));
+                          }}
                         />
+                        {asesor && (
+                          <p className="text-xs text-muted-foreground">Se completa automáticamente con el DNI del Director/a.</p>
+                        )}
                       </div>
                     </div>
                   );
