@@ -79,6 +79,25 @@ export async function guardarComisionDirectiva(
     }))
     .filter((miembro) => miembro.nombre);
 
+  const presidente = datos.find((miembro) => miembro.cargo === "presidente");
+  const tesorero = datos.find((miembro) => miembro.cargo === "tesorero");
+
+  if (!presidente?.nombre) {
+    throw new Error("Debés completar el nombre y apellido del Presidente.");
+  }
+
+  if (!tesorero?.nombre) {
+    throw new Error("Debés completar el nombre y apellido del Tesorero.");
+  }
+
+  const dniInvalido = datos.find(
+    (miembro) => miembro.dni !== "" && !/^\d{8}$/.test(miembro.dni),
+  );
+
+  if (dniInvalido) {
+    throw new Error(`El DNI de ${dniInvalido.nombre || dniInvalido.cargo} debe tener exactamente 8 dígitos numéricos.`);
+  }
+
   if (usingMinisterioApi()) {
     return ministerioRequest<MiembroComision[]>(
       `/api/cooperadoras/${cooperadoraId}/comision-directiva`,
