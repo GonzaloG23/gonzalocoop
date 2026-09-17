@@ -89,6 +89,7 @@ export async function guardarDatosInstitucionales(
   cooperadoraId: string,
   datos: DatosInstitucionales,
   actor: ActorModificacion,
+  nombreEscuela = "",
 ) {
   const normalizados: DatosInstitucionales = {
     cue: datos.cue.replace(/\D/g, ""),
@@ -100,6 +101,20 @@ export async function guardarDatosInstitucionales(
     supervisor_nombre: datos.supervisor_nombre.trim(),
     email_oficial: datos.email_oficial.trim(),
   };
+
+  const faltantes: string[] = [];
+  if (!nombreEscuela.trim()) faltantes.push("Nombre de la escuela");
+  if (!normalizados.cue) faltantes.push("CUE");
+  if (!normalizados.nivel) faltantes.push("Nivel de la escuela");
+  if (!normalizados.turno) faltantes.push("Turno");
+  if (!normalizados.localidad) faltantes.push("Localidad");
+  if (!normalizados.director_nombre) faltantes.push("Nombre y Apellido de Director/a");
+  if (!/^\d{8}$/.test(normalizados.director_dni)) faltantes.push("DNI de Director/a (8 dígitos)");
+  if (!normalizados.email_oficial) faltantes.push("Email Oficial de Cooperadora");
+
+  if (faltantes.length > 0) {
+    throw new Error(`Completá los campos obligatorios: ${faltantes.join(", ")}.`);
+  }
 
   if (usingMinisterioApi()) {
     return ministerioRequest<DatosInstitucionales>(
