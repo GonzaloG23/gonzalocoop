@@ -125,11 +125,11 @@ function PanelCooperadora() {
           <CardDescription>Accesos directos para registrar ingresos y egresos en el libro mensual.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
-          <Link to="/libro" className="group flex min-h-24 items-center gap-4 rounded-sm border border-green-600/40 bg-green-50 p-4 transition-colors hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/35">
+          <Link to="/libro" search={{ tipo: "ingreso" }} className="group flex min-h-24 items-center gap-4 rounded-sm border border-green-600/40 bg-green-50 p-4 transition-colors hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/35">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-600 text-white shadow-sm"><TrendingUp className="h-6 w-6" /></span>
             <div><p className="text-lg font-semibold text-green-700 dark:text-green-400">Registrar ingreso</p><p className="mt-1 text-sm text-green-800/70 dark:text-green-300/70">Cargar un nuevo ingreso de la cooperadora.</p></div>
           </Link>
-          <Link to="/libro" className="group flex min-h-24 items-center gap-4 rounded-sm border border-red-600/40 bg-red-50 p-4 transition-colors hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/35">
+          <Link to="/libro" search={{ tipo: "egreso" }} className="group flex min-h-24 items-center gap-4 rounded-sm border border-red-600/40 bg-red-50 p-4 transition-colors hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/35">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-600 text-white shadow-sm"><TrendingDown className="h-6 w-6" /></span>
             <div><p className="text-lg font-semibold text-red-700 dark:text-red-400">Registrar egreso</p><p className="mt-1 text-sm text-red-800/70 dark:text-red-300/70">Cargar un nuevo egreso de la cooperadora.</p></div>
           </Link>
