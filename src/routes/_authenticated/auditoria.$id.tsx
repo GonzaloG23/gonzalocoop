@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Building2 } from "lucide-react";
+import { ArrowLeft, Building2, Users } from "lucide-react";
 
 import { AppShell, useContexto } from "@/components/AppShell";
 import { LibroMensual } from "@/components/LibroMensual";
 import { cargarCooperadoraAuditoria } from "@/lib/data/auditoria";
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
+import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
+import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -33,6 +35,16 @@ export const Route = createFileRoute("/_authenticated/auditoria/$id")({
   component: AuditoriaLibroPage,
 });
 
+const ETIQUETAS_CARGO: Record<CargoComision, string> = {
+  presidente: "Presidente",
+  secretario: "Secretario",
+  tesorero: "Tesorero",
+  vocal_1: "Vocal 1",
+  vocal_2: "Vocal 2",
+  revisor_cuentas: "Revisor de Cuentas",
+  asesor_director: "Asesor/Director",
+};
+
 function AuditoriaLibroPage() {
   const { id } = Route.useParams();
   const { mes } = Route.useSearch();
@@ -53,6 +65,18 @@ function AuditoriaLibroPage() {
   const historialInstitucional = useQuery({
     queryKey: ["historial-datos-institucionales", id],
     queryFn: () => cargarHistorialDatosInstitucionales(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const comision = useQuery({
+    queryKey: ["comision-directiva", id],
+    queryFn: () => cargarComisionDirectiva(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const historialComision = useQuery({
+    queryKey: ["historial-comision-directiva", id],
+    queryFn: () => cargarHistorialComisionDirectiva(id),
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
@@ -100,6 +124,8 @@ function AuditoriaLibroPage() {
   const c = coop.data;
   const datos = datosInstitucionales.data;
   const historial = historialInstitucional.data ?? [];
+  const autoridades = comision.data ?? [];
+  const historialAutoridades = historialComision.data ?? [];
 
   return (
     <AppShell
@@ -138,7 +164,7 @@ function AuditoriaLibroPage() {
         <details className="mb-6 rounded-sm border border-border bg-card">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
             <span className="flex items-center justify-between gap-3">
-              <span>Historial de modificaciones</span>
+              <span>Historial de modificaciones de datos institucionales</span>
               <span className="text-xs font-normal text-muted-foreground">{historial.length} registro{historial.length === 1 ? "" : "s"}</span>
             </span>
           </summary>
@@ -151,6 +177,65 @@ function AuditoriaLibroPage() {
                 </div>
                 <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
               </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <Users className="h-5 w-5 text-primary" /> Comisión Directiva
+          </CardTitle>
+          <CardDescription>Autoridades actualmente registradas por la cooperadora.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {comision.isLoading ? (
+            <p className="text-sm text-muted-foreground">Cargando comisión directiva…</p>
+          ) : autoridades.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay integrantes registrados.</p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {autoridades.map((miembro) => (
+                <div key={miembro.cargo} className="rounded-sm border border-border px-3 py-2 text-sm">
+                  <p className="text-xs text-muted-foreground">{ETIQUETAS_CARGO[miembro.cargo]}</p>
+                  <p className="mt-1 font-medium">{miembro.nombre}</p>
+                  {miembro.dni && <p className="text-xs text-muted-foreground">DNI {miembro.dni}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {historialAutoridades.length > 0 && (
+        <details className="mb-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones de la Comisión Directiva</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {historialAutoridades.length} registro{historialAutoridades.length === 1 ? "" : "s"}
+              </span>
+            </span>
+          </summary>
+          <div className="space-y-2 border-t border-border p-4">
+            {historialAutoridades.map((registro) => (
+              <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
+                <summary className="cursor-pointer list-none text-sm">
+                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-medium">{registro.usuario_nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+                  </span>
+                </summary>
+                <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs sm:grid-cols-2">
+                  {registro.miembros.map((miembro) => (
+                    <div key={miembro.cargo} className="rounded-sm bg-secondary/40 px-2 py-1.5">
+                      <span className="font-medium">{ETIQUETAS_CARGO[miembro.cargo]}:</span>{" "}
+                      {miembro.nombre}{miembro.dni ? ` · DNI ${miembro.dni}` : ""}
+                    </div>
+                  ))}
+                </div>
+              </details>
             ))}
           </div>
         </details>
