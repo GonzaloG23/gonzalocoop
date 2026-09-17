@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAnualRouteImport } from './routes/_authenticated/anual'
 import { Route as AuthenticatedComisionRouteImport } from './routes/_authenticated/comision'
+import { Route as AuthenticatedConcesionRouteImport } from './routes/_authenticated/concesion'
 import { Route as AuthenticatedLibroRouteImport } from './routes/_authenticated/libro'
 import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
 import { Route as AuthenticatedParametrosRouteImport } from './routes/_authenticated/parametros'
@@ -42,6 +43,11 @@ const AuthenticatedAnualRoute = AuthenticatedAnualRouteImport.update({
 const AuthenticatedComisionRoute = AuthenticatedComisionRouteImport.update({
   id: '/comision',
   path: '/comision',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConcesionRoute = AuthenticatedConcesionRouteImport.update({
+  id: '/concesion',
+  path: '/concesion',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLibroRoute = AuthenticatedLibroRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/anual': typeof AuthenticatedAnualRoute
   '/comision': typeof AuthenticatedComisionRoute
+  '/concesion': typeof AuthenticatedConcesionRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
   '/parametros': typeof AuthenticatedParametrosRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/anual': typeof AuthenticatedAnualRoute
   '/comision': typeof AuthenticatedComisionRoute
+  '/concesion': typeof AuthenticatedConcesionRoute
   '/libro': typeof AuthenticatedLibroRoute
   '/panel': typeof AuthenticatedPanelRoute
   '/parametros': typeof AuthenticatedParametrosRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/anual': typeof AuthenticatedAnualRoute
   '/_authenticated/comision': typeof AuthenticatedComisionRoute
+  '/_authenticated/concesion': typeof AuthenticatedConcesionRoute
   '/_authenticated/libro': typeof AuthenticatedLibroRoute
   '/_authenticated/panel': typeof AuthenticatedPanelRoute
   '/_authenticated/parametros': typeof AuthenticatedParametrosRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/anual'
     | '/comision'
+    | '/concesion'
     | '/libro'
     | '/panel'
     | '/parametros'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/anual'
     | '/comision'
+    | '/concesion'
     | '/libro'
     | '/panel'
     | '/parametros'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/anual'
     | '/_authenticated/comision'
+    | '/_authenticated/concesion'
     | '/_authenticated/libro'
     | '/_authenticated/panel'
     | '/_authenticated/parametros'
@@ -187,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedComisionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/concesion': {
+      id: '/_authenticated/concesion'
+      path: '/concesion'
+      fullPath: '/concesion'
+      preLoaderRoute: typeof AuthenticatedConcesionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/libro': {
       id: '/_authenticated/libro'
       path: '/libro'
@@ -228,6 +247,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnualRoute: typeof AuthenticatedAnualRoute
   AuthenticatedComisionRoute: typeof AuthenticatedComisionRoute
+  AuthenticatedConcesionRoute: typeof AuthenticatedConcesionRoute
   AuthenticatedLibroRoute: typeof AuthenticatedLibroRoute
   AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
   AuthenticatedParametrosRoute: typeof AuthenticatedParametrosRoute
@@ -238,6 +258,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnualRoute: AuthenticatedAnualRoute,
   AuthenticatedComisionRoute: AuthenticatedComisionRoute,
+  AuthenticatedConcesionRoute: AuthenticatedConcesionRoute,
   AuthenticatedLibroRoute: AuthenticatedLibroRoute,
   AuthenticatedPanelRoute: AuthenticatedPanelRoute,
   AuthenticatedParametrosRoute: AuthenticatedParametrosRoute,
