@@ -135,14 +135,17 @@ function AuditoriaLibroPage() {
         .join(" · ")}
       acciones={volver}
     >
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-serif text-lg">
-            <Building2 className="h-5 w-5 text-primary" /> Datos institucionales
-          </CardTitle>
-          <CardDescription>Información oficial registrada por la cooperadora.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <details className="mb-6 rounded-sm border border-border bg-card">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+          <span className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              Datos institucionales
+            </span>
+            <span className="text-xs font-normal text-muted-foreground">Ver información</span>
+          </span>
+        </summary>
+        <div className="border-t border-border p-4">
           {!datos ? (
             <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
           ) : (
@@ -157,8 +160,8 @@ function AuditoriaLibroPage() {
               <DatoInstitucional titulo="Email oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </details>
 
       {historial.length > 0 && (
         <details className="mb-6 rounded-sm border border-border bg-card">
