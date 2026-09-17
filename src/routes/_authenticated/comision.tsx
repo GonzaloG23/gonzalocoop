@@ -54,8 +54,11 @@ function ComisionPage() {
   const { data: ctx, isLoading } = useContexto();
   const qc = useQueryClient();
   const cooperadora = ctx?.cooperadora;
-  const [miembros, setMiembros] = useState<Record<CargoComision, string>>(() =>
-    Object.fromEntries(CARGOS.map(({ cargo }) => [cargo, ""])) as Record<CargoComision, string>,
+  const [miembros, setMiembros] = useState<Record<CargoComision, { nombre: string; dni: string }>>(() =>
+    Object.fromEntries(CARGOS.map(({ cargo }) => [cargo, { nombre: "", dni: "" }])) as Record<
+      CargoComision,
+      { nombre: string; dni: string }
+    >,
   );
   const [archivo, setArchivo] = useState<File | null>(null);
 
@@ -75,7 +78,12 @@ function ComisionPage() {
     if (!comision.data) return;
     setMiembros((actual) => {
       const siguiente = { ...actual };
-      for (const miembro of comision.data ?? []) siguiente[miembro.cargo] = miembro.nombre;
+      for (const miembro of comision.data ?? []) {
+        siguiente[miembro.cargo] = {
+          nombre: miembro.nombre ?? "",
+          dni: miembro.dni ?? "",
+        };
+      }
       return siguiente;
     });
   }, [comision.data]);
@@ -85,7 +93,8 @@ function ComisionPage() {
       if (!cooperadora) throw new Error("No hay una cooperadora registrada.");
       const datos: MiembroComision[] = CARGOS.map(({ cargo }) => ({
         cargo,
-        nombre: miembros[cargo].trim(),
+        nombre: miembros[cargo].nombre.trim(),
+        dni: miembros[cargo].dni.trim(),
       }));
       await guardarComisionDirectiva(cooperadora.id, datos);
     },
@@ -154,23 +163,44 @@ function ComisionPage() {
               <Users className="h-5 w-5 text-primary" /> Integrantes de la Comisión Directiva
             </CardTitle>
             <CardDescription>
-              Completá el nombre y apellido de cada integrante. Podés guardar los datos aunque todavía falte algún cargo.
+              Completá el nombre y apellido y el DNI de cada integrante. Podés guardar los datos aunque todavía falte algún cargo.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {CARGOS.map(({ cargo, etiqueta }, index) => (
-              <div key={cargo} className="space-y-2">
-                <Label htmlFor={`cargo-${cargo}`}>
+              <div key={cargo} className="space-y-3 rounded-md border border-border p-3">
+                <p className="text-sm font-medium">
                   {etiqueta}{index === 3 || index === 4 ? ` ${index - 2}` : ""}
-                </Label>
-                <Input
-                  id={`cargo-${cargo}`}
-                  value={miembros[cargo]}
-                  placeholder="Nombre y apellido"
-                  onChange={(e) =>
-                    setMiembros((actual) => ({ ...actual, [cargo]: e.target.value }))
-                  }
-                />
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor={`cargo-${cargo}-nombre`}>Nombre y apellido</Label>
+                  <Input
+                    id={`cargo-${cargo}-nombre`}
+                    value={miembros[cargo].nombre}
+                    placeholder="Nombre y apellido"
+                    onChange={(e) =>
+                      setMiembros((actual) => ({
+                        ...actual,
+                        [cargo]: { ...actual[cargo], nombre: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`cargo-${cargo}-dni`}>DNI</Label>
+                  <Input
+                    id={`cargo-${cargo}-dni`}
+                    value={miembros[cargo].dni}
+                    inputMode="numeric"
+                    placeholder="Número de DNI"
+                    onChange={(e) =>
+                      setMiembros((actual) => ({
+                        ...actual,
+                        [cargo]: { ...actual[cargo], dni: e.target.value.replace(/\D/g, "") },
+                      }))
+                    }
+                  />
+                </div>
               </div>
             ))}
             <div className="sm:col-span-2 pt-2">
