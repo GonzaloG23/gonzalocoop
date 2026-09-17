@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Building2 } from "lucide-react";
 
 import { AppShell, useContexto } from "@/components/AppShell";
 import { LibroMensual } from "@/components/LibroMensual";
 import { cargarCooperadoraAuditoria } from "@/lib/data/auditoria";
+import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/auditoria/$id")({
   ssr: false,
@@ -41,6 +42,18 @@ function AuditoriaLibroPage() {
     queryKey: ["cooperadora", id],
     queryFn: () => cargarCooperadoraAuditoria(id),
     enabled: !!ctx?.esAuditor,
+  });
+
+  const datosInstitucionales = useQuery({
+    queryKey: ["datos-institucionales", id],
+    queryFn: () => cargarDatosInstitucionales(coop.data!),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const historialInstitucional = useQuery({
+    queryKey: ["historial-datos-institucionales", id],
+    queryFn: () => cargarHistorialDatosInstitucionales(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
   if (ctx && !ctx.esAuditor) {
@@ -85,6 +98,8 @@ function AuditoriaLibroPage() {
   }
 
   const c = coop.data;
+  const datos = datosInstitucionales.data;
+  const historial = historialInstitucional.data ?? [];
 
   return (
     <AppShell
@@ -94,7 +109,63 @@ function AuditoriaLibroPage() {
         .join(" · ")}
       acciones={volver}
     >
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <Building2 className="h-5 w-5 text-primary" /> Datos institucionales
+          </CardTitle>
+          <CardDescription>Información oficial registrada por la cooperadora.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!datos ? (
+            <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <DatoInstitucional titulo="Nombre de la escuela" valor={c.nombre} className="lg:col-span-3" />
+              <DatoInstitucional titulo="CUE" valor={datos.cue} />
+              <DatoInstitucional titulo="Nivel" valor={datos.nivel} />
+              <DatoInstitucional titulo="Turno" valor={datos.turno} />
+              <DatoInstitucional titulo="Localidad" valor={datos.localidad} />
+              <DatoInstitucional titulo="Director/a" valor={datos.director_nombre} className="sm:col-span-2" />
+              <DatoInstitucional titulo="Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
+              <DatoInstitucional titulo="Email oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {historial.length > 0 && (
+        <details className="mb-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones</span>
+              <span className="text-xs font-normal text-muted-foreground">{historial.length} registro{historial.length === 1 ? "" : "s"}</span>
+            </span>
+          </summary>
+          <div className="border-t border-border p-4 space-y-2">
+            {historial.map((registro) => (
+              <div key={registro.id} className="flex flex-col gap-1 rounded-sm border border-border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium">{registro.usuario_nombre}</p>
+                  {registro.usuario_email && <p className="text-xs text-muted-foreground">{registro.usuario_email}</p>}
+                </div>
+                <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
+  );
+}
+
+function DatoInstitucional({ titulo, valor, className = "" }: { titulo: string; valor: string; className?: string }) {
+  return (
+    <div className={`rounded-sm border border-border bg-card px-3 py-2 ${className}`}>
+      <p className="text-xs text-muted-foreground">{titulo}</p>
+      <p className="mt-1 text-sm font-medium">{valor || "No informado"}</p>
+    </div>
   );
 }
