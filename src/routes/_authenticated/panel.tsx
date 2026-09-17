@@ -7,7 +7,12 @@ import { toast } from "sonner";
 import { authData } from "@/lib/data/auth";
 import { AppShell, useContexto } from "@/components/AppShell";
 import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales } from "@/lib/libro";
-import { cargarDatosInstitucionales, guardarDatosInstitucionales, type DatosInstitucionales } from "@/lib/data/datos-institucionales";
+import {
+  cargarDatosInstitucionales,
+  cargarHistorialDatosInstitucionales,
+  guardarDatosInstitucionales,
+  type DatosInstitucionales,
+} from "@/lib/data/datos-institucionales";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,7 +107,13 @@ function PanelCooperadora() {
     queryFn: () => cargarDatosInstitucionales(coop!),
     enabled: !!coop,
   });
+  const historialInstitucional = useQuery({
+    queryKey: ["historial-datos-institucionales", coop?.id],
+    queryFn: () => cargarHistorialDatosInstitucionales(coop!.id),
+    enabled: !!coop,
+  });
   const [datos, setDatos] = useState<DatosInstitucionales | null>(null);
+  const [editando, setEditando] = useState(false);
   const resumen = useMemo(() => {
     if (!coop || !ejercicio.data) return null;
     return calcularEjercicio(num(coop.saldo_inicial_ejercicio), ejercicio.data.periodos, ejercicio.data.movimientos, parametros.data);
@@ -114,18 +125,27 @@ function PanelCooperadora() {
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
 
   useEffect(() => {
-    if (datosInstitucionales.data) setDatos(datosInstitucionales.data);
-  }, [datosInstitucionales.data]);
+    if (!datosInstitucionales.data) return;
+    setDatos(datosInstitucionales.data);
+    if (!(historialInstitucional.data?.length)) setEditando(true);
+  }, [datosInstitucionales.data, historialInstitucional.data]);
 
   const guardarDatos = useMutation({
     mutationFn: async () => {
       if (!coop || !datos) throw new Error("No hay datos institucionales para guardar.");
-      return guardarDatosInstitucionales(coop.id, datos);
+      if (!ctx) throw new Error("No se pudo identificar al usuario que realiza la modificación.");
+      return guardarDatosInstitucionales(coop.id, datos, {
+        id: ctx.userId,
+        nombre: ctx.nombre || "Usuario",
+        email: ctx.email,
+      });
     },
     onSuccess: (guardados) => {
       setDatos(guardados);
+      setEditando(false);
       qc.invalidateQueries({ queryKey: ["datos-institucionales", coop?.id] });
-      toast.success("Datos institucionales guardados.");
+      qc.invalidateQueries({ queryKey: ["historial-datos-institucionales", coop?.id] });
+      toast.success("Información institucional guardada.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -143,12 +163,14 @@ function PanelCooperadora() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-serif text-lg"><Building2 className="h-5 w-5 text-primary" /> Datos institucionales de la escuela</CardTitle>
-          <CardDescription>Completá y mantené actualizada la información oficial de la institución.</CardDescription>
+          <CardDescription>
+            {editando ? "Completá o actualizá la información oficial de la institución." : "Información oficial registrada de la institución."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!datos ? (
             <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
-          ) : (
+          ) : editando ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2 lg:col-span-3"><Label htmlFor="panel-nombre">Nombre de la escuela</Label><Input id="panel-nombre" value={coop?.nombre ?? ""} readOnly /></div>
               <div className="space-y-2"><Label htmlFor="panel-cue">CUE</Label><Input id="panel-cue" inputMode="numeric" value={datos.cue} onChange={(e) => actualizarDato("cue", e.target.value.replace(/\D/g, ""))} placeholder="Número CUE" /></div>
@@ -158,11 +180,55 @@ function PanelCooperadora() {
               <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
               <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-supervisor">Nombre y Apellido de Supervisor/a</Label><Input id="panel-supervisor" value={datos.supervisor_nombre} onChange={(e) => actualizarDato("supervisor_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
               <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." /></div>
-              <div className="md:col-span-2 lg:col-span-4"><Button onClick={() => guardarDatos.mutate()} disabled={guardarDatos.isPending}>{guardarDatos.isPending ? "Guardando…" : "Guardar datos institucionales"}</Button></div>
+              <div className="flex flex-wrap gap-2 md:col-span-2 lg:col-span-4">
+                <Button onClick={() => guardarDatos.mutate()} disabled={guardarDatos.isPending}>{guardarDatos.isPending ? "Guardando…" : "Guardar información"}</Button>
+                {historialInstitucional.data?.length ? <Button type="button" variant="outline" onClick={() => setEditando(false)} disabled={guardarDatos.isPending}>Cancelar</Button> : null}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <DatoInstitucional titulo="Nombre de la escuela" valor={coop?.nombre ?? ""} className="lg:col-span-3" />
+                <DatoInstitucional titulo="CUE" valor={datos.cue} />
+                <DatoInstitucional titulo="Nivel de la escuela" valor={datos.nivel} />
+                <DatoInstitucional titulo="Turno" valor={datos.turno} />
+                <DatoInstitucional titulo="Localidad" valor={datos.localidad} />
+                <DatoInstitucional titulo="Nombre y Apellido de Director/a" valor={datos.director_nombre} className="sm:col-span-2" />
+                <DatoInstitucional titulo="Nombre y Apellido de Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
+                <DatoInstitucional titulo="Email Oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <p className="text-xs text-muted-foreground">
+                  {historialInstitucional.data?.[0]
+                    ? `Última modificación: ${historialInstitucional.data[0].usuario_nombre}${historialInstitucional.data[0].usuario_email ? ` · ${historialInstitucional.data[0].usuario_email}` : ""} · ${new Date(historialInstitucional.data[0].modificado_en).toLocaleString("es-AR")}`
+                    : "Información registrada"}
+                </p>
+                <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {historialInstitucional.data && historialInstitucional.data.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Historial de modificaciones</CardTitle>
+            <CardDescription>Registro de las personas que modificaron la información institucional.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {historialInstitucional.data.map((registro) => (
+              <div key={registro.id} className="flex flex-col gap-1 rounded-sm border border-border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium">{registro.usuario_nombre}</p>
+                  {registro.usuario_email && <p className="text-xs text-muted-foreground">{registro.usuario_email}</p>}
+                </div>
+                <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Tarjeta titulo="Saldo actual" valor={money(saldoActual)} destacado />
@@ -206,6 +272,15 @@ function PanelCooperadora() {
 
       <Card className="mt-6"><CardHeader><CardTitle className="flex items-center gap-2 font-serif text-lg"><ClipboardList className="h-4 w-4" /> Próximamente</CardTitle><CardDescription>La siguiente etapa puede ampliar este panel sin cambiar la estructura de datos actual.</CardDescription></CardHeader><CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2"><p>• Comprobantes y documentación respaldatoria</p><p>• Presupuesto y seguimiento de ejecución</p><p>• Proveedores</p><p>• Historial de modificaciones</p></CardContent></Card>
     </AppShell>
+  );
+}
+
+function DatoInstitucional({ titulo, valor, className = "" }: { titulo: string; valor: string; className?: string }) {
+  return (
+    <div className={`rounded-sm border border-border bg-card px-3 py-2 ${className}`}>
+      <p className="text-xs text-muted-foreground">{titulo}</p>
+      <p className="mt-1 text-sm font-medium">{valor || "No informado"}</p>
+    </div>
   );
 }
 
