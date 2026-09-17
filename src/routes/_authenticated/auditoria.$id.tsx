@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Building2, Users } from "lucide-react";
+import { ArrowLeft, Building2, FileText, Store, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,9 +10,16 @@ import {
   actualizarDatosIdentificatoriosCooperadora,
   cargarCooperadoraAuditoria,
 } from "@/lib/data/auditoria";
+import {
+  abrirDocumentoConcesion,
+  cargarConcesionKiosco,
+  cargarDocumentoConcesion,
+} from "@/lib/data/concesion";
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
 import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
+import { cargarHistorialConcesionKiosco } from "@/lib/data/concesion-historial";
+import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,6 +98,30 @@ function AuditoriaLibroPage() {
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
+  const concesion = useQuery({
+    queryKey: ["concesion-kiosco", id],
+    queryFn: () => cargarConcesionKiosco(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const historialConcesion = useQuery({
+    queryKey: ["historial-concesion-kiosco", id],
+    queryFn: () => cargarHistorialConcesionKiosco(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const contrato = useQuery({
+    queryKey: ["documento-concesion", id, "contrato"],
+    queryFn: () => cargarDocumentoConcesion(id, "contrato"),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const buenaConducta = useQuery({
+    queryKey: ["documento-concesion", id, "buena_conducta"],
+    queryFn: () => cargarDocumentoConcesion(id, "buena_conducta"),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
   const actualizarIdentificacion = useMutation({
     mutationFn: () => actualizarDatosIdentificatoriosCooperadora(id, { nombre, cue }),
     onSuccess: () => {
@@ -147,6 +178,8 @@ function AuditoriaLibroPage() {
   const historial = historialInstitucional.data ?? [];
   const autoridades = comision.data ?? [];
   const historialAutoridades = historialComision.data ?? [];
+  const datosConcesion = concesion.data;
+  const historialConcesionData = historialConcesion.data ?? [];
 
   const iniciarEdicionIdentificacion = () => {
     setNombre(c.nombre ?? "");
@@ -292,6 +325,69 @@ function AuditoriaLibroPage() {
         </details>
       )}
 
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <Store className="h-5 w-5 text-primary" /> Concesión de Kioscos y Cantinas
+          </CardTitle>
+          <CardDescription>Datos del concesionario, canon y documentación respaldatoria.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {concesion.isLoading ? (
+            <p className="text-sm text-muted-foreground">Cargando datos de concesión…</p>
+          ) : !datosConcesion ? (
+            <p className="text-sm text-muted-foreground">No hay datos de concesión registrados.</p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <DatoInstitucional titulo="Apellido" valor={datosConcesion.apellido} />
+              <DatoInstitucional titulo="Nombre" valor={datosConcesion.nombre} />
+              <DatoInstitucional titulo="Canon" valor={money(num(datosConcesion.canon))} />
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DocumentoAuditoria
+              titulo="Contrato de concesión"
+              documento={contrato.data}
+              onOpen={() => abrirDocumentoConcesion(id, "contrato").catch((error: Error) => toast.error(error.message))}
+            />
+            <DocumentoAuditoria
+              titulo="Certificado de buena conducta"
+              documento={buenaConducta.data}
+              onOpen={() => abrirDocumentoConcesion(id, "buena_conducta").catch((error: Error) => toast.error(error.message))}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {historialConcesionData.length > 0 && (
+        <details className="mb-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones de la concesión</span>
+              <span className="text-xs font-normal text-muted-foreground">{historialConcesionData.length} registro{historialConcesionData.length === 1 ? "" : "s"}</span>
+            </span>
+          </summary>
+          <div className="space-y-2 border-t border-border p-4">
+            {historialConcesionData.map((registro) => (
+              <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
+                <summary className="cursor-pointer list-none text-sm">
+                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-medium">{registro.datos.apellido}, {registro.datos.nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+                  </span>
+                </summary>
+                <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-3">
+                  <DatoInstitucional titulo="Apellido" valor={registro.datos.apellido} />
+                  <DatoInstitucional titulo="Nombre" valor={registro.datos.nombre} />
+                  <DatoInstitucional titulo="Canon" valor={money(num(registro.datos.canon))} />
+                </div>
+              </details>
+            ))}
+          </div>
+        </details>
+      )}
+
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
@@ -302,6 +398,33 @@ function DatoInstitucional({ titulo, valor, className = "" }: { titulo: string; 
     <div className={`rounded-sm border border-border bg-card px-3 py-2 ${className}`}>
       <p className="text-xs text-muted-foreground">{titulo}</p>
       <p className="mt-1 text-sm font-medium">{valor || "No informado"}</p>
+    </div>
+  );
+}
+
+function DocumentoAuditoria({
+  titulo,
+  documento,
+  onOpen,
+}: {
+  titulo: string;
+  documento: { nombreArchivo: string; tamano: number; actualizadoEn: string } | null | undefined;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="rounded-sm border border-border bg-secondary/20 p-3">
+      <p className="text-xs font-medium text-muted-foreground">{titulo}</p>
+      {documento ? (
+        <>
+          <p className="mt-1 break-all text-sm font-medium">{documento.nombreArchivo}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Actualizado: {new Date(documento.actualizadoEn).toLocaleString("es-AR")}</p>
+          <Button className="mt-3" variant="outline" size="sm" onClick={onOpen}>
+            <FileText className="mr-2 h-4 w-4" /> Ver PDF
+          </Button>
+        </>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">No cargado.</p>
+      )}
     </div>
   );
 }
