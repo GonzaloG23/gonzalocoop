@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Building2, ClipboardList, FileBarChart, TrendingDown, TrendingUp, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { authData } from "@/lib/data/auth";
 import { AppShell, useContexto } from "@/components/AppShell";
 import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales } from "@/lib/libro";
+import { cargarDatosInstitucionales, guardarDatosInstitucionales, type DatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +77,7 @@ function AltaCooperadora() {
         <CardContent>
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); crear.mutate(); }}>
             <div className="space-y-2 sm:col-span-2"><Label htmlFor="nombre">Nombre de la escuela</Label><Input id="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-            <div className="space-y-2"><Label htmlFor="cue">CUE</Label><Input id="cue" value={cue} onChange={(e) => setCue(e.target.value)} /></div>
+            <div className="space-y-2"><Label htmlFor="cue">CUE</Label><Input id="cue" inputMode="numeric" value={cue} onChange={(e) => setCue(e.target.value.replace(/\D/g, ""))} /></div>
             <div className="space-y-2"><Label htmlFor="cuit">CUIT</Label><Input id="cuit" value={cuit} onChange={(e) => setCuit(e.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="localidad">Localidad</Label><Input id="localidad" value={localidad} onChange={(e) => setLocalidad(e.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="ejercicio">Año de ejercicio</Label><Input id="ejercicio" inputMode="numeric" required value={ejercicio} onChange={(e) => setEjercicio(e.target.value)} /></div>
@@ -91,10 +92,17 @@ function AltaCooperadora() {
 
 function PanelCooperadora() {
   const { data: ctx } = useContexto();
+  const qc = useQueryClient();
   const coop = ctx?.cooperadora ?? null;
   const anio = coop?.ejercicio ?? new Date().getFullYear();
   const ejercicio = useQuery({ queryKey: ["ejercicio", coop?.id, anio], queryFn: () => cargarEjercicio(coop!.id, anio), enabled: !!coop });
   const parametros = useQuery({ queryKey: ["parametros"], queryFn: cargarParametros, staleTime: 30_000 });
+  const datosInstitucionales = useQuery({
+    queryKey: ["datos-institucionales", coop?.id],
+    queryFn: () => cargarDatosInstitucionales(coop!),
+    enabled: !!coop,
+  });
+  const [datos, setDatos] = useState<DatosInstitucionales | null>(null);
   const resumen = useMemo(() => {
     if (!coop || !ejercicio.data) return null;
     return calcularEjercicio(num(coop.saldo_inicial_ejercicio), ejercicio.data.periodos, ejercicio.data.movimientos, parametros.data);
@@ -105,13 +113,58 @@ function PanelCooperadora() {
   const saldoActual = resumen?.find((r) => r.mes === mesActual)?.saldoFinal ?? 0;
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
 
+  useEffect(() => {
+    if (datosInstitucionales.data) setDatos(datosInstitucionales.data);
+  }, [datosInstitucionales.data]);
+
+  const guardarDatos = useMutation({
+    mutationFn: async () => {
+      if (!coop || !datos) throw new Error("No hay datos institucionales para guardar.");
+      return guardarDatosInstitucionales(coop.id, datos);
+    },
+    onSuccess: (guardados) => {
+      setDatos(guardados);
+      qc.invalidateQueries({ queryKey: ["datos-institucionales", coop?.id] });
+      toast.success("Datos institucionales guardados.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const actualizarDato = (campo: keyof DatosInstitucionales, valor: string) => {
+    setDatos((actual) => actual ? { ...actual, [campo]: valor } : actual);
+  };
+
   return (
     <AppShell
       titulo={coop?.nombre ?? "Panel"}
       descripcion={`Ejercicio ${anio}${coop?.localidad ? ` · ${coop.localidad}` : ""}`}
       acciones={<div className="flex flex-wrap gap-2"><Button asChild size="sm"><Link to="/libro"><Wallet className="mr-1 h-4 w-4" /> Libro mensual</Link></Button><Button asChild size="sm" variant="outline"><Link to="/anual"><FileBarChart className="mr-1 h-4 w-4" /> Resumen anual</Link></Button></div>}
     >
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg"><Building2 className="h-5 w-5 text-primary" /> Datos institucionales de la escuela</CardTitle>
+          <CardDescription>Completá y mantené actualizada la información oficial de la institución.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!datos ? (
+            <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2 lg:col-span-3"><Label htmlFor="panel-nombre">Nombre de la escuela</Label><Input id="panel-nombre" value={coop?.nombre ?? ""} readOnly /></div>
+              <div className="space-y-2"><Label htmlFor="panel-cue">CUE</Label><Input id="panel-cue" inputMode="numeric" value={datos.cue} onChange={(e) => actualizarDato("cue", e.target.value.replace(/\D/g, ""))} placeholder="Número CUE" /></div>
+              <div className="space-y-2"><Label htmlFor="panel-nivel">Nivel de la escuela</Label><Input id="panel-nivel" value={datos.nivel} onChange={(e) => actualizarDato("nivel", e.target.value)} placeholder="Nivel" /></div>
+              <div className="space-y-2"><Label htmlFor="panel-turno">Turno</Label><Input id="panel-turno" value={datos.turno} onChange={(e) => actualizarDato("turno", e.target.value)} placeholder="Turno" /></div>
+              <div className="space-y-2"><Label htmlFor="panel-localidad">Localidad</Label><Input id="panel-localidad" value={datos.localidad} onChange={(e) => actualizarDato("localidad", e.target.value)} placeholder="Localidad" /></div>
+              <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
+              <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-supervisor">Nombre y Apellido de Supervisor/a</Label><Input id="panel-supervisor" value={datos.supervisor_nombre} onChange={(e) => actualizarDato("supervisor_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
+              <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." /></div>
+              <div className="md:col-span-2 lg:col-span-4"><Button onClick={() => guardarDatos.mutate()} disabled={guardarDatos.isPending}>{guardarDatos.isPending ? "Guardando…" : "Guardar datos institucionales"}</Button></div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Tarjeta titulo="Saldo actual" valor={money(saldoActual)} destacado />
         <Tarjeta titulo="Ingresos del ejercicio" valor={money(totales?.ingresos ?? 0)} />
         <Tarjeta titulo="Egresos del ejercicio" valor={money(totales?.egresos ?? 0)} />
