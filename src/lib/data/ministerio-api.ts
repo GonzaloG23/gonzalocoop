@@ -37,11 +37,12 @@ export async function ministerioRequest<T>(
     );
   }
 
+  const esFormulario = init.body instanceof FormData;
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(esFormulario ? {} : { "Content-Type": "application/json" }),
       ...(init.headers ?? {}),
     },
   });
