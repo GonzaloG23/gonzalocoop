@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, Building2, ClipboardList, FileBarChart, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ArrowRight, Building2, ClipboardList, FileBarChart, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { authData } from "@/lib/data/auth";
@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/panel")({
   head: () => ({
     meta: [
       { title: "Panel de la cooperadora | Libro de Cooperadoras" },
-      { name: "description", content: "Saldo actual, resumen del ejercicio y alertas de rendición de la cooperadora escolar." },
+      { name: "description", content: "Saldo actual, resumen del ejercicio y estado de los meses de la cooperadora escolar." },
       { property: "og:title", content: "Panel de la cooperadora" },
-      { property: "og:description", content: "Saldo actual, resumen del ejercicio y alertas." },
+      { property: "og:description", content: "Saldo actual, resumen del ejercicio y estado de los meses." },
     ],
   }),
   component: Panel,
@@ -104,7 +104,6 @@ function PanelCooperadora() {
   const mesActual = anio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
   const saldoActual = resumen?.find((r) => r.mes === mesActual)?.saldoFinal ?? 0;
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
-  const alertas = resumen?.flatMap((r) => r.alertas.map((a) => ({ mes: r.mes, texto: a }))) ?? [];
 
   return (
     <AppShell
@@ -144,14 +143,10 @@ function PanelCooperadora() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6">
         <Card><CardHeader><CardTitle className="font-serif text-lg">Meses sin cerrar</CardTitle><CardDescription>Cerrar el mes congela sus movimientos.</CardDescription></CardHeader><CardContent className="space-y-2">
           {pendientes.length === 0 && <p className="text-sm text-muted-foreground">No queda ningún mes pendiente.</p>}
           {pendientes.map((p) => <div key={p.mes} className="flex items-center justify-between rounded-sm border border-border px-3 py-2 text-sm"><span>{nombreMes(p.mes)}</span><span className="flex items-center gap-2"><Badge variant="secondary">{p.cantidad} movimientos</Badge><span className="text-muted-foreground">{money(p.saldoFinal)}</span></span></div>)}
-        </CardContent></Card>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2 font-serif text-lg"><AlertTriangle className="h-4 w-4 text-destructive" /> Alertas de control</CardTitle><CardDescription>Revisiones automáticas sobre tu libro.</CardDescription></CardHeader><CardContent className="space-y-2">
-          {alertas.length === 0 && <p className="text-sm text-muted-foreground">Sin observaciones por el momento.</p>}
-          {alertas.map((a, i) => <p key={i} className="rounded-sm border border-border bg-secondary px-3 py-2 text-sm"><span className="font-medium">{nombreMes(a.mes)}:</span> {a.texto}</p>)}
         </CardContent></Card>
       </div>
 
