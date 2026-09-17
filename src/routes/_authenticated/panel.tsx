@@ -1,7 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, Building2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  Building2,
+  ClipboardList,
+  FileBarChart,
+  ListChecks,
+  Settings2,
+  Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -204,9 +214,18 @@ function PanelCooperadora() {
       titulo={coop?.nombre ?? "Panel"}
       descripcion={`Ejercicio ${anio}${coop?.localidad ? ` · ${coop.localidad}` : ""}`}
       acciones={
-        <Button asChild size="sm">
-          <Link to="/libro">Ir al libro mensual</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm">
+            <Link to="/libro">
+              <BookOpen className="mr-1 h-4 w-4" /> Libro mensual
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/anual">
+              <FileBarChart className="mr-1 h-4 w-4" /> Resumen anual
+            </Link>
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -214,6 +233,44 @@ function PanelCooperadora() {
         <Tarjeta titulo="Ingresos del ejercicio" valor={money(totales?.ingresos ?? 0)} />
         <Tarjeta titulo="Egresos del ejercicio" valor={money(totales?.egresos ?? 0)} />
         <Tarjeta titulo="Saldo final proyectado" valor={money(totales?.saldoFinal ?? 0)} />
+      </div>
+
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Gestión de la cooperadora</CardTitle>
+            <CardDescription>
+              Accesos directos para registrar, consultar y controlar la documentación contable.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <AccesoPanel
+              to="/libro"
+              icon={Wallet}
+              titulo="Ingresos y egresos"
+              descripcion="Registrar movimientos, consultar comprobantes y cerrar meses."
+              principal
+            />
+            <AccesoPanel
+              to="/rubros"
+              icon={ListChecks}
+              titulo="Rubros"
+              descripcion="Administrar las categorías de ingresos y egresos."
+            />
+            <AccesoPanel
+              to="/anual"
+              icon={FileBarChart}
+              titulo="Reportes"
+              descripcion="Consultar el resumen anual y sus resultados."
+            />
+            <AccesoPanel
+              to="/parametros"
+              icon={Settings2}
+              titulo="Parámetros"
+              descripcion="Consultar la configuración de controles del sistema."
+            />
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -260,7 +317,57 @@ function PanelCooperadora() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <ClipboardList className="h-4 w-4" /> Próximamente
+          </CardTitle>
+          <CardDescription>
+            La siguiente etapa puede ampliar este panel sin cambiar la estructura de datos actual.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+          <p>• Comprobantes y documentación respaldatoria</p>
+          <p>• Presupuesto y seguimiento de ejecución</p>
+          <p>• Proveedores</p>
+          <p>• Historial de modificaciones</p>
+        </CardContent>
+      </Card>
     </AppShell>
+  );
+}
+
+function AccesoPanel({
+  to,
+  icon: Icon,
+  titulo,
+  descripcion,
+  principal = false,
+}: {
+  to: "/libro" | "/rubros" | "/anual" | "/parametros";
+  icon: typeof Wallet;
+  titulo: string;
+  descripcion: string;
+  principal?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`group rounded-sm border p-4 transition-colors hover:bg-secondary ${
+        principal ? "border-primary/40 bg-primary/5" : "border-border bg-card"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary group-hover:bg-background">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="font-medium">{titulo}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{descripcion}</p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
