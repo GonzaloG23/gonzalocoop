@@ -126,7 +126,7 @@ function PanelCooperadora() {
 
   useEffect(() => {
     if (!datosInstitucionales.data) return;
-    setDatos(datosInstitucionales.data);
+    setDatos((actual) => actual ?? datosInstitucionales.data!);
     if (!(historialInstitucional.data?.length)) setEditando(true);
   }, [datosInstitucionales.data, historialInstitucional.data]);
 
