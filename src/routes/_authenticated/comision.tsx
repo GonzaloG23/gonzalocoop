@@ -18,6 +18,7 @@ import {
   cargarHistorialComisionDirectiva,
   registrarModificacionComisionDirectiva,
 } from "@/lib/data/comision-historial";
+import { cargarDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ function ComisionPage() {
   const { data: ctx, isLoading } = useContexto();
   const qc = useQueryClient();
   const cooperadora = ctx?.cooperadora;
+  const [editando, setEditando] = useState(false);
   const [miembros, setMiembros] = useState<Record<CargoComision, { nombre: string; dni: string }>>(() =>
     Object.fromEntries(CARGOS.map(({ cargo }) => [cargo, { nombre: "", dni: "" }])) as Record<
       CargoComision,
@@ -78,14 +80,21 @@ function ComisionPage() {
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
+  const datosInstitucionales = useQuery({
+    queryKey: ["datos-institucionales", cooperadora?.id],
+    queryFn: () => cargarDatosInstitucionales(cooperadora!),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
   const acta = useQuery({
     queryKey: ["acta-constitucion", cooperadora?.id],
     queryFn: () => cargarActaConstitucion(cooperadora!.id),
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
+  const directorNombre = datosInstitucionales.data?.director_nombre?.trim() ?? "";
+
   useEffect(() => {
-    if (!comision.data) return;
     setMiembros((actual) => {
       const siguiente = { ...actual };
       for (const miembro of comision.data ?? []) {
@@ -94,19 +103,34 @@ function ComisionPage() {
           dni: miembro.dni ?? "",
         };
       }
+      if (directorNombre) {
+        siguiente.asesor_director = {
+          ...siguiente.asesor_director,
+          nombre: directorNombre,
+        };
+      }
       return siguiente;
     });
-  }, [comision.data]);
+  }, [comision.data, directorNombre]);
+
+  useEffect(() => {
+    if (!historialComision.data) return;
+    setEditando(historialComision.data.length === 0);
+  }, [historialComision.data]);
 
   const guardar = useMutation({
     mutationFn: async () => {
       if (!cooperadora) throw new Error("No hay una cooperadora registrada.");
       if (!ctx) throw new Error("No se pudo identificar al usuario que realiza la modificación.");
+
       const datos: MiembroComision[] = CARGOS.map(({ cargo }) => ({
         cargo,
-        nombre: miembros[cargo].nombre.trim(),
+        nombre: cargo === "asesor_director" && directorNombre
+          ? directorNombre
+          : miembros[cargo].nombre.trim(),
         dni: miembros[cargo].dni.trim(),
       }));
+
       const guardados = await guardarComisionDirectiva(cooperadora.id, datos);
       await registrarModificacionComisionDirectiva(cooperadora.id, guardados, {
         id: ctx.userId,
@@ -115,7 +139,21 @@ function ComisionPage() {
       });
       return guardados;
     },
-    onSuccess: () => {
+    onSuccess: (guardados) => {
+      setMiembros((actual) => {
+        const siguiente = { ...actual };
+        for (const miembro of guardados) {
+          siguiente[miembro.cargo] = {
+            nombre: miembro.nombre ?? "",
+            dni: miembro.dni ?? "",
+          };
+        }
+        if (directorNombre) {
+          siguiente.asesor_director.nombre = directorNombre;
+        }
+        return siguiente;
+      });
+      setEditando(false);
       qc.invalidateQueries({ queryKey: ["comision-directiva", cooperadora?.id] });
       qc.invalidateQueries({ queryKey: ["historial-comision-directiva", cooperadora?.id] });
       toast.success("Datos de la comisión directiva guardados.");
@@ -169,99 +207,123 @@ function ComisionPage() {
     );
   }
 
+  const ultimaModificacion = historialComision.data?.[0];
+  const nombreFicha = (cargo: CargoComision) => miembros[cargo]?.nombre || "No informado";
+  const dniFicha = (cargo: CargoComision) => miembros[cargo]?.dni || "";
+
   return (
     <AppShell
       titulo="Comisión directiva"
       descripcion={`${cooperadora.nombre}${cooperadora.localidad ? ` · ${cooperadora.localidad}` : ""}`}
     >
-      {historialComision.data && historialComision.data.length > 0 && (
-        <details className="mb-6 rounded-sm border border-border bg-card">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <details open={editando} className="rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-4 hover:bg-secondary/50">
             <span className="flex items-center justify-between gap-3">
-              <span>Historial de modificaciones de la Comisión Directiva</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {historialComision.data.length} registro{historialComision.data.length === 1 ? "" : "s"}
+              <span>
+                <span className="flex items-center gap-2 font-serif text-lg">
+                  <Users className="h-5 w-5 text-primary" />
+                  Comisión Directiva
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  {editando
+                    ? "Completá o actualizá las autoridades de la cooperadora."
+                    : "Información oficial registrada de la Comisión Directiva."}
+                </span>
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {editando ? "Edición" : "Ver información"}
               </span>
             </span>
           </summary>
-          <div className="space-y-2 border-t border-border p-4">
-            {historialComision.data.map((registro) => (
-              <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
-                <summary className="cursor-pointer list-none text-sm">
-                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="font-medium">{registro.usuario_nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
-                  </span>
-                </summary>
-                <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs sm:grid-cols-2">
-                  {registro.miembros.map((miembro) => (
-                    <div key={miembro.cargo} className="rounded-sm bg-secondary/40 px-2 py-1.5">
-                      <span className="font-medium">{CARGOS.find((item) => item.cargo === miembro.cargo)?.etiqueta ?? miembro.cargo}:</span>{" "}
-                      {miembro.nombre}{miembro.dni ? ` · DNI ${miembro.dni}` : ""}
-                    </div>
-                  ))}
-                </div>
-              </details>
-            ))}
-          </div>
-        </details>
-      )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-serif text-lg">
-              <Users className="h-5 w-5 text-primary" /> Integrantes de la Comisión Directiva
-            </CardTitle>
-            <CardDescription>
-              Completá el nombre y apellido y el DNI de cada integrante. Podés guardar los datos aunque todavía falte algún cargo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {CARGOS.map(({ cargo, etiqueta }, index) => (
-              <div key={cargo} className="space-y-3 rounded-md border border-border p-3">
-                <p className="text-sm font-medium">
-                  {etiqueta}{index === 3 || index === 4 ? ` ${index - 2}` : ""}
-                </p>
-                <div className="space-y-2">
-                  <Label htmlFor={`cargo-${cargo}-nombre`}>Nombre y apellido</Label>
-                  <Input
-                    id={`cargo-${cargo}-nombre`}
-                    value={miembros[cargo].nombre}
-                    placeholder="Nombre y apellido"
-                    onChange={(e) =>
-                      setMiembros((actual) => ({
-                        ...actual,
-                        [cargo]: { ...actual[cargo], nombre: e.target.value },
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`cargo-${cargo}-dni`}>DNI</Label>
-                  <Input
-                    id={`cargo-${cargo}-dni`}
-                    value={miembros[cargo].dni}
-                    inputMode="numeric"
-                    placeholder="Número de DNI"
-                    onChange={(e) =>
-                      setMiembros((actual) => ({
-                        ...actual,
-                        [cargo]: { ...actual[cargo], dni: e.target.value.replace(/\D/g, "") },
-                      }))
-                    }
-                  />
+          <div className="border-t border-border p-6">
+            {editando ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {CARGOS.map(({ cargo, etiqueta }, index) => {
+                  const asesor = cargo === "asesor_director";
+                  const nombreAsesor = directorNombre || miembros[cargo].nombre;
+                  return (
+                    <div key={cargo} className="space-y-3 rounded-md border border-border p-3">
+                      <p className="text-sm font-medium">
+                        {etiqueta}{index === 3 || index === 4 ? ` ${index - 2}` : ""}
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor={`cargo-${cargo}-nombre`}>Nombre y apellido</Label>
+                        <Input
+                          id={`cargo-${cargo}-nombre`}
+                          value={nombreAsesor}
+                          readOnly={asesor}
+                          placeholder="Nombre y apellido"
+                          onChange={(e) => {
+                            if (asesor) return;
+                            setMiembros((actual) => ({
+                              ...actual,
+                              [cargo]: { ...actual[cargo], nombre: e.target.value },
+                            }));
+                          }}
+                        />
+                        {asesor && (
+                          <p className="text-xs text-muted-foreground">
+                            Se completa automáticamente con el nombre del Director/a registrado en Datos institucionales.
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`cargo-${cargo}-dni`}>DNI</Label>
+                        <Input
+                          id={`cargo-${cargo}-dni`}
+                          value={miembros[cargo].dni}
+                          inputMode="numeric"
+                          placeholder="Número de DNI"
+                          onChange={(e) =>
+                            setMiembros((actual) => ({
+                              ...actual,
+                              [cargo]: { ...actual[cargo], dni: e.target.value.replace(/\D/g, "") },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="flex flex-wrap gap-2 sm:col-span-2 pt-2">
+                  <Button onClick={() => guardar.mutate()} disabled={guardar.isPending}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {guardar.isPending ? "Guardando…" : "Guardar comisión directiva"}
+                  </Button>
+                  {historialComision.data?.length ? (
+                    <Button type="button" variant="outline" onClick={() => setEditando(false)} disabled={guardar.isPending}>
+                      Cancelar
+                    </Button>
+                  ) : null}
                 </div>
               </div>
-            ))}
-            <div className="sm:col-span-2 pt-2">
-              <Button onClick={() => guardar.mutate()} disabled={guardar.isPending}>
-                <Save className="mr-2 h-4 w-4" />
-                {guardar.isPending ? "Guardando…" : "Guardar comisión directiva"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <div className="space-y-5">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {CARGOS.map(({ cargo, etiqueta }, index) => (
+                    <FichaComision
+                      key={cargo}
+                      titulo={`${etiqueta}${index === 3 || index === 4 ? ` ${index - 2}` : ""}`}
+                      nombre={nombreFicha(cargo)}
+                      dni={dniFicha(cargo)}
+                    />
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                  <p className="text-xs text-muted-foreground">
+                    {ultimaModificacion
+                      ? `Última modificación: ${ultimaModificacion.usuario_nombre}${ultimaModificacion.usuario_email ? ` · ${ultimaModificacion.usuario_email}` : ""} · ${new Date(ultimaModificacion.modificado_en).toLocaleString("es-AR")}`
+                      : "Información registrada"}
+                  </p>
+                  <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </details>
 
         <Card>
           <CardHeader>
@@ -317,6 +379,49 @@ function ComisionPage() {
           </CardContent>
         </Card>
       </div>
+
+      {historialComision.data && historialComision.data.length > 0 && (
+        <details className="mt-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {historialComision.data.length} registro{historialComision.data.length === 1 ? "" : "s"}
+              </span>
+            </span>
+          </summary>
+          <div className="space-y-2 border-t border-border p-4">
+            {historialComision.data.map((registro) => (
+              <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
+                <summary className="cursor-pointer list-none text-sm">
+                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-medium">{registro.usuario_nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+                  </span>
+                </summary>
+                <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs sm:grid-cols-2">
+                  {registro.miembros.map((miembro) => (
+                    <div key={miembro.cargo} className="rounded-sm bg-secondary/40 px-2 py-1.5">
+                      <span className="font-medium">{CARGOS.find((item) => item.cargo === miembro.cargo)?.etiqueta ?? miembro.cargo}:</span>{" "}
+                      {miembro.nombre}{miembro.dni ? ` · DNI ${miembro.dni}` : ""}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </details>
+      )}
     </AppShell>
+  );
+}
+
+function FichaComision({ titulo, nombre, dni }: { titulo: string; nombre: string; dni: string }) {
+  return (
+    <div className="rounded-sm border border-border bg-card px-3 py-3">
+      <p className="text-xs text-muted-foreground">{titulo}</p>
+      <p className="mt-1 text-sm font-medium">{nombre || "No informado"}</p>
+      {dni && <p className="mt-1 text-xs text-muted-foreground">DNI {dni}</p>}
+    </div>
   );
 }
