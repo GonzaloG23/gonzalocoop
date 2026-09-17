@@ -49,6 +49,12 @@ function LibroPage() {
             (elemento) => elemento.textContent?.trim().toLowerCase() === tipoDirecto,
           ) as HTMLElement | undefined;
           opcion?.click();
+
+          const etiquetaTipo = Array.from(dialogo?.querySelectorAll("label") ?? []).find(
+            (elemento) => elemento.textContent?.trim() === "Tipo",
+          );
+          const campoTipo = etiquetaTipo?.parentElement as HTMLElement | null;
+          if (campoTipo) campoTipo.style.display = "none";
         }, 100);
       }, 150);
     }, 150);
