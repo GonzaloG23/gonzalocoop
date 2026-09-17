@@ -160,14 +160,24 @@ function PanelCooperadora() {
       descripcion={`Ejercicio ${anio}${coop?.localidad ? ` · ${coop.localidad}` : ""}`}
       acciones={<div className="flex flex-wrap gap-2"><Button asChild size="sm"><Link to="/libro"><Wallet className="mr-1 h-4 w-4" /> Libro mensual</Link></Button><Button asChild size="sm" variant="outline"><Link to="/anual"><FileBarChart className="mr-1 h-4 w-4" /> Resumen anual</Link></Button></div>}
     >
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-serif text-lg"><Building2 className="h-5 w-5 text-primary" /> Datos institucionales de la escuela</CardTitle>
-          <CardDescription>
-            {editando ? "Completá o actualizá la información oficial de la institución." : "Información oficial registrada de la institución."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <details open={editando} className="rounded-sm border border-border bg-card">
+        <summary className="cursor-pointer list-none px-4 py-4 hover:bg-secondary/50">
+          <span className="flex items-center justify-between gap-3">
+            <span>
+              <span className="flex items-center gap-2 font-serif text-lg">
+                <Building2 className="h-5 w-5 text-primary" />
+                Datos institucionales de la escuela
+              </span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {editando
+                  ? "Completá o actualizá la información oficial de la institución."
+                  : "Información oficial registrada de la institución."}
+              </span>
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">{editando ? "Edición" : "Ver información"}</span>
+          </span>
+        </summary>
+        <div className="border-t border-border p-6">
           {!datos ? (
             <p className="text-sm text-muted-foreground">Cargando datos institucionales…</p>
           ) : editando ? (
@@ -207,8 +217,8 @@ function PanelCooperadora() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </details>
 
       {historialInstitucional.data && historialInstitucional.data.length > 0 && (
         <details className="mt-6 rounded-sm border border-border bg-card">
@@ -260,7 +270,7 @@ function PanelCooperadora() {
         <CardHeader><CardTitle className="font-serif text-lg">Consultas y control</CardTitle><CardDescription>Accesos para consultar la información registrada y controlar el ejercicio.</CardDescription></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           <Link to="/libro" className="group rounded-sm border border-border bg-card p-4 transition-colors hover:bg-secondary"><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary"><Wallet className="h-5 w-5" /></span><div><p className="font-medium">Libro mensual</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Consultar movimientos, comprobantes y cierres mensuales.</p></div></div></Link>
-          <Link to="/anual" className="group rounded-sm border border-border bg-card p-4 transition-colors hover:bg-secondary"><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary"><FileBarChart className="h-5 w-5" /></span><div><p className="font-medium">Resumen anual</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Consultar el resumen del ejercicio y sus resultados.</p></div></div></Link>
+          <Link to="/anual" className="group rounded-sm border border-border bg-card p-4 transition-colors hover:bg-secondary"><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary"><FileBarChart className="h-5 w-5" /></span><div><p className="font-medium">Resumen anual</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Consultar el resumen del ejercicio y sus resultados.</p></div></Link>
           <Link to="/comision" className="group rounded-sm border border-border bg-card p-4 transition-colors hover:bg-secondary"><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary"><Users className="h-5 w-5" /></span><div><p className="font-medium">Comisión Directiva</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Completar autoridades y adjuntar el acta de constitución.</p></div></div></Link>
         </CardContent>
       </Card>
