@@ -640,10 +640,6 @@ function FormularioMovimiento({
                 <Printer className="mr-2 h-4 w-4" /> Imprimir comprobante
               </Button>
 
-              <p className="text-xs text-muted-foreground">
-                Se imprime un comprobante por cada hoja A4.
-              </p>
-
               <Button
                 type="button"
                 variant="outline"
