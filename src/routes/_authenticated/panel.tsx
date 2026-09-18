@@ -133,7 +133,7 @@ function PanelCooperadora() {
   const resumenBancario = useQuery({
     queryKey: ["resumen-bancario", coop?.id],
     queryFn: () => cargarResumenBancario(coop!.id),
-    enabled: !!coop && datos?.posee_cuenta_bancaria === true,
+    enabled: !!coop && datosInstitucionales.data?.posee_cuenta_bancaria === true,
   });
   const concesion = useQuery({
     queryKey: ["concesion-kiosco", coop?.id],
@@ -143,7 +143,7 @@ function PanelCooperadora() {
   const aperturaCuenta = useQuery({
     queryKey: ["apertura-cuenta-bancaria", coop?.id],
     queryFn: () => cargarAperturaCuentaBancaria(coop!.id),
-    enabled: !!coop && datos?.posee_cuenta_bancaria === false,
+    enabled: !!coop && datosInstitucionales.data?.posee_cuenta_bancaria === false,
   });
   const [datos, setDatos] = useState<DatosInstitucionales | null>(null);
   const [editando, setEditando] = useState(false);
