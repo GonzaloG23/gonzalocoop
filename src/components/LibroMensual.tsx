@@ -22,8 +22,8 @@ import { fechaCorta, fechaHora, money, nombreMes, num, MESES } from "@/lib/forma
 import { exportarMesExcel, exportarMesPDF } from "@/lib/exportar";
 import {
   abrirComprobanteIngresoParaImprimir,
-  abrirComprobantePorEmail,
-  abrirComprobantePorWhatsApp,
+  enviarComprobantePorEmail,
+  enviarComprobantePorWhatsApp,
   type DatosComprobanteIngreso,
 } from "@/lib/comprobante-ingreso";
 import { Button } from "@/components/ui/button";
@@ -435,6 +435,7 @@ function FormularioMovimiento({
   const [alumnoCurso, setAlumnoCurso] = useState("");
   const [correoComprobante, setCorreoComprobante] = useState("");
   const [whatsappComprobante, setWhatsappComprobante] = useState("");
+  const [enviandoCanal, setEnviandoCanal] = useState<"email" | "whatsapp" | null>(null);
   const [comprobanteGenerado, setComprobanteGenerado] = useState<DatosComprobanteIngreso | null>(null);
 
   useEffect(() => {
@@ -456,6 +457,7 @@ function FormularioMovimiento({
   const faltanDatosAlumno =
     requiereComprobanteAlumno &&
     (!alumnoNombre.trim() || alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8);
+  const faltaConcepto = !requiereComprobanteAlumno && !concepto.trim();
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -468,16 +470,16 @@ function FormularioMovimiento({
       if (userError || !userData.user) {
         throw userError ?? new Error("No hay un usuario autenticado.");
       }
-      await registrarMovimiento({
+      const movimientoRegistrado = await registrarMovimiento({
         cooperadora_id: cooperadora.id,
         periodo_id: periodo.id,
         fecha,
         tipo,
         rubro_id: rubroId || null,
-        concepto,
+        concepto: requiereComprobanteAlumno ? "" : concepto.trim(),
         monto: Number(monto),
         medio_pago: medioPago || null,
-        comprobante: comprobante.trim() || null,
+        comprobante: requiereComprobanteAlumno ? null : comprobante.trim() || null,
         proveedor_cuit: tipo === "egreso" ? cuitDigitos : null,
         proveedor_razon_social: tipo === "egreso" ? proveedorRazon.trim() : null,
         tipo_factura: tipo === "egreso" ? tipoFactura : null,
@@ -485,20 +487,28 @@ function FormularioMovimiento({
         ajusta_movimiento_id: ajusta?.id ?? null,
         motivo_ajuste: ajusta ? motivo : null,
         creado_por: userData.user.id,
+        generar_comprobante: requiereComprobanteAlumno,
       });
+
+      if (requiereComprobanteAlumno && !movimientoRegistrado?.comprobante) {
+        throw new Error(
+          "El movimiento se registró, pero no se recibió el número correlativo del comprobante.",
+        );
+      }
+
+      return movimientoRegistrado;
     },
-    onSuccess: () => {
+    onSuccess: (movimientoRegistrado) => {
       toast.success(ajusta ? "Ajuste contable registrado." : "Movimiento registrado.");
       qc.invalidateQueries({ queryKey: ["ejercicio", cooperadora.id, anio] });
 
       const datosComprobante: DatosComprobanteIngreso = {
         cooperadora,
         fecha,
-        rubro: rubroSeleccionado?.nombre ?? concepto,
-        concepto,
+        rubro: rubroSeleccionado?.nombre ?? "Ingreso",
         monto: Number(monto),
         medioPago,
-        comprobante: comprobante.trim(),
+        comprobante: movimientoRegistrado?.comprobante ?? "",
         alumnoNombre: alumnoNombre.trim(),
         alumnoDni: alumnoDniDigitos,
         alumnoCurso: alumnoCurso.trim(),
@@ -547,7 +557,28 @@ function FormularioMovimiento({
     Number(fecha.slice(0, 4)) !== anio ||
     Number(fecha.slice(5, 7)) !== mes;
   const bloqueado =
-    sinSaldo || excedeSaldo || faltanDatosProveedor || fechaFueraDelMes || faltanDatosAlumno;
+    sinSaldo ||
+    excedeSaldo ||
+    faltanDatosProveedor ||
+    fechaFueraDelMes ||
+    faltanDatosAlumno ||
+    faltaConcepto;
+
+  const enviarAutomaticamente = async (
+    canal: "email" | "whatsapp",
+    accion: () => Promise<void>,
+    mensajeExito: string,
+  ) => {
+    setEnviandoCanal(canal);
+    try {
+      await accion();
+      toast.success(mensajeExito);
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setEnviandoCanal(null);
+    }
+  };
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
@@ -568,9 +599,13 @@ function FormularioMovimiento({
             <div className="rounded-md border border-primary/30 bg-primary/5 p-4">
               <p className="font-medium">Ingreso registrado correctamente</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Se generó el comprobante para el alumno indicado.
+                Se generó el comprobante en forma correlativa.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">N° de comprobante</p>
+                  <p className="text-sm font-semibold tabular">{comprobanteGenerado.comprobante}</p>
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Alumno/a</p>
                   <p className="text-sm font-medium">{comprobanteGenerado.alumnoNombre}</p>
@@ -622,15 +657,17 @@ function FormularioMovimiento({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      try {
-                        abrirComprobantePorEmail(comprobanteGenerado, correoComprobante);
-                      } catch (error) {
-                        toast.error((error as Error).message);
-                      }
-                    }}
+                    disabled={enviandoCanal !== null}
+                    onClick={() =>
+                      enviarAutomaticamente(
+                        "email",
+                        () => enviarComprobantePorEmail(comprobanteGenerado, correoComprobante),
+                        "Comprobante enviado por email.",
+                      )
+                    }
                   >
-                    <Mail className="mr-2 h-4 w-4" /> Enviar por email
+                    <Mail className="mr-2 h-4 w-4" />
+                    {enviandoCanal === "email" ? "Enviando…" : "Enviar por email"}
                   </Button>
                 </div>
               </div>
@@ -648,21 +685,23 @@ function FormularioMovimiento({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      try {
-                        abrirComprobantePorWhatsApp(comprobanteGenerado, whatsappComprobante);
-                      } catch (error) {
-                        toast.error((error as Error).message);
-                      }
-                    }}
+                    disabled={enviandoCanal !== null}
+                    onClick={() =>
+                      enviarAutomaticamente(
+                        "whatsapp",
+                        () => enviarComprobantePorWhatsApp(comprobanteGenerado, whatsappComprobante),
+                        "Comprobante enviado por WhatsApp.",
+                      )
+                    }
                   >
-                    <MessageCircle className="mr-2 h-4 w-4" /> Enviar por WhatsApp
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    {enviandoCanal === "whatsapp" ? "Enviando…" : "Enviar por WhatsApp"}
                   </Button>
                 </div>
               </div>
 
               <p className="text-xs text-muted-foreground">
-                El sistema no envía mensajes automáticamente. Para email y WhatsApp, el PDF se descarga para que puedas adjuntarlo al mensaje.
+                Email y WhatsApp envían el mismo PDF como archivo adjunto desde la API del Ministerio.
               </p>
             </div>
 
@@ -793,16 +832,18 @@ function FormularioMovimiento({
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="concepto">Concepto</Label>
-            <Input
-              id="concepto"
-              required
-              value={concepto}
-              onChange={(e) => setConcepto(e.target.value)}
-              placeholder="Ej. Compra de pintura para el aula 3"
-            />
-          </div>
+          {!requiereComprobanteAlumno && (
+            <div className="space-y-2">
+              <Label htmlFor="concepto">Concepto</Label>
+              <Input
+                id="concepto"
+                required
+                value={concepto}
+                onChange={(e) => setConcepto(e.target.value)}
+                placeholder="Ej. Compra de pintura para el aula 3"
+              />
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
@@ -836,16 +877,27 @@ function FormularioMovimiento({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="comprobante">
-                N° Comprobante{tipo === "egreso" ? "" : " (opcional)"}
-              </Label>
-              <Input
-                id="comprobante"
-                required={tipo === "egreso"}
-                value={comprobante}
-                onChange={(e) => setComprobante(e.target.value)}
-                placeholder="N° factura / recibo"
-              />
+              {!requiereComprobanteAlumno ? (
+                <>
+                  <Label htmlFor="comprobante">
+                    N° Comprobante{tipo === "egreso" ? "" : " (opcional)"}
+                  </Label>
+                  <Input
+                    id="comprobante"
+                    required={tipo === "egreso"}
+                    value={comprobante}
+                    onChange={(e) => setComprobante(e.target.value)}
+                    placeholder="N° factura / recibo"
+                  />
+                </>
+              ) : (
+                <>
+                  <Label>N° Comprobante</Label>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                    Se asigna automáticamente al registrar el ingreso.
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
