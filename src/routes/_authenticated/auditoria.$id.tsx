@@ -16,6 +16,11 @@ import {
   cargarDocumentoConcesion,
 } from "@/lib/data/concesion";
 import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
+import {
+  calcularProximaActualizacionResumenBancario,
+  cargarResumenBancario,
+  resumenBancarioVencido,
+} from "@/lib/data/resumen-bancario";
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
 import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
@@ -105,6 +110,12 @@ function AuditoriaLibroPage() {
   const cuentaBancaria = useQuery({
     queryKey: ["cuenta-bancaria", id],
     queryFn: () => cargarCuentaBancaria(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const resumenBancario = useQuery({
+    queryKey: ["resumen-bancario", id],
+    queryFn: () => cargarResumenBancario(id),
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
@@ -201,6 +212,12 @@ function AuditoriaLibroPage() {
   const autoridades = comision.data ?? [];
   const historialAutoridades = historialComision.data ?? [];
   const datosBancarios = cuentaBancaria.data;
+  const resumenBancarioData = resumenBancario.data;
+  const resumenBancarioDesactualizado =
+    !resumenBancario.isLoading && resumenBancarioVencido(resumenBancarioData);
+  const proximaActualizacionResumen = resumenBancarioData
+    ? calcularProximaActualizacionResumenBancario(resumenBancarioData.actualizadoEn)
+    : null;
   const datosConcesion = concesion.data;
   const historialConcesionData = historialConcesion.data ?? [];
   const historialDocumentosConcesionData = historialDocumentosConcesion.data ?? [];
@@ -366,6 +383,46 @@ function AuditoriaLibroPage() {
           )}
         </CardContent>
       </Card>
+
+      {resumenBancarioDesactualizado && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
+              <span>⚠</span> Alerta de resumen bancario desactualizado
+            </CardTitle>
+            <CardDescription>
+              El resumen bancario debe actualizarse cada 6 meses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!resumenBancarioData ? (
+              <p className="text-sm text-destructive">
+                No hay ningún resumen bancario cargado para esta cooperadora.
+              </p>
+            ) : (
+              <div className="space-y-1 text-sm">
+                <p>
+                  Última actualización:{" "}
+                  <span className="font-medium">
+                    {new Date(resumenBancarioData.actualizadoEn).toLocaleString("es-AR")}
+                  </span>
+                </p>
+                {proximaActualizacionResumen ? (
+                  <p className="text-destructive">
+                    Debía actualizarse antes del{" "}
+                    <span className="font-medium">
+                      {proximaActualizacionResumen.toLocaleDateString("es-AR")}
+                    </span>.
+                  </p>
+                ) : null}
+                <p className="break-all text-xs text-muted-foreground">
+                  Archivo: {resumenBancarioData.nombreArchivo}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {alertasDniCuentaBancaria.length > 0 && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">
