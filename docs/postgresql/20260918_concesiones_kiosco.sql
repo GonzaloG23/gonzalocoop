@@ -93,3 +93,8 @@ CREATE TABLE IF NOT EXISTS cuentas_bancarias_cooperadora (
 
 CREATE INDEX IF NOT EXISTS idx_cuentas_bancarias_cooperadora
   ON cuentas_bancarias_cooperadora(cooperadora_id);
+
+
+-- Naturaleza del dato:
+-- El saldo_bancario representa fondos de la Cooperadora resguardados en la cuenta.
+-- No constituye por sí mismo un ingreso ni un egreso del Libro Mensual.
