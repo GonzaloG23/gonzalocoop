@@ -15,6 +15,7 @@ import {
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
 } from "@/lib/data/concesion";
+import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
 import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
@@ -98,6 +99,12 @@ function AuditoriaLibroPage() {
   const historialComision = useQuery({
     queryKey: ["historial-comision-directiva", id],
     queryFn: () => cargarHistorialComisionDirectiva(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const cuentaBancaria = useQuery({
+    queryKey: ["cuenta-bancaria", id],
+    queryFn: () => cargarCuentaBancaria(id),
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
@@ -193,6 +200,7 @@ function AuditoriaLibroPage() {
   const historial = historialInstitucional.data ?? [];
   const autoridades = comision.data ?? [];
   const historialAutoridades = historialComision.data ?? [];
+  const datosBancarios = cuentaBancaria.data;
   const datosConcesion = concesion.data;
   const historialConcesionData = historialConcesion.data ?? [];
   const historialDocumentosConcesionData = historialDocumentosConcesion.data ?? [];
@@ -202,6 +210,20 @@ function AuditoriaLibroPage() {
     !buenaConducta.data ? "Certificado de buena conducta" : null,
     !contratoSellado.data ? "Sellado del contrato" : null,
   ].filter((valor): valor is string => Boolean(valor));
+
+  const presidenteComision = autoridades.find((miembro) => miembro.cargo === "presidente");
+  const tesoreroComision = autoridades.find((miembro) => miembro.cargo === "tesorero");
+  const alertasDniCuentaBancaria =
+    !cuentaBancaria.isLoading && datosBancarios
+      ? [
+          presidenteComision?.dni !== datosBancarios.presidenteDni
+            ? `Presidente: el DNI de la cuenta bancaria es ${datosBancarios.presidenteDni}, pero en la Comisión Directiva figura ${presidenteComision?.dni || "sin DNI registrado"}.`
+            : null,
+          tesoreroComision?.dni !== datosBancarios.tesoreroDni
+            ? `Tesorero: el DNI de la cuenta bancaria es ${datosBancarios.tesoreroDni}, pero en la Comisión Directiva figura ${tesoreroComision?.dni || "sin DNI registrado"}.`
+            : null,
+        ].filter((valor): valor is string => Boolean(valor))
+      : [];
 
   const iniciarEdicionIdentificacion = () => {
     setNombre(c.nombre ?? "");
@@ -313,6 +335,54 @@ function AuditoriaLibroPage() {
           )}
         </CardContent>
       </Card>
+
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <Wallet className="h-5 w-5 text-primary" /> Cuenta bancaria
+          </CardTitle>
+          <CardDescription>Saldo depositado y titulares registrados en la cuenta de la cooperadora.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {cuentaBancaria.isLoading ? (
+            <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
+          ) : !datosBancarios ? (
+            <p className="text-sm text-muted-foreground">No hay datos de cuenta bancaria registrados.</p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <DatoInstitucional titulo="Dinero depositado" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
+              <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
+              <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
+              <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
+              <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
+              <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
+              <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {alertasDniCuentaBancaria.length > 0 && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
+              <span>⚠</span> Alerta de titulares de la cuenta bancaria
+            </CardTitle>
+            <CardDescription>
+              Se detectó una diferencia entre los DNI registrados en la cuenta bancaria y los DNI de la Comisión Directiva.
+              La comparación se realiza por DNI.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {alertasDniCuentaBancaria.map((alerta) => (
+                <p key={alerta} className="text-sm text-destructive">• {alerta}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {historialAutoridades.length > 0 && (
         <details className="mb-6 rounded-sm border border-border bg-card">
