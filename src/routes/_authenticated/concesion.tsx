@@ -178,14 +178,14 @@ function ConcesionPage() {
         usuario_email: ctx.email,
       });
 
-      return documento;
+      return { documento, reemplazo: Boolean(documentoExistente) };
     },
-    onSuccess: (_documento, variables) => {
+    onSuccess: (resultado, variables) => {
       setArchivos((actual) => ({ ...actual, [variables.tipo]: null }));
       qc.invalidateQueries({ queryKey: ["documento-concesion", cooperadora?.id, variables.tipo] });
       qc.invalidateQueries({ queryKey: ["historial-documentos-concesion", cooperadora?.id] });
       const titulo = DOCUMENTOS.find((documento) => documento.tipo === variables.tipo)?.titulo ?? "Documento";
-      toast.success(`${titulo} ${_documento && variables.tipo ? "actualizado" : "cargado"}.`);
+      toast.success(`${titulo} ${resultado.reemplazo ? "modificado" : "cargado"}.`);
     },
     onError: (error: Error) => toast.error(error.message),
   });
