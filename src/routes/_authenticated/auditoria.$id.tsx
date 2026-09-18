@@ -18,7 +18,10 @@ import {
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
 import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
-import { cargarHistorialConcesionKiosco } from "@/lib/data/concesion-historial";
+import {
+  cargarHistorialConcesionKiosco,
+  cargarHistorialDocumentosConcesion,
+} from "@/lib/data/concesion-historial";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,6 +113,12 @@ function AuditoriaLibroPage() {
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
+  const historialDocumentosConcesion = useQuery({
+    queryKey: ["historial-documentos-concesion", id],
+    queryFn: () => cargarHistorialDocumentosConcesion(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
   const contrato = useQuery({
     queryKey: ["documento-concesion", id, "contrato"],
     queryFn: () => cargarDocumentoConcesion(id, "contrato"),
@@ -186,6 +195,7 @@ function AuditoriaLibroPage() {
   const historialAutoridades = historialComision.data ?? [];
   const datosConcesion = concesion.data;
   const historialConcesionData = historialConcesion.data ?? [];
+  const historialDocumentosConcesionData = historialDocumentosConcesion.data ?? [];
   const cambiosCanonAuditoria = construirHistorialCanonAuditoria(historialConcesionData);
   const hayReduccionCanon = cambiosCanonAuditoria.some((cambio) => cambio.esBaja);
   const faltanDocumentosConcesion = [
@@ -442,16 +452,55 @@ function AuditoriaLibroPage() {
         </Card>
       )}
 
-      {historialConcesionData.length > 0 && (
+      {(historialConcesionData.length > 0 || historialDocumentosConcesionData.length > 0) && (
         <details className="mb-6 rounded-sm border border-border bg-card">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
             <span className="flex items-center justify-between gap-3">
               <span>Historial de modificaciones de la concesión</span>
-              <span className="text-xs font-normal text-muted-foreground">{historialConcesionData.length} registro{historialConcesionData.length === 1 ? "" : "s"}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {historialConcesionData.length + historialDocumentosConcesionData.length} registro{historialConcesionData.length + historialDocumentosConcesionData.length === 1 ? "" : "s"}
+              </span>
             </span>
           </summary>
-          <div className="space-y-2 border-t border-border p-4">
-            {historialConcesionData.map((registro) => (
+          <div className="space-y-4 border-t border-border p-4">
+            {historialDocumentosConcesionData.length > 0 && (
+              <div className="rounded-sm border border-border">
+                <div className="border-b border-border bg-secondary/40 px-3 py-3">
+                  <p className="text-sm font-medium">Historial de documentación</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Cargas y reemplazos de los archivos respaldatorios.
+                  </p>
+                </div>
+                <div className="divide-y divide-border">
+                  {historialDocumentosConcesionData.map((registro) => (
+                    <div
+                      key={registro.id}
+                      className="flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">{tituloTipoDocumentoAuditoria(registro.tipo)}</p>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">{registro.nombreArchivo}</p>
+                      </div>
+                      <div className="shrink-0 text-left sm:text-right">
+                        <p className="text-sm font-medium">
+                          {registro.accion === "reemplazo" ? "Archivo modificado" : "Archivo cargado"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {registro.usuario_nombre}
+                          {registro.usuario_email ? ` · ${registro.usuario_email}` : ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(registro.modificado_en).toLocaleString("es-AR")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {historialConcesionData.map((registro) => (
               <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
                 <summary className="cursor-pointer list-none text-sm">
                   <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -466,6 +515,7 @@ function AuditoriaLibroPage() {
                 </div>
               </details>
             ))}
+            </div>
           </div>
         </details>
       )}
@@ -473,6 +523,14 @@ function AuditoriaLibroPage() {
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
+}
+
+function tituloTipoDocumentoAuditoria(
+  tipo: "contrato" | "contrato_sellado" | "buena_conducta",
+) {
+  if (tipo === "contrato") return "Contrato de concesión";
+  if (tipo === "contrato_sellado") return "Sellado de contrato";
+  return "Certificado de buena conducta";
 }
 
 function construirHistorialCanonAuditoria(
