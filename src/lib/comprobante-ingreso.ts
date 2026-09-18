@@ -89,20 +89,21 @@ function dibujarComprobante(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.text(
-      esOferente
-        ? `Nombre y apellido: ${datos.alumnoNombre}`
-        : `Nombre y apellido: ${datos.alumnoNombre}`,
+      `Nombre y apellido: ${datos.alumnoNombre}`,
       MARGEN_X + 5,
       y + 50,
     );
-    doc.text(`DNI: ${datos.alumnoDni}`, MARGEN_X + 5, y + 57);
 
-    if (datos.alumnoCurso) {
-      doc.text(
-        `Curso / grado: ${datos.alumnoCurso}`,
-        MARGEN_X + 75,
-        y + 57,
-      );
+    if (!esOferente) {
+      doc.text(`DNI: ${datos.alumnoDni}`, MARGEN_X + 5, y + 57);
+
+      if (datos.alumnoCurso) {
+        doc.text(
+          `Curso / grado: ${datos.alumnoCurso}`,
+          MARGEN_X + 75,
+          y + 57,
+        );
+      }
     }
   }
 
