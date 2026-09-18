@@ -13,6 +13,7 @@ export type DatosComprobanteIngreso = {
   alumnoNombre: string;
   alumnoDni: string;
   alumnoCurso: string;
+  personaTipo: "alumno" | "oferente";
 };
 
 const ANCHO_A4 = 210;
@@ -72,18 +73,25 @@ function dibujarComprobante(
   doc.setDrawColor(200, 200, 200);
   doc.line(MARGEN_X + 5, y + 34, ANCHO_A4 - MARGEN_X - 5, y + 34);
 
-  const tieneDatosAlumno =
+  const tieneDatosPersona =
     Boolean(datos.alumnoNombre || datos.alumnoDni || datos.alumnoCurso);
 
-  if (tieneDatosAlumno) {
+  if (tieneDatosPersona) {
+    const esOferente = datos.personaTipo === "oferente";
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text("DATOS DEL ALUMNO", MARGEN_X + 5, y + 42);
+    doc.text(
+      esOferente ? "DATOS DEL OFERENTE" : "DATOS DEL ALUMNO",
+      MARGEN_X + 5,
+      y + 42,
+    );
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.text(
-      `Nombre y apellido: ${datos.alumnoNombre}`,
+      esOferente
+        ? `Nombre y apellido: ${datos.alumnoNombre}`
+        : `Nombre y apellido: ${datos.alumnoNombre}`,
       MARGEN_X + 5,
       y + 50,
     );
@@ -98,7 +106,7 @@ function dibujarComprobante(
     }
   }
 
-  const desplazamientoPago = tieneDatosAlumno ? 0 : -27;
+  const desplazamientoPago = tieneDatosPersona ? 0 : -27;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.text("DATOS DEL PAGO", MARGEN_X + 5, y + 69 + desplazamientoPago);
@@ -199,7 +207,7 @@ function mensajeComprobante(datos: DatosComprobanteIngreso) {
   return [
     `Comprobante de pago N° ${datos.comprobante}`,
     `Escuela: ${datos.cooperadora.nombre}`,
-    `Alumno/a: ${datos.alumnoNombre}`,
+    `${datos.personaTipo === "oferente" ? "Oferente" : "Alumno/a"}: ${datos.alumnoNombre}`,
     `DNI: ${datos.alumnoDni}`,
     `Rubro: ${datos.rubro}`,
     `Monto abonado: ${money(datos.monto)}`,
