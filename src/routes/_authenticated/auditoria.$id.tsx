@@ -16,6 +16,7 @@ import {
   cargarDocumentoConcesion,
 } from "@/lib/data/concesion";
 import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
+import { cargarAperturaCuentaBancaria, aperturaCuentaVencida } from "@/lib/data/apertura-cuenta-bancaria";
 import { calcularEjercicio, cargarEjercicio, cargarParametros } from "@/lib/libro";
 import {
   abrirResumenBancario,
@@ -120,6 +121,12 @@ function AuditoriaLibroPage() {
     queryFn: cargarParametros,
     staleTime: 30_000,
     enabled: !!ctx?.esAuditor,
+  });
+
+  const aperturaCuenta = useQuery({
+    queryKey: ["apertura-cuenta-bancaria", id],
+    queryFn: () => cargarAperturaCuentaBancaria(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
   const ejercicio = useQuery({
@@ -403,10 +410,25 @@ function AuditoriaLibroPage() {
               La situación requiere revisión de Auditoría según los criterios de cuenta bancaria establecidos.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {alertasCuentaBancaria.map((alerta) => (
               <p key={alerta} className="text-sm text-destructive">• {alerta}</p>
             ))}
+            {aperturaCuenta.data ? (
+              <div className="rounded-sm border border-destructive/20 bg-background/60 p-3 text-sm">
+                <p>
+                  Fecha de notificación:{" "}
+                  <span className="font-medium">
+                    {new Date(aperturaCuenta.data.fechaNotificacion + "T00:00:00").toLocaleDateString("es-AR")}
+                  </span>
+                </p>
+                <p className={aperturaCuentaVencida(aperturaCuenta.data) ? "mt-1 font-semibold text-destructive" : "mt-1"}>
+                  {aperturaCuentaVencida(aperturaCuenta.data)
+                    ? "El plazo de 05 días hábiles se encuentra vencido."
+                    : "Plazo para realizar la apertura: hasta el " + new Date(aperturaCuenta.data.fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR") + "."}
+                </p>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       )}
