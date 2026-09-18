@@ -128,6 +128,8 @@ function dibujarComprobante(
   doc.setTextColor(0, 0, 0);
 }
 
+export const DEMO_COMPROBANTES_KEY = "demo-comprobantes-ingreso-v1";
+
 function crearDocumento(datos: DatosComprobanteIngreso) {
   const doc = new jsPDF({
     orientation: "portrait",
@@ -136,7 +138,20 @@ function crearDocumento(datos: DatosComprobanteIngreso) {
   });
 
   dibujarComprobante(doc, datos, 8);
-  dibujarComprobante(doc, datos, 155);
+  return doc;
+}
+
+function crearDocumentoDosComprobantes(
+  comprobantes: [DatosComprobanteIngreso, DatosComprobanteIngreso],
+) {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  dibujarComprobante(doc, comprobantes[0], 8);
+  dibujarComprobante(doc, comprobantes[1], 155);
 
   doc.setDrawColor(190, 190, 190);
   doc.setLineDashPattern([2, 2], 0);
@@ -144,6 +159,33 @@ function crearDocumento(datos: DatosComprobanteIngreso) {
   doc.setLineDashPattern([], 0);
 
   return doc;
+}
+
+export function guardarComprobanteIngresoDemo(datos: DatosComprobanteIngreso) {
+  if (typeof window === "undefined") return;
+
+  const actuales = JSON.parse(
+    localStorage.getItem(DEMO_COMPROBANTES_KEY) ?? "[]",
+  ) as DatosComprobanteIngreso[];
+
+  const sinDuplicado = actuales.filter(
+    (item) => item.comprobante !== datos.comprobante,
+  );
+
+  sinDuplicado.push(datos);
+  localStorage.setItem(DEMO_COMPROBANTES_KEY, JSON.stringify(sinDuplicado));
+}
+
+export function cargarComprobantesIngresoDemo() {
+  if (typeof window === "undefined") return [] as DatosComprobanteIngreso[];
+
+  try {
+    return JSON.parse(
+      localStorage.getItem(DEMO_COMPROBANTES_KEY) ?? "[]",
+    ) as DatosComprobanteIngreso[];
+  } catch {
+    return [] as DatosComprobanteIngreso[];
+  }
 }
 
 export function generarComprobanteIngreso(datos: DatosComprobanteIngreso) {
@@ -156,10 +198,43 @@ export function generarComprobanteIngreso(datos: DatosComprobanteIngreso) {
   };
 }
 
+export function generarDosComprobantesIngreso(
+  comprobantes: [DatosComprobanteIngreso, DatosComprobanteIngreso],
+) {
+  if (comprobantes[0].comprobante === comprobantes[1].comprobante) {
+    throw new Error("Para imprimir una hoja A4 se necesitan dos comprobantes distintos.");
+  }
+
+  const doc = crearDocumentoDosComprobantes(comprobantes);
+  const nombreArchivo = `comprobantes-ingreso-${comprobantes[0].comprobante.replace(/[^0-9-]/g, "")}-${comprobantes[1].comprobante.replace(/[^0-9-]/g, "")}.pdf`;
+
+  return {
+    blob: doc.output("blob"),
+    nombreArchivo,
+  };
+}
+
 export function descargarComprobanteIngreso(datos: DatosComprobanteIngreso) {
   const doc = crearDocumento(datos);
   const nombreArchivo = `comprobante-ingreso-${datos.comprobante.replace(/[^0-9-]/g, "")}.pdf`;
   doc.save(nombreArchivo);
+}
+
+export function abrirComprobantesIngresoParaImprimir(
+  comprobantes: [DatosComprobanteIngreso, DatosComprobanteIngreso],
+) {
+  const { blob } = generarDosComprobantesIngreso(comprobantes);
+  const url = URL.createObjectURL(blob);
+  const ventana = window.open(url, "_blank");
+
+  if (!ventana) {
+    URL.revokeObjectURL(url);
+    throw new Error(
+      "El navegador bloqueó la apertura del comprobante. Permití las ventanas emergentes para imprimirlo.",
+    );
+  }
+
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function abrirComprobanteIngresoParaImprimir(
