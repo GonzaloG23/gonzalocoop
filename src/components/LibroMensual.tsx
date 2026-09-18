@@ -21,10 +21,8 @@ import {
 import { fechaCorta, fechaHora, money, nombreMes, num, MESES } from "@/lib/formato";
 import { exportarMesExcel, exportarMesPDF } from "@/lib/exportar";
 import {
-  abrirComprobantesIngresoParaImprimir,
-  cargarComprobantesIngresoDemo,
+  abrirComprobanteIngresoParaImprimir,
   enviarComprobantePorEmail,
-  guardarComprobanteIngresoDemo,
   enviarComprobantePorWhatsApp,
   type DatosComprobanteIngreso,
 } from "@/lib/comprobante-ingreso";
@@ -529,7 +527,6 @@ function FormularioMovimiento({
       setAlumnoCurso("");
 
       if (requiereComprobanteAlumno) {
-        guardarComprobanteIngresoDemo(datosComprobante);
         setComprobanteGenerado(datosComprobante);
       } else {
         onCerrar();
@@ -633,40 +630,22 @@ function FormularioMovimiento({
             <div className="space-y-3">
               <p className="text-sm font-medium">Elegí qué hacer con el comprobante</p>
 
-              {(() => {
-                const comprobantesDisponibles = cargarComprobantesIngresoDemo();
-                const ultimosDos = comprobantesDisponibles.slice(-2) as
-                  | [DatosComprobanteIngreso, DatosComprobanteIngreso]
-                  | DatosComprobanteIngreso[];
-
-                const hayDos =
-                  ultimosDos.length === 2 &&
-                  ultimosDos[0].comprobante !== ultimosDos[1].comprobante;
-
-                return (
-                  <Button
-                    type="button"
-                    className="w-full justify-start"
-                    disabled={!hayDos}
-                    onClick={() => {
-                      if (!hayDos) return;
-                      try {
-                        abrirComprobantesIngresoParaImprimir(
-                          ultimosDos as [DatosComprobanteIngreso, DatosComprobanteIngreso],
-                        );
-                      } catch (error) {
-                        toast.error((error as Error).message);
-                      }
-                    }}
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    {hayDos ? "Imprimir 2 comprobantes en una A4" : "Esperando otro comprobante para imprimir"}
-                  </Button>
-                );
-              })()}
+              <Button
+                type="button"
+                className="w-full justify-start"
+                onClick={() => {
+                  try {
+                    abrirComprobanteIngresoParaImprimir(comprobanteGenerado);
+                  } catch (error) {
+                    toast.error((error as Error).message);
+                  }
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" /> Imprimir comprobante
+              </Button>
 
               <p className="text-xs text-muted-foreground">
-                La impresión se realiza de a dos comprobantes diferentes por hoja A4 para ahorrar papel.
+                Se imprime un comprobante por cada hoja A4.
               </p>
 
               <div className="rounded-md border border-border p-3">
