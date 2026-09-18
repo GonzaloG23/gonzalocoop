@@ -121,6 +121,11 @@ function AuditoriaLibroPage() {
     queryFn: () => cargarHistorialComisionDirectiva(id),
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
+  const solicitudesMandato = useQuery({
+    queryKey: ["solicitudes-mandato", id],
+    queryFn: () => cargarSolicitudesCambioMandato(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
 
   const cuentaBancaria = useQuery({
     queryKey: ["cuenta-bancaria", id],
@@ -187,6 +192,32 @@ function AuditoriaLibroPage() {
     queryKey: ["documento-concesion", id, "buena_conducta"],
     queryFn: () => cargarDocumentoConcesion(id, "buena_conducta"),
     enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const resolverSolicitudMandato = useMutation({
+    mutationFn: async (input: { decision: "aprobar" | "rechazar"; solicitudId: string }) => {
+      if (!ctx) throw new Error("No se pudo identificar al auditor.");
+      const solicitud = (solicitudesMandato.data ?? []).find((item) => item.id === input.solicitudId);
+      if (!solicitud) throw new Error("No se encontró la solicitud.");
+      return resolverSolicitudCambioMandato(
+        solicitud,
+        input.decision,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Auditor",
+          email: ctx.email,
+        },
+        input.decision === "rechazar" ? "Solicitud rechazada por Auditoría." : "Solicitud autorizada por Auditoría.",
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["solicitudes-mandato", id] });
+      qc.invalidateQueries({ queryKey: ["comision-directiva", id] });
+      qc.invalidateQueries({ queryKey: ["historial-comision-directiva", id] });
+      qc.invalidateQueries({ queryKey: ["panel-auditor"] });
+      toast.success("Solicitud de mandato actualizada.");
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const autorizarCambioMandato = useMutation({
@@ -460,6 +491,35 @@ function AuditoriaLibroPage() {
                 ))}
               </div>
 
+              {(solicitudesMandato.data ?? []).filter((solicitud) => solicitud.estado === "pendiente").map((solicitud) => (
+                <div key={solicitud.id} className="rounded-md border border-slate-300 bg-slate-100 p-4 text-slate-700">
+                  <p className="font-medium">Solicitud de modificación de mandato pendiente</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <DatoInstitucional titulo="Período actual" valor={String(solicitud.numero_periodo_actual)} />
+                    <DatoInstitucional titulo="Período solicitado" valor={String(solicitud.numero_periodo_solicitado)} />
+                    <DatoInstitucional titulo="Inicio solicitado" valor={formatearFechaAuditoria(solicitud.fecha_inicio_solicitada)} />
+                    <DatoInstitucional titulo="Vencimiento solicitado" valor={formatearFechaAuditoria(solicitud.fecha_fin_solicitada)} />
+                    <DatoInstitucional titulo="Solicitado por" valor={solicitud.usuario_nombre} />
+                    <DatoInstitucional titulo="Fecha de solicitud" valor={new Date(solicitud.solicitada_en).toLocaleString("es-AR")} />
+                  </div>
+                  <p className="mt-3 text-sm">Motivo: {solicitud.motivo}</p>
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      onClick={() => resolverSolicitudMandato.mutate({ decision: "aprobar", solicitudId: solicitud.id })}
+                      disabled={resolverSolicitudMandato.isPending}
+                    >
+                      Autorizar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => resolverSolicitudMandato.mutate({ decision: "rechazar", solicitudId: solicitud.id })}
+                      disabled={resolverSolicitudMandato.isPending}
+                    >
+                      Rechazar
+                    </Button>
+                  </div>
+                </div>
+              ))}
               <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
