@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, RotateCcw, Save, Upload, Users } from "lucide-react";
+import { AlertTriangle, FileText, RotateCcw, Save, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, useContexto } from "@/components/AppShell";
@@ -383,6 +383,9 @@ function ComisionPage() {
   const diasMandato = diasParaVencimientoMandato(comision.data?.fechaFinMandato ?? null);
   const ultimaModificacion = historialComision.data?.[0];
   const solicitudMandatoPendiente = solicitudesMandato.data?.find((solicitud) => solicitud.estado === "pendiente") ?? null;
+  const solicitudMandatoRechazada = [...(solicitudesMandato.data ?? [])]
+    .filter((solicitud) => solicitud.estado === "rechazada")
+    .sort((a, b) => new Date(b.resuelta_en ?? b.solicitada_en).getTime() - new Date(a.resuelta_en ?? a.solicitada_en).getTime())[0] ?? null;
   const nombreFicha = (cargo: CargoComision) => miembros[cargo]?.nombre || "No informado";
   const dniFicha = (cargo: CargoComision) => miembros[cargo]?.dni || "";
 
@@ -604,6 +607,28 @@ function ComisionPage() {
                       <DatoMandato titulo="Vencimiento solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_fin_solicitada)} />
                     </div>
                     <p className="mt-2 text-xs">Pendiente de autorización de Auditoría.</p>
+                  </div>
+                )}
+                {solicitudMandatoRechazada && (
+                  <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-900 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                      <div className="min-w-0">
+                        <p className="font-semibold">Solicitud de modificación de mandato rechazada</p>
+                        <p className="mt-1 text-sm">Auditoría rechazó la modificación solicitada.</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                          <DatoMandato titulo="Período solicitado" valor={String(solicitudMandatoRechazada.numero_periodo_solicitado)} />
+                          <DatoMandato titulo="Inicio solicitado" valor={formatearFecha(solicitudMandatoRechazada.fecha_inicio_solicitada)} />
+                          <DatoMandato titulo="Vencimiento solicitado" valor={formatearFecha(solicitudMandatoRechazada.fecha_fin_solicitada)} />
+                        </div>
+                        {solicitudMandatoRechazada.comentario_resolucion && (
+                          <p className="mt-3 text-sm"><span className="font-medium">Observación de Auditoría:</span> {solicitudMandatoRechazada.comentario_resolucion}</p>
+                        )}
+                        <p className="mt-2 text-xs text-red-700">
+                          Resuelto por {solicitudMandatoRechazada.resuelta_por_nombre || "Auditoría"} · {new Date(solicitudMandatoRechazada.resuelta_en ?? solicitudMandatoRechazada.solicitada_en).toLocaleString("es-AR")}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
