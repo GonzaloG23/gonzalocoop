@@ -17,6 +17,7 @@ import {
 } from "@/lib/data/concesion";
 import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
 import {
+  abrirResumenBancario,
   calcularProximaActualizacionResumenBancario,
   cargarResumenBancario,
   resumenBancarioVencido,
@@ -415,9 +416,20 @@ function AuditoriaLibroPage() {
                     </span>.
                   </p>
                 ) : null}
-                <p className="break-all text-xs text-muted-foreground">
-                  Archivo: {resumenBancarioData.nombreArchivo}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <p className="break-all text-xs text-muted-foreground">
+                    Archivo: {resumenBancarioData.nombreArchivo}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      abrirResumenBancario(id).catch((error: Error) => toast.error(error.message))
+                    }
+                  >
+                    <FileText className="mr-2 h-4 w-4" /> Ver PDF
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
