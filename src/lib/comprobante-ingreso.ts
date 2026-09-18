@@ -108,7 +108,7 @@ export function descargarComprobanteIngreso(datos: DatosComprobanteIngreso) {
 export function abrirComprobanteIngresoParaImprimir(datos: DatosComprobanteIngreso) {
   const { blob } = generarComprobanteIngreso(datos);
   const url = URL.createObjectURL(blob);
-  const ventana = window.open(url, "_blank", "noopener,noreferrer");
+  const ventana = window.open(url, "_blank");
 
   if (!ventana) {
     URL.revokeObjectURL(url);
