@@ -324,8 +324,11 @@ function ConcesionPage() {
               const archivo = archivos[documento.tipo];
               const cargando = subirDocumento.isPending && subirDocumento.variables?.tipo === documento.tipo;
               return (
-                <div key={documento.tipo} className="overflow-hidden rounded-sm border border-border bg-card">
-                  <div className="flex items-center gap-3 border-b border-border bg-secondary/50 px-4 py-3">
+                <div
+                  key={documento.tipo}
+                  className="overflow-hidden rounded-md border-2 border-primary/20 bg-card shadow-sm ring-1 ring-border/50"
+                >
+                  <div className="flex items-center gap-3 border-b-2 border-primary/10 bg-secondary/70 px-4 py-4">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
                       <FileText className="h-5 w-5" />
                     </span>
@@ -334,7 +337,7 @@ function ConcesionPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{documento.descripcion}</p>
                     </div>
                   </div>
-                  <div className="p-4">
+                  <div className="space-y-3 p-4">
                   <Label htmlFor={`concesion-${documento.tipo}`} className="mt-3 block">Archivo PDF</Label>
                   <Input
                     id={`concesion-${documento.tipo}`}
@@ -367,7 +370,7 @@ function ConcesionPage() {
                   )}
 
                   <Button
-                    className="mt-3 w-full"
+                    className="mt-4 w-full border border-primary/20 shadow-sm"
                     onClick={() => subirDocumento.mutate({ tipo: documento.tipo })}
                     disabled={!archivo || cargando}
                   >
