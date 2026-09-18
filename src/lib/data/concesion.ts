@@ -4,6 +4,7 @@ export type ConcesionKiosco = {
   apellido: string;
   nombre: string;
   canon: number | string;
+  fechaFirmaContrato: string;
 };
 
 export type DocumentoConcesion = {
@@ -13,7 +14,7 @@ export type DocumentoConcesion = {
   actualizadoEn: string;
 };
 
-export type TipoDocumentoConcesion = "contrato" | "buena_conducta";
+export type TipoDocumentoConcesion = "contrato" | "contrato_sellado" | "buena_conducta";
 
 const DEMO_CONCESION_KEY_PREFIX = "demo-concesion-kiosco-";
 const DEMO_DOCUMENTO_KEY_PREFIX = "demo-documento-concesion-";
@@ -64,12 +65,21 @@ export async function guardarConcesionKiosco(
   datos: ConcesionKiosco,
 ): Promise<ConcesionKiosco> {
   const canonTexto = String(datos.canon).trim().replace(",", ".");
+  const fechaFirmaContrato = String(datos.fechaFirmaContrato ?? "").trim();
+
   if (!canonTexto) throw new Error("Debés completar el canon.");
+  if (!fechaFirmaContrato) throw new Error("Debés completar la fecha de firma del contrato.");
+
+  const fechaValida =
+    /^\d{4}-\d{2}-\d{2}$/.test(fechaFirmaContrato) &&
+    !Number.isNaN(new Date(fechaFirmaContrato + "T00:00:00").getTime());
+  if (!fechaValida) throw new Error("La fecha de firma del contrato no es válida.");
 
   const normalizados: ConcesionKiosco = {
     apellido: datos.apellido.trim(),
     nombre: datos.nombre.trim(),
     canon: Number(canonTexto),
+    fechaFirmaContrato,
   };
 
   if (!normalizados.apellido) throw new Error("Debés completar el apellido del concesionario.");
