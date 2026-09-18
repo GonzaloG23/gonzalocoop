@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Save, Upload, Users } from "lucide-react";
+import { FileText, RotateCcw, Save, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, useContexto } from "@/components/AppShell";
@@ -11,7 +11,9 @@ import {
   cargarComisionDirectiva,
   guardarActaConstitucion,
   guardarComisionDirectiva,
+  calcularFinMandato,
   type CargoComision,
+  type DatosComisionDirectiva,
   type MiembroComision,
 } from "@/lib/data/comision";
 import {
@@ -67,6 +69,8 @@ function ComisionPage() {
     >,
   );
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [fechaInicioMandato, setFechaInicioMandato] = useState("");
+  const [editandoMandato, setEditandoMandato] = useState(false);
 
   const comision = useQuery({
     queryKey: ["comision-directiva", cooperadora?.id],
@@ -98,7 +102,7 @@ function ComisionPage() {
   useEffect(() => {
     setMiembros((actual) => {
       const siguiente = { ...actual };
-      for (const miembro of comision.data ?? []) {
+      for (const miembro of comision.data?.miembros ?? []) {
         siguiente[miembro.cargo] = {
           nombre: miembro.nombre ?? "",
           dni: miembro.dni ?? "",
@@ -117,7 +121,8 @@ function ComisionPage() {
 
   useEffect(() => {
     if (!historialComision.data) return;
-    setEditando(historialComision.data.length === 0);
+    setEditando(historialComision.data.length === 0 || !comision.data?.fechaInicioMandato);
+    if (comision.data?.fechaInicioMandato) setFechaInicioMandato(comision.data.fechaInicioMandato);
   }, [historialComision.data]);
 
   const guardar = useMutation({
@@ -135,18 +140,46 @@ function ComisionPage() {
           : miembros[cargo].dni.trim(),
       }));
 
-      const guardados = await guardarComisionDirectiva(cooperadora.id, datos);
-      await registrarModificacionComisionDirectiva(cooperadora.id, guardados, {
-        id: ctx.userId,
-        nombre: ctx.nombre || "Usuario",
-        email: ctx.email,
-      });
+      const esPrimerMandato =
+        !comision.data?.fechaInicioMandato ||
+        !comision.data?.fechaFinMandato ||
+        !comision.data?.numeroPeriodo;
+
+      if (esPrimerMandato && !fechaInicioMandato) {
+        throw new Error("Debés indicar la fecha de inicio del mandato.");
+      }
+
+      const inicio = esPrimerMandato ? fechaInicioMandato : comision.data!.fechaInicioMandato!;
+      const fin = esPrimerMandato ? calcularFinMandato(inicio) : comision.data!.fechaFinMandato!;
+      const periodo = esPrimerMandato ? 1 : comision.data!.numeroPeriodo;
+
+      const guardados = (await guardarComisionDirectiva(cooperadora.id, datos, {
+        fechaInicioMandato: inicio,
+        fechaFinMandato: fin,
+        numeroPeriodo: periodo,
+      })) as DatosComisionDirectiva;
+
+      await registrarModificacionComisionDirectiva(
+        cooperadora.id,
+        guardados.miembros,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Usuario",
+          email: ctx.email,
+        },
+        {
+          tipo: esPrimerMandato ? "mandato" : "modificacion",
+          fechaInicioMandato: inicio,
+          fechaFinMandato: fin,
+          numeroPeriodo: periodo,
+        },
+      );
       return guardados;
     },
     onSuccess: (guardados) => {
       setMiembros((actual) => {
         const siguiente = { ...actual };
-        for (const miembro of guardados) {
+        for (const miembro of guardados.miembros) {
           siguiente[miembro.cargo] = {
             nombre: miembro.nombre ?? "",
             dni: miembro.dni ?? "",
@@ -159,10 +192,78 @@ function ComisionPage() {
         };
         return siguiente;
       });
+      setFechaInicioMandato(guardados.fechaInicioMandato ?? fechaInicioMandato);
       setEditando(false);
       qc.invalidateQueries({ queryKey: ["comision-directiva", cooperadora?.id] });
       qc.invalidateQueries({ queryKey: ["historial-comision-directiva", cooperadora?.id] });
       toast.success("Datos de la comisión directiva guardados.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const registrarReeleccion = useMutation({
+    mutationFn: async () => {
+      if (!cooperadora || !ctx) throw new Error("No se pudo identificar la cooperadora o el usuario.");
+      if (!comision.data?.fechaInicioMandato || !comision.data.fechaFinMandato || !comision.data.numeroPeriodo) {
+        throw new Error("Primero registrá el mandato actual.");
+      }
+      if (comision.data.numeroPeriodo >= 2) {
+        throw new Error("No se permite una nueva reelección después de cumplir dos períodos.");
+      }
+      const historialMandatos = (historialComision.data ?? []).filter((registro) => registro.tipo === "mandato");
+      const usadosPorDni = new Map<string, number>();
+      for (const registro of historialMandatos) {
+        for (const miembro of registro.miembros) {
+          const dni = miembro.dni.trim();
+          if (dni) usadosPorDni.set(dni, (usadosPorDni.get(dni) ?? 0) + 1);
+        }
+      }
+
+      const bloqueados = comision.data.miembros.filter((miembro) => {
+        const dni = miembro.dni.trim();
+        return dni && (usadosPorDni.get(dni) ?? 0) >= 2;
+      });
+
+      if (bloqueados.length > 0) {
+        throw new Error(`No se puede registrar la reelección porque ${bloqueados.map((m) => m.nombre).join(", ")} ya cumplió dos períodos de mandato.`);
+      }
+
+      if (comision.data.miembros.some((miembro) => !miembro.dni.trim())) {
+        throw new Error("Para registrar una reelección, todos los integrantes deben tener DNI informado.");
+      }
+
+      const inicio = comision.data.fechaFinMandato;
+      const fin = calcularFinMandato(inicio);
+      const periodo = comision.data.numeroPeriodo + 1;
+      const guardados = (await guardarComisionDirectiva(cooperadora.id, comision.data.miembros, {
+        fechaInicioMandato: inicio,
+        fechaFinMandato: fin,
+        numeroPeriodo: periodo,
+      })) as DatosComisionDirectiva;
+
+      await registrarModificacionComisionDirectiva(
+        cooperadora.id,
+        guardados.miembros,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Usuario",
+          email: ctx.email,
+        },
+        {
+          tipo: "mandato",
+          fechaInicioMandato: inicio,
+          fechaFinMandato: fin,
+          numeroPeriodo: periodo,
+        },
+      );
+      return guardados;
+    },
+    onSuccess: (guardados) => {
+      setFechaInicioMandato(guardados.fechaInicioMandato ?? "");
+      setEditandoMandato(false);
+      qc.invalidateQueries({ queryKey: ["comision-directiva", cooperadora?.id] });
+      qc.invalidateQueries({ queryKey: ["historial-comision-directiva", cooperadora?.id] });
+      toast.success("Reelección registrada por un nuevo período de 2 años.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
