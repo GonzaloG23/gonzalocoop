@@ -116,6 +116,35 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
         }
       }
 
+      const recibosGastosVarios = movimientos.filter(
+        (m) => m.tipo === "egreso" && m.tipo_factura === "recibo_gastos_varios",
+      );
+      const topeReciboGastosVarios = num(parametros.tope_recibo_gastos_varios);
+
+      const alertasRecibos: Alerta[] = [];
+
+      if (recibosGastosVarios.length > 25) {
+        const ultimoRecibo = recibosGastosVarios[recibosGastosVarios.length - 1];
+        const mesUltimoRecibo = Number(ultimoRecibo?.fecha.slice(5, 7)) || mesTope;
+
+        alertasRecibos.push({
+          mes: mesUltimoRecibo,
+          texto: `Se registraron ${recibosGastosVarios.length} recibos de gastos varios en el ejercicio ${coop.ejercicio}; supera el máximo anual de 25.`,
+        });
+      }
+
+      if (topeReciboGastosVarios > 0) {
+        for (const recibo of recibosGastosVarios) {
+          const monto = num(recibo.monto);
+          if (monto <= topeReciboGastosVarios) continue;
+
+          alertasRecibos.push({
+            mes: Number(recibo.fecha.slice(5, 7)) || mesTope,
+            texto: `Recibo de gastos varios del ${recibo.fecha}: ${money(monto)} supera el monto autorizado de ${money(topeReciboGastosVarios)}${recibo.comprobante ? ` (comprobante ${recibo.comprobante})` : ""}.`,
+          });
+        }
+      }
+
       return {
         coop,
         saldoActual,
@@ -127,6 +156,12 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
             r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
           ),
           ...alertasCuenta,
+          ...alertasRecibos.map((a) => ({
+            ...a,
+            texto: a.texto.startsWith("Se registraron")
+              ? a.texto
+              : `${nombreMes(a.mes)}: ${a.texto}`,
+          })),
         ],
       };
     }),
@@ -180,28 +215,37 @@ function ParametrosAuditoria() {
   const qc = useQueryClient();
   const parametros = useQuery({ queryKey: ["parametros"], queryFn: cargarParametros, staleTime: 30_000 });
   const [saldoMinimo, setSaldoMinimo] = useState("");
+  const [topeReciboGastosVarios, setTopeReciboGastosVarios] = useState("");
 
   useEffect(() => {
-    if (parametros.data) setSaldoMinimo(String(parametros.data.saldo_minimo_cuenta_bancaria ?? 0));
+    if (parametros.data) {
+      setSaldoMinimo(String(parametros.data.saldo_minimo_cuenta_bancaria ?? 0));
+      setTopeReciboGastosVarios(String(parametros.data.tope_recibo_gastos_varios ?? 0));
+    }
   }, [parametros.data]);
 
   const guardar = useMutation({
     mutationFn: async () => {
       if (!parametros.data) throw new Error("No se pudieron cargar los parámetros de control.");
       const valor = num(saldoMinimo);
+      const topeRecibo = num(topeReciboGastosVarios);
       if (!Number.isFinite(valor) || valor < 0) {
         throw new Error("El saldo mínimo debe ser un importe válido mayor o igual a cero.");
+      }
+      if (!Number.isFinite(topeRecibo) || topeRecibo < 0) {
+        throw new Error("El monto autorizado por recibo debe ser un importe válido mayor o igual a cero.");
       }
       await guardarParametros({
         id: parametros.data.id,
         dia_limite_cierre: Number(parametros.data.dia_limite_cierre),
         tope_egreso: num(parametros.data.tope_egreso),
         saldo_minimo_cuenta_bancaria: valor,
+        tope_recibo_gastos_varios: topeRecibo,
       });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["parametros"] });
-      toast.success("Parámetro de cuenta bancaria actualizado.");
+      toast.success("Parámetros de control actualizados.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -227,8 +271,29 @@ function ParametrosAuditoria() {
             Cuando el saldo actual del Libro sea igual o superior a este monto y la escuela no tenga cuenta, se genera una alerta para Auditoría. Con 0, este criterio queda desactivado.
           </p>
         </div>
+
+        <div className="space-y-2">
+          <label htmlFor="tope-recibo-gastos-varios" className="text-sm font-medium">
+            Monto autorizado por cada Recibo de Gastos Varios
+          </label>
+          <Input
+            id="tope-recibo-gastos-varios"
+            inputMode="decimal"
+            value={topeReciboGastosVarios}
+            onChange={(e) => setTopeReciboGastosVarios(e.target.value)}
+            placeholder="Importe autorizado"
+          />
+          <p className="text-xs text-muted-foreground">
+            En 0, este control queda desactivado. Auditoría recibe una alerta por cada recibo que supere el importe configurado.
+          </p>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          También se genera una alerta cuando una Cooperadora registra más de 25 Recibos de Gastos Varios durante el ejercicio anual.
+        </p>
+
         <Button onClick={() => guardar.mutate()} disabled={guardar.isPending || parametros.isLoading}>
-          {guardar.isPending ? "Guardando…" : "Guardar parámetro"}
+          {guardar.isPending ? "Guardando…" : "Guardar parámetros"}
         </Button>
       </CardContent>
     </Card>
