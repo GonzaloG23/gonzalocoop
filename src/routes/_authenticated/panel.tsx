@@ -601,7 +601,6 @@ function PanelCooperadora() {
             </Button>
           ) : null}
         </div>
-        </div>
 
         </CardContent>
       </Card>
