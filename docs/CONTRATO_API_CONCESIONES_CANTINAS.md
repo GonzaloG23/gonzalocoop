@@ -181,3 +181,55 @@ El backend debe validar que:
 - la operación quede registrada con usuario y fecha/hora.
 
 El historial no se elimina cuando el documento vigente se reemplaza.
+
+
+## Cuenta bancaria
+
+### GET `/api/cooperadoras/:id/cuenta-bancaria`
+
+Obtiene el saldo registrado y los titulares de la cuenta bancaria de la cooperadora.
+
+Respuesta:
+
+```json
+{
+  "saldoBancario": 1250000,
+  "asesorDirectorNombre": "María Gómez",
+  "asesorDirectorDni": "20123456",
+  "presidenteNombre": "Juan Pérez",
+  "presidenteDni": "30123456",
+  "tesoreroNombre": "Ana López",
+  "tesoreroDni": "32123456"
+}
+```
+
+### PUT `/api/cooperadoras/:id/cuenta-bancaria`
+
+Crea o actualiza los datos de la cuenta bancaria.
+
+Body:
+
+```json
+{
+  "datos": {
+    "saldoBancario": 1250000,
+    "asesorDirectorNombre": "María Gómez",
+    "asesorDirectorDni": "20123456",
+    "presidenteNombre": "Juan Pérez",
+    "presidenteDni": "30123456",
+    "tesoreroNombre": "Ana López",
+    "tesoreroDni": "32123456"
+  }
+}
+```
+
+Validaciones obligatorias:
+
+- saldo bancario mayor o igual a cero;
+- nombre y DNI del Asesor/Director;
+- nombre y DNI del Presidente;
+- nombre y DNI del Tesorero;
+- todos los DNI deben tener exactamente 8 dígitos;
+- usuario autenticado y autorizado sobre la cooperadora.
+
+La comparación con la Comisión Directiva se realiza en la vista de Auditoría: el DNI del Presidente de la cuenta debe coincidir con el DNI del Presidente registrado en la Comisión Directiva, y lo mismo para el Tesorero. Si no coinciden, Auditoría debe mostrar una alerta.
