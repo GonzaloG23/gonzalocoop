@@ -5,7 +5,7 @@ export type ComprobanteNumerable = {
 };
 
 export function formatearNumeroComprobanteIngreso(secuencia: number) {
-  if (!Number.isInteger(secuencia) || secuencia < 0 || secuencia > 999999999) {
+  if (!Number.isInteger(secuencia) || secuencia < 1 || secuencia > 999999999) {
     throw new Error("Se alcanzó el límite de numeración de comprobantes.");
   }
 
@@ -15,7 +15,7 @@ export function formatearNumeroComprobanteIngreso(secuencia: number) {
 export function siguienteNumeroComprobanteIngreso(
   movimientos: ComprobanteNumerable[],
 ) {
-  let mayor = -1;
+  let mayor = 0;
 
   for (const movimiento of movimientos) {
     const comprobante = movimiento.comprobante?.trim() ?? "";
