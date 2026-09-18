@@ -70,7 +70,6 @@ function ComisionPage() {
   );
   const [archivo, setArchivo] = useState<File | null>(null);
   const [fechaInicioMandato, setFechaInicioMandato] = useState("");
-  const [editandoMandato, setEditandoMandato] = useState(false);
 
   const comision = useQuery({
     queryKey: ["comision-directiva", cooperadora?.id],
@@ -123,7 +122,7 @@ function ComisionPage() {
     if (!historialComision.data) return;
     setEditando(historialComision.data.length === 0 || !comision.data?.fechaInicioMandato);
     if (comision.data?.fechaInicioMandato) setFechaInicioMandato(comision.data.fechaInicioMandato);
-  }, [historialComision.data]);
+  }, [historialComision.data, comision.data?.fechaInicioMandato]);
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -347,6 +346,31 @@ function ComisionPage() {
           <div className="border-t border-border p-6">
             {editando ? (
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-3 rounded-md border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
+                  <p className="font-medium">Mandato de la Comisión Directiva</p>
+                  {!comision.data?.fechaInicioMandato || !comision.data?.numeroPeriodo ? (
+                    <>
+                      <Label htmlFor="fecha-inicio-mandato">Fecha de inicio del mandato</Label>
+                      <Input
+                        id="fecha-inicio-mandato"
+                        type="date"
+                        value={fechaInicioMandato}
+                        onChange={(e) => setFechaInicioMandato(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        La duración se calcula automáticamente por 2 años.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <DatoMandato titulo="Período" valor={String(comision.data.numeroPeriodo)} />
+                      <DatoMandato titulo="Inicio" valor={formatearFecha(comision.data.fechaInicioMandato)} />
+                      <DatoMandato titulo="Vencimiento" valor={formatearFecha(comision.data.fechaFinMandato)} />
+                    </div>
+                  )}
+                </div>
+
                 {CARGOS.map(({ cargo, etiqueta }, index) => {
                   const asesor = cargo === "asesor_director";
                   const nombreCampo = asesor ? directorNombre : miembros[cargo].nombre;
@@ -432,7 +456,19 @@ function ComisionPage() {
                       ? `Última modificación: ${ultimaModificacion.usuario_nombre}${ultimaModificacion.usuario_email ? ` · ${ultimaModificacion.usuario_email}` : ""} · ${new Date(ultimaModificacion.modificado_en).toLocaleString("es-AR")}`
                       : "Información registrada"}
                   </p>
-                  <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
+                    {comision.data?.numeroPeriodo === 1 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => registrarReeleccion.mutate()}
+                        disabled={registrarReeleccion.isPending}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        {registrarReeleccion.isPending ? "Registrando…" : "Registrar reelección"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -509,10 +545,22 @@ function ComisionPage() {
               <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
                 <summary className="cursor-pointer list-none text-sm">
                   <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="font-medium">{registro.usuario_nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
+                    <span className="font-medium">
+                      {registro.tipo === "mandato"
+                        ? `Período ${registro.numero_periodo} · `
+                        : ""}
+                      {registro.usuario_nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}
+                    </span>
                     <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
                   </span>
                 </summary>
+                {registro.tipo === "mandato" && (
+                  <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-3">
+                    <DatoMandato titulo="Inicio del período" valor={formatearFecha(registro.fecha_inicio_mandato)} />
+                    <DatoMandato titulo="Fin del período" valor={formatearFecha(registro.fecha_fin_mandato)} />
+                    <DatoMandato titulo="Tipo" valor={registro.numero_periodo === 2 ? "Reelección" : "Primer período"} />
+                  </div>
+                )}
                 <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs sm:grid-cols-2">
                   {registro.miembros.map((miembro) => (
                     <div key={miembro.cargo} className="rounded-sm bg-secondary/40 px-2 py-1.5">
@@ -527,6 +575,20 @@ function ComisionPage() {
         </details>
       )}
     </AppShell>
+  );
+}
+
+function formatearFecha(fecha: string | null) {
+  if (!fecha) return "No informada";
+  return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-AR");
+}
+
+function DatoMandato({ titulo, valor }: { titulo: string; valor: string }) {
+  return (
+    <div className="rounded-sm border border-border bg-card px-3 py-2">
+      <p className="text-xs text-muted-foreground">{titulo}</p>
+      <p className="mt-1 text-sm font-medium">{valor}</p>
+    </div>
   );
 }
 
