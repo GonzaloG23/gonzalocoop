@@ -1,5 +1,6 @@
 import { usingMinisterioApi, ministerioRequest } from "./index";
 import { supabaseData, supabaseConfigured } from "./supabase";
+import { siguienteNumeroComprobanteIngreso } from "../numeracion-comprobantes";
 
 const supabase = supabaseData.client;
 const DEMO_COOPERADORA_ID = "demo-cooperadora-001";
@@ -48,11 +49,17 @@ export type NuevoMovimiento = {
   ajusta_movimiento_id: string | null;
   motivo_ajuste: string | null;
   creado_por: string;
+  generar_comprobante?: boolean;
+};
+
+type MovimientoRegistrado = NuevoMovimiento & {
+  id?: string;
+  creado_en?: string;
 };
 
 export async function insertarMovimiento(input: NuevoMovimiento) {
   if (usingMinisterioApi()) {
-    return ministerioRequest<NuevoMovimiento & { id?: string; creado_en?: string }>(
+    return ministerioRequest<MovimientoRegistrado>(
       "/api/movimientos",
       {
         method: "POST",
@@ -70,7 +77,6 @@ export async function insertarMovimiento(input: NuevoMovimiento) {
       throw new Error("El período está cerrado y no admite nuevos movimientos.");
     }
 
-    // El movimiento debe tener una fecha correspondiente al mes seleccionado.
     const match = input.periodo_id.match(/^demo-periodo-(\d+)$/);
     if (match) {
       const mesPeriodo = Number(match[1]);
@@ -82,18 +88,47 @@ export async function insertarMovimiento(input: NuevoMovimiento) {
       }
     }
 
-    const movimiento = {
+    const actuales = JSON.parse(
+      localStorage.getItem(DEMO_MOVIMIENTOS_KEY) ?? "[]",
+    ) as MovimientoRegistrado[];
+
+    const comprobante = input.generar_comprobante
+      ? siguienteNumeroComprobanteIngreso(actuales)
+      : input.comprobante;
+
+    const movimiento: MovimientoRegistrado = {
       ...input,
+      comprobante,
       id: `demo-movimiento-${Date.now()}`,
       creado_en: new Date().toISOString(),
     };
 
-    const actuales = JSON.parse(localStorage.getItem(DEMO_MOVIMIENTOS_KEY) ?? "[]") as unknown[];
     actuales.push(movimiento);
     localStorage.setItem(DEMO_MOVIMIENTOS_KEY, JSON.stringify(actuales));
     return movimiento;
   }
 
-  const { error } = await supabase.from("movimientos").insert(input);
+  const { generar_comprobante, ...datos } = input;
+  let comprobante = datos.comprobante;
+
+  if (generar_comprobante) {
+    const { data: existentes, error: consultaError } = await supabase
+      .from("movimientos")
+      .select("comprobante")
+      .eq("cooperadora_id", input.cooperadora_id);
+
+    if (consultaError) throw consultaError;
+    comprobante = siguienteNumeroComprobanteIngreso(
+      (existentes ?? []) as { comprobante: string | null }[],
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("movimientos")
+    .insert({ ...datos, comprobante })
+    .select("*")
+    .single();
+
   if (error) throw error;
+  return data as MovimientoRegistrado;
 }
