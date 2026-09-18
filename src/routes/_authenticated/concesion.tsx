@@ -533,7 +533,7 @@ function ConcesionPage() {
             </div>
           </div>
         </details>
-      )}
+      ) : null}
     </AppShell>
   );
 }
