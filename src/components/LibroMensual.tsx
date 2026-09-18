@@ -464,16 +464,22 @@ function FormularioMovimiento({
       rubroNormalizado.replace(/\s+/g, "") === "ayudaescolar/cooperadora" ||
       rubroNormalizado.startsWith("certificados voluntarios:") ||
       rubroNormalizado === "venta de pliegos");
+  const esVentaPliegos =
+    generaComprobanteIngreso && rubroNormalizado === "venta de pliegos";
   const requiereDatosAlumno =
-    generaComprobanteIngreso && rubroNormalizado !== "venta de pliegos";
-  const faltanDatosAlumno =
-    requiereDatosAlumno &&
-    (!alumnoNombre.trim() || alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8);
+    generaComprobanteIngreso && !esVentaPliegos;
+  const requiereDatosOferente = esVentaPliegos;
+  const faltanDatosPersona =
+    (requiereDatosAlumno &&
+      (!alumnoNombre.trim() ||
+        alumnoDniDigitos.length < 7 ||
+        alumnoDniDigitos.length > 8)) ||
+    (requiereDatosOferente && !alumnoNombre.trim());
   const faltaConcepto = !generaComprobanteIngreso && !concepto.trim();
 
   const guardar = useMutation({
     mutationFn: async () => {
-      if (faltanDatosAlumno) {
+      if (faltanDatosPersona) {
         throw new Error("Completá nombre y DNI del alumno para generar el comprobante.");
       }
 
@@ -524,6 +530,7 @@ function FormularioMovimiento({
         alumnoNombre: alumnoNombre.trim(),
         alumnoDni: alumnoDniDigitos,
         alumnoCurso: alumnoCurso.trim(),
+        personaTipo: esVentaPliegos ? "oferente" : "alumno",
       };
 
       setConcepto("");
@@ -573,7 +580,7 @@ function FormularioMovimiento({
     excedeSaldo ||
     faltanDatosProveedor ||
     fechaFueraDelMes ||
-    faltanDatosAlumno ||
+    faltanDatosPersona ||
     faltaConcepto;
 
 
@@ -606,7 +613,9 @@ function FormularioMovimiento({
                 </div>
                 {comprobanteGenerado.alumnoNombre && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Alumno/a</p>
+                    <p className="text-xs text-muted-foreground">
+                      {comprobanteGenerado.personaTipo === "oferente" ? "Oferente" : "Alumno/a"}
+                    </p>
                     <p className="text-sm font-medium">{comprobanteGenerado.alumnoNombre}</p>
                   </div>
                 )}
@@ -783,49 +792,63 @@ function FormularioMovimiento({
             <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
               <div>
                 <p className="text-sm font-medium">
-                  {requiereDatosAlumno ? "Datos del alumno para el comprobante" : "Comprobante de ingreso"}
+                  {requiereDatosOferente
+                    ? "Datos del oferente para el comprobante"
+                    : requiereDatosAlumno
+                      ? "Datos del alumno para el comprobante"
+                      : "Comprobante de ingreso"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Se generará un comprobante al registrar este ingreso.
                 </p>
               </div>
-              {requiereDatosAlumno && (
+
+              {(requiereDatosAlumno || requiereDatosOferente) && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="alumno-nombre">Nombre y apellido del alumno *</Label>
+                    <Label htmlFor="persona-nombre">
+                      {requiereDatosOferente
+                        ? "Nombre y apellido del oferente *"
+                        : "Nombre y apellido del alumno *"}
+                    </Label>
                     <Input
-                      id="alumno-nombre"
+                      id="persona-nombre"
                       required
                       value={alumnoNombre}
                       onChange={(e) => setAlumnoNombre(e.target.value)}
                       placeholder="Nombre y apellido"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="alumno-dni">DNI del alumno *</Label>
-                    <Input
-                      id="alumno-dni"
-                      required
-                      inputMode="numeric"
-                      maxLength={8}
-                      value={alumnoDni}
-                      onChange={(e) => setAlumnoDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                      placeholder="Número de DNI"
-                    />
-                    {alumnoDni.length > 0 &&
-                      (alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8) && (
-                        <p className="text-xs text-destructive">El DNI debe tener 7 u 8 dígitos.</p>
-                      )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="alumno-curso">Curso / grado</Label>
-                    <Input
-                      id="alumno-curso"
-                      value={alumnoCurso}
-                      onChange={(e) => setAlumnoCurso(e.target.value)}
-                      placeholder="Ej. 5° grado"
-                    />
-                  </div>
+
+                  {requiereDatosAlumno && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="alumno-dni">DNI del alumno *</Label>
+                        <Input
+                          id="alumno-dni"
+                          required
+                          inputMode="numeric"
+                          maxLength={8}
+                          value={alumnoDni}
+                          onChange={(e) => setAlumnoDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                          placeholder="Número de DNI"
+                        />
+                        {alumnoDni.length > 0 &&
+                          (alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8) && (
+                            <p className="text-xs text-destructive">El DNI debe tener 7 u 8 dígitos.</p>
+                          )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="alumno-curso">Curso / grado</Label>
+                        <Input
+                          id="alumno-curso"
+                          value={alumnoCurso}
+                          onChange={(e) => setAlumnoCurso(e.target.value)}
+                          placeholder="Ej. 5° grado"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
