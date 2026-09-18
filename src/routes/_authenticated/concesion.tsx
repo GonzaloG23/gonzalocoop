@@ -127,30 +127,21 @@ function ConcesionPage() {
     mutationFn: async () => {
       if (!cooperadora) throw new Error("No hay una cooperadora registrada.");
       if (!ctx) throw new Error("No se pudo identificar al usuario que realiza la modificación.");
-      const canonAnterior = concesion.data ? num(concesion.data.canon) : null;
       const guardados = await guardarConcesionKiosco(cooperadora.id, datos);
       await registrarModificacionConcesionKiosco(cooperadora.id, guardados, {
         id: ctx.userId,
         nombre: ctx.nombre || "Usuario",
         email: ctx.email,
       });
-      return { guardados, canonAnterior };
+      return guardados;
     },
-    onSuccess: ({ guardados, canonAnterior }) => {
+    onSuccess: (guardados) => {
       setDatos({ ...guardados, canon: String(guardados.canon) });
       setEditando(false);
       qc.invalidateQueries({ queryKey: ["concesion-kiosco", cooperadora?.id] });
       qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", cooperadora?.id] });
 
-      const canonNuevo = num(guardados.canon);
-      if (canonAnterior !== null && canonNuevo < canonAnterior) {
-        toast.warning("Alerta: el nuevo canon es menor que el canon anterior.", {
-          description: "Antes: " + money(canonAnterior) + " · Ahora: " + money(canonNuevo),
-          duration: 7000,
-        });
-      } else {
-        toast.success("Datos de la concesión guardados.");
-      }
+      toast.success("Datos de la concesión guardados.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -391,15 +382,6 @@ function ConcesionPage() {
             </span>
           </summary>
           <div className="space-y-4 border-t border-border p-4">
-            {cambiosCanon.some((cambio) => cambio.esBaja) && (
-              <div className="rounded-sm border border-destructive/50 bg-destructive/5 p-4">
-                <p className="text-sm font-medium text-destructive">Alerta: reducción del canon</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Se detectó al menos una modificación en la que el nuevo canon es menor al valor anterior.
-                </p>
-              </div>
-            )}
-
             {cambiosCanon.length > 0 && (
               <div className="rounded-sm border border-border">
                 <div className="border-b border-border bg-secondary/40 px-3 py-3">
@@ -421,19 +403,11 @@ function ConcesionPage() {
                     </thead>
                     <tbody>
                       {cambiosCanon.map((cambio) => (
-                        <tr
-                          key={cambio.id}
-                          className={cambio.esBaja ? "border-b border-border last:border-0 bg-destructive/5" : "border-b border-border last:border-0"}
-                        >
+                        <tr key={cambio.id} className="border-b border-border last:border-0">
                           <td className="px-3 py-2 align-top text-xs text-muted-foreground">
                             {new Date(cambio.modificadoEn).toLocaleString("es-AR")}
                           </td>
-                          <td className="px-3 py-2 align-top font-medium">
-                            <span>{cambio.etiqueta}</span>
-                            {cambio.esBaja ? (
-                              <span className="mt-1 block text-xs font-normal text-destructive">⚠ Canon reducido</span>
-                            ) : null}
-                          </td>
+                          <td className="px-3 py-2 align-top font-medium">{cambio.etiqueta}</td>
                           <td className="px-3 py-2 align-top">
                             {cambio.valorAnterior === null ? "—" : money(cambio.valorAnterior)}
                           </td>
@@ -495,7 +469,6 @@ function construirHistorialCanon(
     etiqueta: string;
     valorAnterior: number | null;
     nuevoValor: number;
-    esBaja: boolean;
     usuarioNombre: string;
     usuarioEmail: string | null;
     modificadoEn: string;
@@ -513,7 +486,6 @@ function construirHistorialCanon(
       etiqueta: valorAnterior === null ? "Valor inicial" : "Cambio de canon",
       valorAnterior,
       nuevoValor,
-      esBaja: valorAnterior !== null && nuevoValor < valorAnterior,
       usuarioNombre: registro.usuario_nombre,
       usuarioEmail: registro.usuario_email,
       modificadoEn: registro.modificado_en,
