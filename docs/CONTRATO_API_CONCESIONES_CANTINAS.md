@@ -243,3 +243,16 @@ El importe informado en la cuenta bancaria representa fondos de la Cooperadora d
 - Depositar fondos en la cuenta bancaria no genera un nuevo ingreso.
 - Retirar fondos de la cuenta bancaria para utilizarlos no genera por sí mismo un nuevo egreso; el egreso se registra cuando corresponde al concepto real de la operación.
 - El importe de fondos resguardados es un dato informativo de custodia y puede diferir del saldo contable del Libro Mensual.
+
+
+## Efectivo en mano
+
+El panel puede calcular un importe informativo de **efectivo en mano** cuando existe una diferencia entre el saldo actual del Libro Mensual y los fondos resguardados en la cuenta bancaria.
+
+La fórmula es:
+
+`efectivoEnMano = saldoActualLibro - fondosResguardados`
+
+Este importe no se carga manualmente y no genera por sí mismo un movimiento contable. Representa el dinero que, según la información declarada, permanece en efectivo fuera de la cuenta bancaria.
+
+El panel puede ocultar el recuadro cuando la diferencia sea cero.
