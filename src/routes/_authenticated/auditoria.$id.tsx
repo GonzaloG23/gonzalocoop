@@ -188,6 +188,10 @@ function AuditoriaLibroPage() {
   const historialConcesionData = historialConcesion.data ?? [];
   const cambiosCanonAuditoria = construirHistorialCanonAuditoria(historialConcesionData);
   const hayReduccionCanon = cambiosCanonAuditoria.some((cambio) => cambio.esBaja);
+  const faltanDocumentosConcesion = [
+    !buenaConducta.data ? "Certificado de buena conducta" : null,
+    !contratoSellado.data ? "Sellado del contrato" : null,
+  ].filter((valor): valor is string => Boolean(valor));
 
   const iniciarEdicionIdentificacion = () => {
     setNombre(c.nombre ?? "");
@@ -331,6 +335,27 @@ function AuditoriaLibroPage() {
             ))}
           </div>
         </details>
+      )}
+
+      {faltanDocumentosConcesion.length > 0 && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
+              <span>⚠</span> Documentación de concesión incompleta
+            </CardTitle>
+            <CardDescription>
+              La auditoría detectó que falta documentación obligatoria de la concesión.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm font-medium">Documentación faltante:</p>
+            <div className="mt-2 space-y-1">
+              {faltanDocumentosConcesion.map((documento) => (
+                <p key={documento} className="text-sm text-destructive">• {documento}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Card className="mb-6">
