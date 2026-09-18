@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { authData } from "@/lib/data/auth";
 import { cerrarPeriodo } from "@/lib/data/operaciones";
 import { registrarMovimiento } from "@/lib/data/movimientos";
-import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
 import {
   asegurarPeriodo,
   calcularEjercicio,
@@ -97,11 +96,6 @@ export function LibroMensual({
     queryKey: ["parametros"],
     queryFn: cargarParametros,
     staleTime: 30_000,
-  });
-  const cuentaBancaria = useQuery({
-    queryKey: ["cuenta-bancaria", cooperadora.id],
-    queryFn: () => cargarCuentaBancaria(cooperadora.id),
-    enabled: !!cooperadora.id,
   });
 
   const resumen = useMemo(() => {
@@ -213,24 +207,6 @@ export function LibroMensual({
         <Indicador titulo="Ingresos del mes" valor={mesActual?.ingresos ?? 0} tono="ingreso" />
         <Indicador titulo="Egresos del mes" valor={mesActual?.egresos ?? 0} tono="egreso" />
         <Indicador titulo="Saldo final" valor={mesActual?.saldoFinal ?? 0} destacado />
-      </div>
-
-      <div className="rounded-md border-2 border-primary/30 bg-primary/5 px-4 py-3 shadow-sm">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Fondos resguardados</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Dinero de la Cooperadora depositado en la cuenta bancaria como medida de resguardo. No constituye un ingreso ni un egreso adicional del Libro.
-            </p>
-          </div>
-          <p className="font-serif text-2xl font-bold tracking-tight text-primary">
-            {cuentaBancaria.isLoading
-              ? "Cargando…"
-              : cuentaBancaria.data
-                ? money(num(cuentaBancaria.data.saldoBancario))
-                : "No informado"}
-          </p>
-        </div>
       </div>
 
       {cerrado && (
