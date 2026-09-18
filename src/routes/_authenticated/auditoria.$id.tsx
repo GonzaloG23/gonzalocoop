@@ -362,9 +362,9 @@ function AuditoriaLibroPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-serif text-lg">
-            <Wallet className="h-5 w-5 text-primary" /> Cuenta bancaria
+            <Wallet className="h-5 w-5 text-primary" /> Fondos resguardados en cuenta bancaria
           </CardTitle>
-          <CardDescription>Saldo depositado y titulares registrados en la cuenta de la cooperadora.</CardDescription>
+          <CardDescription>Fondos resguardados y titulares registrados en la cuenta de la cooperadora.</CardDescription>
         </CardHeader>
         <CardContent>
           {cuentaBancaria.isLoading ? (
@@ -373,7 +373,7 @@ function AuditoriaLibroPage() {
             <p className="text-sm text-muted-foreground">No hay datos de cuenta bancaria registrados.</p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              <DatoInstitucional titulo="Dinero depositado" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
+              <DatoInstitucional titulo="Fondos resguardados" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
               <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
               <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
               <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
