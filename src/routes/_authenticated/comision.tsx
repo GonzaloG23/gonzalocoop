@@ -21,6 +21,10 @@ import {
   cargarHistorialComisionDirectiva,
   registrarModificacionComisionDirectiva,
 } from "@/lib/data/comision-historial";
+import {
+  cargarSolicitudesCambioMandato,
+  crearSolicitudCambioMandato,
+} from "@/lib/data/comision-mandatos-solicitudes";
 import { cargarDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +76,10 @@ function ComisionPage() {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [fechaInicioMandato, setFechaInicioMandato] = useState("");
   const [modoNuevaConformacion, setModoNuevaConformacion] = useState(false);
+  const [editandoMandato, setEditandoMandato] = useState(false);
+  const [periodoSolicitado, setPeriodoSolicitado] = useState("1");
+  const [fechaInicioSolicitada, setFechaInicioSolicitada] = useState("");
+  const [motivoSolicitud, setMotivoSolicitud] = useState("");
 
   const comision = useQuery({
     queryKey: ["comision-directiva", cooperadora?.id],
@@ -82,6 +90,12 @@ function ComisionPage() {
   const historialComision = useQuery({
     queryKey: ["historial-comision-directiva", cooperadora?.id],
     queryFn: () => cargarHistorialComisionDirectiva(cooperadora!.id),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
+  const solicitudesMandato = useQuery({
+    queryKey: ["solicitudes-mandato", cooperadora?.id],
+    queryFn: () => cargarSolicitudesCambioMandato(cooperadora!.id),
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
@@ -125,6 +139,28 @@ function ComisionPage() {
     setEditando(historialComision.data.length === 0 || !comision.data?.fechaInicioMandato);
     if (comision.data?.fechaInicioMandato) setFechaInicioMandato(comision.data.fechaInicioMandato);
   }, [historialComision.data, comision.data?.fechaInicioMandato]);
+
+  const solicitarCambioMandato = useMutation({
+    mutationFn: async () => {
+      if (!cooperadora || !ctx) throw new Error("No se pudo identificar la cooperadora o el usuario.");
+      return crearSolicitudCambioMandato(cooperadora.id, {
+        id: ctx.userId,
+        nombre: ctx.nombre || "Usuario",
+        email: ctx.email,
+      }, {
+        numeroPeriodoSolicitado: Number(periodoSolicitado),
+        fechaInicioSolicitada,
+        motivo: motivoSolicitud,
+      });
+    },
+    onSuccess: () => {
+      setEditandoMandato(false);
+      setMotivoSolicitud("");
+      qc.invalidateQueries({ queryKey: ["solicitudes-mandato", cooperadora?.id] });
+      toast.success("La modificación quedó pendiente de autorización de Auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -346,6 +382,7 @@ function ComisionPage() {
 
   const diasMandato = diasParaVencimientoMandato(comision.data?.fechaFinMandato ?? null);
   const ultimaModificacion = historialComision.data?.[0];
+  const solicitudMandatoPendiente = solicitudesMandato.data?.find((solicitud) => solicitud.estado === "pendiente") ?? null;
   const nombreFicha = (cargo: CargoComision) => miembros[cargo]?.nombre || "No informado";
   const dniFicha = (cargo: CargoComision) => miembros[cargo]?.dni || "";
 
@@ -379,27 +416,73 @@ function ComisionPage() {
             {editando ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-3 rounded-md border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
-                  <p className="font-medium">Mandato de la Comisión Directiva</p>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium">Mandato de la Comisión Directiva</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Los datos vigentes se muestran arriba. Toda modificación requiere autorización de Auditoría.</p>
+                    </div>
+                    {!modoNuevaConformacion && comision.data?.fechaInicioMandato && !solicitudMandatoPendiente && !editandoMandato && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => {
+                        setPeriodoSolicitado(String(comision.data?.numeroPeriodo ?? 1));
+                        setFechaInicioSolicitada(comision.data?.fechaInicioMandato ?? "");
+                        setMotivoSolicitud("");
+                        setEditandoMandato(true);
+                      }}>Modificar período y fecha</Button>
+                    )}
+                  </div>
+
                   {!comision.data?.fechaInicioMandato || !comision.data?.numeroPeriodo || modoNuevaConformacion ? (
-                    <>
-                      <Label htmlFor="fecha-inicio-mandato">Fecha de constitución / inicio del mandato</Label>
-                      <Input
-                        id="fecha-inicio-mandato"
-                        type="date"
-                        value={fechaInicioMandato}
-                        onChange={(e) => setFechaInicioMandato(e.target.value)}
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        La duración se calcula automáticamente por 2 años.
-                        {modoNuevaConformacion && " Los integrantes que ya cumplieron dos períodos no pueden volver a integrar la Comisión."}
-                      </p>
-                    </>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="fecha-inicio-mandato">Fecha de constitución / inicio</Label>
+                        <Input id="fecha-inicio-mandato" type="date" value={fechaInicioMandato} onChange={(e) => setFechaInicioMandato(e.target.value)} required />
+                      </div>
+                    </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-3">
-                      <DatoMandato titulo="Período" valor={String(comision.data.numeroPeriodo)} />
-                      <DatoMandato titulo="Inicio" valor={formatearFecha(comision.data.fechaInicioMandato)} />
-                      <DatoMandato titulo="Vencimiento" valor={formatearFecha(comision.data.fechaFinMandato)} />
+                      <DatoMandato titulo="Período vigente" valor={String(comision.data.numeroPeriodo)} />
+                      <DatoMandato titulo="Inicio vigente" valor={formatearFecha(comision.data.fechaInicioMandato)} />
+                      <DatoMandato titulo="Vencimiento vigente" valor={formatearFecha(comision.data.fechaFinMandato)} />
+                    </div>
+                  )}
+
+                  {editandoMandato && !modoNuevaConformacion && comision.data?.fechaInicioMandato && (
+                    <div className="rounded-md border border-slate-300 bg-slate-50 p-4 text-slate-700">
+                      <p className="font-medium">Propuesta de modificación</p>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="periodo-solicitado">Período</Label>
+                          <Input id="periodo-solicitado" type="number" min={1} max={2} value={periodoSolicitado} onChange={(e) => setPeriodoSolicitado(e.target.value)} />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="fecha-inicio-solicitada">Fecha de constitución / inicio</Label>
+                          <Input id="fecha-inicio-solicitada" type="date" value={fechaInicioSolicitada} onChange={(e) => setFechaInicioSolicitada(e.target.value)} />
+                        </div>
+                        <div className="space-y-2 sm:col-span-3">
+                          <Label htmlFor="motivo-solicitud">Motivo</Label>
+                          <Input id="motivo-solicitud" value={motivoSolicitud} onChange={(e) => setMotivoSolicitud(e.target.value)} placeholder="Ej.: corrección según acta" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs">La modificación quedará en estado pendiente y no reemplazará el mandato vigente hasta su aprobación.</p>
+                      <div className="mt-4 flex gap-2">
+                        <Button type="button" onClick={() => solicitarCambioMandato.mutate()} disabled={solicitarCambioMandato.isPending}>
+                          {solicitarCambioMandato.isPending ? "Enviando…" : "Enviar a Auditoría"}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setEditandoMandato(false)} disabled={solicitarCambioMandato.isPending}>Cancelar</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {solicitudMandatoPendiente && !editandoMandato && (
+                    <div className="rounded-md border border-slate-300 bg-slate-100 p-4 text-slate-600">
+                      <p className="font-medium">Modificación pendiente de aprobación</p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        <DatoMandato titulo="Período solicitado" valor={String(solicitudMandatoPendiente.numero_periodo_solicitado)} />
+                        <DatoMandato titulo="Inicio solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_inicio_solicitada)} />
+                        <DatoMandato titulo="Vencimiento solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_fin_solicitada)} />
+                      </div>
+                      <p className="mt-2 text-xs">Solicitado por ${solicitudMandatoPendiente.usuario_nombre}</p>
+                      <p className="mt-1 text-xs">Motivo: ${solicitudMandatoPendiente.motivo}</p>
                     </div>
                   )}
                 </div>
@@ -512,6 +595,17 @@ function ComisionPage() {
                     />
                   ))}
                 </div>
+                {solicitudMandatoPendiente && (
+                  <div className="rounded-md border border-slate-300 bg-slate-100 p-4 text-slate-600">
+                    <p className="font-medium">Modificación de mandato pendiente de aprobación</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      <DatoMandato titulo="Período solicitado" valor={String(solicitudMandatoPendiente.numero_periodo_solicitado)} />
+                      <DatoMandato titulo="Inicio solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_inicio_solicitada)} />
+                      <DatoMandato titulo="Vencimiento solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_fin_solicitada)} />
+                    </div>
+                    <p className="mt-2 text-xs">Pendiente de autorización de Auditoría.</p>
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                   <p className="text-xs text-muted-foreground">
                     {ultimaModificacion
