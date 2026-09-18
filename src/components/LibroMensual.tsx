@@ -690,7 +690,7 @@ function FormularioMovimiento({
                 <div>
                   <p className="text-sm font-medium">Enviar por WhatsApp</p>
                   <p className="text-xs text-muted-foreground">
-                    Se prepara el PDF junto con el mensaje para compartirlo en WhatsApp. No se envía el texto por separado.
+                    Se descarga el PDF y se abre WhatsApp Web con el mensaje preparado. Adjuntá el PDF antes de enviarlo.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
