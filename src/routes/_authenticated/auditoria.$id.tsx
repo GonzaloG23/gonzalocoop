@@ -390,7 +390,10 @@ function AuditoriaLibroPage() {
               ))}
             </div>
           )}
-        </      {alertasCuentaBancaria.length > 0 && (
+        </CardContent>
+      </Card>
+
+      {alertasCuentaBancaria.length > 0 && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
@@ -409,35 +412,31 @@ function AuditoriaLibroPage() {
       )}
 
       {poseeCuentaBancaria ? (
-CardContent>
-      </Card>
-
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-serif text-lg">
-            <Wallet className="h-5 w-5 text-primary" /> Fondos resguardados en cuenta bancaria
-          </CardTitle>
-          <CardDescription>Fondos resguardados y titulares registrados en la cuenta de la cooperadora.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {cuentaBancaria.isLoading ? (
-            <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
-          ) : !datosBancarios ? (
-            <p className="text-sm text-muted-foreground">No hay datos de cuenta bancaria registrados.</p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              <DatoInstitucional titulo="Fondos resguardados" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
-              <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
-              <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
-              <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
-              <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
-              <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
-              <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <Wallet className="h-5 w-5 text-primary" /> Fondos resguardados en cuenta bancaria
+            </CardTitle>
+            <CardDescription>Fondos resguardados y titulares registrados en la cuenta de la cooperadora.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {cuentaBancaria.isLoading ? (
+              <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
+            ) : !datosBancarios ? (
+              <p className="text-sm text-muted-foreground">No hay datos de cuenta bancaria registrados.</p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <DatoInstitucional titulo="Fondos resguardados" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
+                <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
+                <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
+                <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
+                <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
+                <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
+                <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ) : null}
 
       {poseeCuentaBancaria && resumenBancarioDesactualizado && (
