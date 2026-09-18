@@ -270,27 +270,61 @@ function PanelCooperadora() {
       </details>
 
 
-      <details open={editandoBancaria} className="mt-6 rounded-sm border border-border bg-card">
-        <summary className="cursor-pointer list-none px-4 py-4 hover:bg-secondary/50">
-          <span className="flex items-center justify-between gap-3">
-            <span>
-              <span className="flex items-center gap-2 font-serif text-lg">
-                <Wallet className="h-5 w-5 text-primary" />
-                Cuenta bancaria de la cooperadora
-              </span>
-              <span className="mt-1 block text-sm text-muted-foreground">
-                Registrá el saldo depositado y los tres titulares de la cuenta.
-              </span>
+      {historialInstitucional.data && historialInstitucional.data.length > 0 && (
+        <details className="mt-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de modificaciones</span>
+              <span className="text-xs font-normal text-muted-foreground">{historialInstitucional.data.length} registro{historialInstitucional.data.length === 1 ? "" : "s"}</span>
             </span>
-            <span className="shrink-0 text-xs text-muted-foreground">{editandoBancaria ? "Edición" : "Ver información"}</span>
-          </span>
-        </summary>
-        <div className="border-t border-border p-6">
+          </summary>
+          <div className="border-t border-border p-4 space-y-2">
+            {historialInstitucional.data.map((registro) => (
+              <div key={registro.id} className="flex flex-col gap-1 rounded-sm border border-border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium">{registro.usuario_nombre}</p>
+                  {registro.usuario_email && <p className="text-xs text-muted-foreground">{registro.usuario_email}</p>}
+                </div>
+                <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Tarjeta titulo="Saldo actual" valor={money(saldoActual)} destacado />
+        <Tarjeta titulo="Ingresos del ejercicio" valor={money(totales?.ingresos ?? 0)} />
+        <Tarjeta titulo="Egresos del ejercicio" valor={money(totales?.egresos ?? 0)} />
+        <Tarjeta titulo="Saldo final proyectado" valor={money(totales?.saldoFinal ?? 0)} />
+      </div>
+
+      <Card className="mt-6">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 font-serif text-lg">
+                <Wallet className="h-5 w-5 text-primary" />
+                Cuenta bancaria
+              </CardTitle>
+              <CardDescription>
+                Dinero depositado y titulares registrados de la cuenta de la cooperadora.
+              </CardDescription>
+            </div>
+            {!editandoBancaria && datosBancarios ? (
+              <Button variant="outline" size="sm" onClick={() => setEditandoBancaria(true)}>
+                Modificar datos
+              </Button>
+            ) : null}
+          </div>
+        </CardHeader>
+
+        <CardContent>
           {!datosBancarios ? (
             <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
           ) : editandoBancaria ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2 lg:col-span-4">
+              <div className="space-y-2 md:col-span-2 lg:col-span-4">
                 <Label htmlFor="panel-saldo-bancario">Dinero depositado en la cuenta bancaria *</Label>
                 <Input
                   id="panel-saldo-bancario"
@@ -305,7 +339,7 @@ function PanelCooperadora() {
               <div className="rounded-md border border-primary/20 bg-secondary/30 p-4 md:col-span-2 lg:col-span-4">
                 <p className="font-medium">Titulares registrados en la cuenta</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Deben consignarse el Asesor/Director, Presidente y Tesorero, con sus respectivos DNI.
+                  Asesor/Director, Presidente y Tesorero, con sus respectivos DNI.
                 </p>
               </div>
 
@@ -401,52 +435,23 @@ function PanelCooperadora() {
               </div>
             </div>
           ) : (
-            <div className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <DatoInstitucional titulo="Dinero depositado en la cuenta bancaria" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
-                <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
-                <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
-                <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
-                <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
-                <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
-                <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
-              </div>
-              <div className="flex justify-end border-t border-border pt-4">
-                <Button variant="outline" onClick={() => setEditandoBancaria(true)}>Modificar datos bancarios</Button>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Tarjeta
+                titulo="Dinero depositado"
+                valor={money(num(datosBancarios.saldoBancario))}
+                destacado
+              />
+              <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
+              <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
+              <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
+              <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
+              <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
+              <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
             </div>
           )}
-        </div>
-      </details>
+        </CardContent>
+      </Card>
 
-      {historialInstitucional.data && historialInstitucional.data.length > 0 && (
-        <details className="mt-6 rounded-sm border border-border bg-card">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
-            <span className="flex items-center justify-between gap-3">
-              <span>Historial de modificaciones</span>
-              <span className="text-xs font-normal text-muted-foreground">{historialInstitucional.data.length} registro{historialInstitucional.data.length === 1 ? "" : "s"}</span>
-            </span>
-          </summary>
-          <div className="border-t border-border p-4 space-y-2">
-            {historialInstitucional.data.map((registro) => (
-              <div key={registro.id} className="flex flex-col gap-1 rounded-sm border border-border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium">{registro.usuario_nombre}</p>
-                  {registro.usuario_email && <p className="text-xs text-muted-foreground">{registro.usuario_email}</p>}
-                </div>
-                <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Tarjeta titulo="Saldo actual" valor={money(saldoActual)} destacado />
-        <Tarjeta titulo="Ingresos del ejercicio" valor={money(totales?.ingresos ?? 0)} />
-        <Tarjeta titulo="Egresos del ejercicio" valor={money(totales?.egresos ?? 0)} />
-        <Tarjeta titulo="Saldo final proyectado" valor={money(totales?.saldoFinal ?? 0)} />
-      </div>
 
       <Card className="mt-6">
         <CardHeader><CardTitle className="font-serif text-lg">Registrar movimiento</CardTitle><CardDescription>Accesos directos para registrar ingresos y egresos en el libro mensual.</CardDescription></CardHeader>
