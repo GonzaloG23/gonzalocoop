@@ -77,6 +77,7 @@ function ConcesionPage() {
   });
   const [archivos, setArchivos] = useState<Record<TipoDocumentoConcesion, File | null>>({
     contrato: null,
+    contrato_sellado: null,
     buena_conducta: null,
   });
 
@@ -95,6 +96,12 @@ function ConcesionPage() {
   const contrato = useQuery({
     queryKey: ["documento-concesion", cooperadora?.id, "contrato"],
     queryFn: () => cargarDocumentoConcesion(cooperadora!.id, "contrato"),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
+  const contratoSellado = useQuery({
+    queryKey: ["documento-concesion", cooperadora?.id, "contrato_sellado"],
+    queryFn: () => cargarDocumentoConcesion(cooperadora!.id, "contrato_sellado"),
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
@@ -306,7 +313,12 @@ function ConcesionPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {DOCUMENTOS.map((documento) => {
-              const metadata = documento.tipo === "contrato" ? contrato.data : buenaConducta.data;
+              const metadata =
+                documento.tipo === "contrato"
+                  ? contrato.data
+                  : documento.tipo === "contrato_sellado"
+                    ? contratoSellado.data
+                    : buenaConducta.data;
               const archivo = archivos[documento.tipo];
               const cargando = subirDocumento.isPending && subirDocumento.variables?.tipo === documento.tipo;
               return (
