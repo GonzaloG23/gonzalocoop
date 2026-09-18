@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Download, FileSpreadsheet, Lock, Plus, Scale } from "lucide-react";
+import { AlertTriangle, Download, FileSpreadsheet, Lock, Mail, MessageCircle, Plus, Printer, Scale } from "lucide-react";
 import { toast } from "sonner";
 
 import { authData } from "@/lib/data/auth";
@@ -20,6 +20,12 @@ import {
 } from "@/lib/libro";
 import { fechaCorta, fechaHora, money, nombreMes, num, MESES } from "@/lib/formato";
 import { exportarMesExcel, exportarMesPDF } from "@/lib/exportar";
+import {
+  abrirComprobanteIngresoParaImprimir,
+  abrirComprobantePorEmail,
+  abrirComprobantePorWhatsApp,
+  type DatosComprobanteIngreso,
+} from "@/lib/comprobante-ingreso";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -424,11 +430,39 @@ function FormularioMovimiento({
   const [tipoFactura, setTipoFactura] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [alumnoNombre, setAlumnoNombre] = useState("");
+  const [alumnoDni, setAlumnoDni] = useState("");
+  const [alumnoCurso, setAlumnoCurso] = useState("");
+  const [correoComprobante, setCorreoComprobante] = useState("");
+  const [whatsappComprobante, setWhatsappComprobante] = useState("");
+  const [comprobanteGenerado, setComprobanteGenerado] = useState<DatosComprobanteIngreso | null>(null);
+
+  useEffect(() => {
+    if (!abierto) setComprobanteGenerado(null);
+  }, [abierto]);
 
   const cuitDigitos = proveedorCuit.replace(/\D/g, "");
+  const alumnoDniDigitos = alumnoDni.replace(/\D/g, "");
+  const rubroSeleccionado = rubros.find((r) => r.id === rubroId);
+  const rubroNormalizado = (rubroSeleccionado?.nombre ?? "")
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  const requiereComprobanteAlumno =
+    !ajusta &&
+    tipo === "ingreso" &&
+    (rubroNormalizado === "matricula" || rubroNormalizado === "ayuda escolar/cooperadora");
+  const faltanDatosAlumno =
+    requiereComprobanteAlumno &&
+    (!alumnoNombre.trim() || alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8);
 
   const guardar = useMutation({
     mutationFn: async () => {
+      if (faltanDatosAlumno) {
+        throw new Error("Completá nombre y DNI del alumno para generar el comprobante.");
+      }
+
       const periodo = await asegurarPeriodo(cooperadora.id, anio, mes);
       const { data: userData, error: userError } = await authData.getUser();
       if (userError || !userData.user) {
@@ -456,6 +490,20 @@ function FormularioMovimiento({
     onSuccess: () => {
       toast.success(ajusta ? "Ajuste contable registrado." : "Movimiento registrado.");
       qc.invalidateQueries({ queryKey: ["ejercicio", cooperadora.id, anio] });
+
+      const datosComprobante: DatosComprobanteIngreso = {
+        cooperadora,
+        fecha,
+        rubro: rubroSeleccionado?.nombre ?? concepto,
+        concepto,
+        monto: Number(monto),
+        medioPago,
+        comprobante: comprobante.trim(),
+        alumnoNombre: alumnoNombre.trim(),
+        alumnoDni: alumnoDniDigitos,
+        alumnoCurso: alumnoCurso.trim(),
+      };
+
       setConcepto("");
       setMonto("");
       setComprobante("");
@@ -464,7 +512,15 @@ function FormularioMovimiento({
       setTipoFactura("");
       setObservaciones("");
       setMotivo("");
-      onCerrar();
+      setAlumnoNombre("");
+      setAlumnoDni("");
+      setAlumnoCurso("");
+
+      if (requiereComprobanteAlumno) {
+        setComprobanteGenerado(datosComprobante);
+      } else {
+        onCerrar();
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -491,7 +547,7 @@ function FormularioMovimiento({
     Number(fecha.slice(0, 4)) !== anio ||
     Number(fecha.slice(5, 7)) !== mes;
   const bloqueado =
-    sinSaldo || excedeSaldo || faltanDatosProveedor || fechaFueraDelMes;
+    sinSaldo || excedeSaldo || faltanDatosProveedor || fechaFueraDelMes || faltanDatosAlumno;
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
@@ -507,6 +563,116 @@ function FormularioMovimiento({
           </DialogDescription>
         </DialogHeader>
 
+        {comprobanteGenerado ? (
+          <div className="space-y-5">
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-4">
+              <p className="font-medium">Ingreso registrado correctamente</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Se generó el comprobante para el alumno indicado.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Alumno/a</p>
+                  <p className="text-sm font-medium">{comprobanteGenerado.alumnoNombre}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">DNI</p>
+                  <p className="text-sm font-medium">{comprobanteGenerado.alumnoDni}</p>
+                </div>
+                {comprobanteGenerado.alumnoCurso && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Curso / grado</p>
+                    <p className="text-sm font-medium">{comprobanteGenerado.alumnoCurso}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">Monto abonado</p>
+                  <p className="text-lg font-semibold text-primary">{money(comprobanteGenerado.monto)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Elegí qué hacer con el comprobante</p>
+
+              <Button
+                type="button"
+                className="w-full justify-start"
+                onClick={() => {
+                  try {
+                    abrirComprobanteIngresoParaImprimir(comprobanteGenerado);
+                  } catch (error) {
+                    toast.error((error as Error).message);
+                  }
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" /> Imprimir comprobante
+              </Button>
+
+              <div className="rounded-md border border-border p-3">
+                <Label htmlFor="correo-comprobante">Correo electrónico</Label>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="correo-comprobante"
+                    type="email"
+                    value={correoComprobante}
+                    onChange={(e) => setCorreoComprobante(e.target.value)}
+                    placeholder="familia@correo.com"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        abrirComprobantePorEmail(comprobanteGenerado, correoComprobante);
+                      } catch (error) {
+                        toast.error((error as Error).message);
+                      }
+                    }}
+                  >
+                    <Mail className="mr-2 h-4 w-4" /> Enviar por email
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-border p-3">
+                <Label htmlFor="whatsapp-comprobante">WhatsApp</Label>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="whatsapp-comprobante"
+                    inputMode="tel"
+                    value={whatsappComprobante}
+                    onChange={(e) => setWhatsappComprobante(e.target.value)}
+                    placeholder="+54 381 555 5555"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        abrirComprobantePorWhatsApp(comprobanteGenerado, whatsappComprobante);
+                      } catch (error) {
+                        toast.error((error as Error).message);
+                      }
+                    }}
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" /> Enviar por WhatsApp
+                  </Button>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                El sistema no envía mensajes automáticamente. Para email y WhatsApp, el PDF se descarga para que puedas adjuntarlo al mensaje.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onCerrar}>
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -579,6 +745,53 @@ function FormularioMovimiento({
               </SelectContent>
             </Select>
           </div>
+
+          {requiereComprobanteAlumno && (
+            <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div>
+                <p className="text-sm font-medium">Datos del alumno para el comprobante</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Se generará un comprobante al registrar este ingreso.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="alumno-nombre">Nombre y apellido del alumno *</Label>
+                  <Input
+                    id="alumno-nombre"
+                    required
+                    value={alumnoNombre}
+                    onChange={(e) => setAlumnoNombre(e.target.value)}
+                    placeholder="Nombre y apellido"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="alumno-dni">DNI del alumno *</Label>
+                  <Input
+                    id="alumno-dni"
+                    required
+                    inputMode="numeric"
+                    maxLength={8}
+                    value={alumnoDni}
+                    onChange={(e) => setAlumnoDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    placeholder="Número de DNI"
+                  />
+                  {alumnoDni.length > 0 && (alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8) && (
+                    <p className="text-xs text-destructive">El DNI debe tener 7 u 8 dígitos.</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="alumno-curso">Curso / grado</Label>
+                  <Input
+                    id="alumno-curso"
+                    value={alumnoCurso}
+                    onChange={(e) => setAlumnoCurso(e.target.value)}
+                    placeholder="Ej. 5° grado"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="concepto">Concepto</Label>
@@ -702,7 +915,8 @@ function FormularioMovimiento({
               {guardar.isPending ? "Guardando…" : ajusta ? "Registrar ajuste" : "Registrar movimiento"}
             </Button>
           </DialogFooter>
-        </form>
+
+        )}        </form>
       </DialogContent>
     </Dialog>
   );
