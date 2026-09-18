@@ -493,26 +493,15 @@ function PanelCooperadora() {
               </div>
 
               {hayEfectivoEnMano ? (
-                <div className="overflow-hidden rounded-md border-2 border-primary/50 bg-primary/5 shadow-md ring-1 ring-primary/10">
-                  <div className="border-b border-primary/20 bg-primary/10 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                        <Wallet className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold uppercase tracking-wide text-primary">Efectivo en mano</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">Dinero disponible fuera de la cuenta bancaria</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Diferencia entre el saldo del Libro y los fondos resguardados.</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Este importe se calcula automáticamente y no genera un movimiento contable.
+                <div className="overflow-hidden rounded-md border border-primary/30 bg-primary/5">
+                  <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary">Efectivo en mano</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Diferencia entre el saldo del Libro y los fondos resguardados.
                       </p>
                     </div>
-                    <p className="font-serif text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+                    <p className="font-serif text-2xl font-bold tracking-tight text-primary sm:text-3xl">
                       {money(efectivoEnMano ?? 0)}
                     </p>
                   </div>
@@ -520,11 +509,8 @@ function PanelCooperadora() {
               ) : null}
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      <Card className="mt-4 border-primary/20">
-        <CardHeader className="pb-3">
+        <div className="mt-4 border-t border-border pt-4">
           <CardTitle className="flex items-center gap-2 font-serif text-base">
             <FileText className="h-5 w-5 text-primary" />
             Resumen bancario
@@ -532,8 +518,7 @@ function PanelCooperadora() {
           <CardDescription>
             Adjuntá el resumen bancario de la cuenta. Debe actualizarse cada 6 meses.
           </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+
           <Input
             id="panel-resumen-bancario"
             className="sr-only"
@@ -615,9 +600,11 @@ function PanelCooperadora() {
               {guardarResumen.isPending ? "Subiendo…" : "Subir resumen bancario"}
             </Button>
           ) : null}
+        </div>
+        </div>
+
         </CardContent>
       </Card>
-
 
       <Card className="mt-6">
         <CardHeader><CardTitle className="font-serif text-lg">Registrar movimiento</CardTitle><CardDescription>Accesos directos para registrar ingresos y egresos en el libro mensual.</CardDescription></CardHeader>
