@@ -98,3 +98,20 @@ CREATE INDEX IF NOT EXISTS idx_cuentas_bancarias_cooperadora
 -- Naturaleza del dato:
 -- El saldo_bancario representa fondos de la Cooperadora resguardados en la cuenta.
 -- No constituye por sí mismo un ingreso ni un egreso del Libro Mensual.
+
+
+-- Resumen bancario vigente.
+-- Debe actualizarse como máximo cada 6 meses.
+CREATE TABLE IF NOT EXISTS resumenes_bancarios_cooperadora (
+  id uuid PRIMARY KEY,
+  cooperadora_id uuid NOT NULL UNIQUE,
+  nombre_archivo text NOT NULL,
+  mime_type text NOT NULL CHECK (mime_type = 'application/pdf'),
+  tamano_bytes bigint NOT NULL CHECK (tamano_bytes > 0 AND tamano_bytes <= 3145728),
+  storage_key text NOT NULL,
+  actualizado_por uuid NOT NULL,
+  actualizado_en timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_resumenes_bancarios_cooperadora
+  ON resumenes_bancarios_cooperadora(cooperadora_id);
