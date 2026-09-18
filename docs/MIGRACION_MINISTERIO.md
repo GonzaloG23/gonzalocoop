@@ -101,6 +101,26 @@ Para producción ministerial se recomienda además una tabla `auditoria_eventos`
 
 Estas reglas no deben depender únicamente de validaciones de la interfaz.
 
+## Concesiones, cantinas y documentación
+
+La migración contempla también la gestión de concesiones de kioscos y cantinas.
+
+Se implementó en el frontend:
+
+- fecha de firma del contrato obligatoria;
+- contrato de concesión en PDF;
+- PDF independiente del sellado del contrato;
+- certificado de buena conducta;
+- consulta y reemplazo de cada documento;
+- historial de modificaciones incluyendo la fecha de firma.
+
+Para el backend institucional se definieron:
+
+- esquema PostgreSQL en `docs/postgresql/20260918_concesiones_kiosco.sql`;
+- contrato de endpoints en `docs/CONTRATO_API_CONCESIONES_CANTINAS.md`.
+
+Los PDF deben almacenarse en el almacenamiento institucional definido por el Ministerio; PostgreSQL conserva los metadatos y la referencia al archivo.
+
 ## Etapas
 
 ### Etapa 1 - Recuperación
