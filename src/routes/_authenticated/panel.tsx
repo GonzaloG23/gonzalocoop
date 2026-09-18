@@ -15,6 +15,7 @@ import {
 } from "@/lib/data/datos-institucionales";
 import { cargarCuentaBancaria, guardarCuentaBancaria, type CuentaBancariaCooperadora } from "@/lib/data/cuenta-bancaria";
 import { cargarConcesionKiosco } from "@/lib/data/concesion";
+import { cargarComisionDirectiva, diasParaVencimientoMandato } from "@/lib/data/comision";
 import {
   asegurarPlazoAperturaCuenta,
   cargarAperturaCuentaBancaria,
@@ -140,6 +141,11 @@ function PanelCooperadora() {
     queryFn: () => cargarConcesionKiosco(coop!.id),
     enabled: !!coop,
   });
+  const comision = useQuery({
+    queryKey: ["comision-directiva", coop?.id],
+    queryFn: () => cargarComisionDirectiva(coop!.id),
+    enabled: !!coop,
+  });
   const aperturaCuenta = useQuery({
     queryKey: ["apertura-cuenta-bancaria", coop?.id],
     queryFn: () => cargarAperturaCuentaBancaria(coop!.id),
@@ -170,6 +176,7 @@ function PanelCooperadora() {
     datos?.posee_cuenta_bancaria === false &&
     (Boolean(concesion.data) || (saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta));
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
+  const diasMandato = diasParaVencimientoMandato(comision.data?.fechaFinMandato ?? null);
 
   useEffect(() => {
     if (!datosInstitucionales.data) return;
@@ -277,6 +284,43 @@ function PanelCooperadora() {
       descripcion={`Ejercicio ${anio}${coop?.localidad ? ` · ${coop.localidad}` : ""}`}
       acciones={<div className="flex flex-wrap gap-2"><Button asChild size="sm"><Link to="/libro"><Wallet className="mr-1 h-4 w-4" /> Libro mensual</Link></Button><Button asChild size="sm" variant="outline"><Link to="/anual"><FileBarChart className="mr-1 h-4 w-4" /> Resumen anual</Link></Button></div>}
     >
+      {diasMandato !== null && diasMandato >= 0 && diasMandato <= 10 && (
+        <Card className="mb-6 border-amber-500/40 bg-amber-50/40">
+          <CardContent className="flex items-start gap-3 py-4">
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+            <div>
+              <p className="font-medium text-amber-900">Recordatorio de renovación de la Comisión Directiva</p>
+              <p className="mt-1 text-sm text-amber-800">
+                El mandato vence el {formatearFechaPanel(comision.data?.fechaFinMandato ?? "")}.{" "}
+                {diasMandato === 0 ? "Vence hoy." : "Faltan " + diasMandato + " días."}{" "}
+                Recordá registrar la reelección o una nueva conformación.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-3">
+                <Link to="/comision">Ver Comisión Directiva</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {diasMandato !== null && diasMandato < 0 && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardContent className="flex items-start gap-3 py-4">
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Mandato de la Comisión Directiva vencido</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                El mandato venció el {formatearFechaPanel(comision.data?.fechaFinMandato ?? "")}.{" "}
+                Registrá la renovación de la Comisión Directiva.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-3">
+                <Link to="/comision">Ir a Comisión Directiva</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <details open={editando} className="rounded-sm border border-border bg-card">
         <summary className="cursor-pointer list-none px-4 py-4 hover:bg-secondary/50">
           <span className="flex items-center justify-between gap-3">
@@ -713,6 +757,11 @@ function PanelCooperadora() {
       <Card className="mt-6"><CardHeader><CardTitle className="flex items-center gap-2 font-serif text-lg"><ClipboardList className="h-4 w-4" /> Próximamente</CardTitle><CardDescription>La siguiente etapa puede ampliar este panel sin cambiar la estructura de datos actual.</CardDescription></CardHeader><CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2"><p>• Comprobantes y documentación respaldatoria</p><p>• Presupuesto y seguimiento de ejecución</p><p>• Proveedores</p></CardContent></Card>
     </AppShell>
   );
+}
+
+function formatearFechaPanel(fecha: string) {
+  if (!fecha) return "No informada";
+  return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-AR");
 }
 
 function TitularBancario({
