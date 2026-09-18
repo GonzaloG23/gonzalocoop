@@ -213,13 +213,17 @@ function AuditoriaLibroPage() {
 
   const presidenteComision = autoridades.find((miembro) => miembro.cargo === "presidente");
   const tesoreroComision = autoridades.find((miembro) => miembro.cargo === "tesorero");
+  const dniCuentaPresidente = normalizarDni(datosBancarios?.presidenteDni);
+  const dniComisionPresidente = normalizarDni(presidenteComision?.dni);
+  const dniCuentaTesorero = normalizarDni(datosBancarios?.tesoreroDni);
+  const dniComisionTesorero = normalizarDni(tesoreroComision?.dni);
   const alertasDniCuentaBancaria =
     !cuentaBancaria.isLoading && datosBancarios
       ? [
-          presidenteComision?.dni !== datosBancarios.presidenteDni
+          dniCuentaPresidente !== dniComisionPresidente
             ? `Presidente: el DNI de la cuenta bancaria es ${datosBancarios.presidenteDni}, pero en la Comisión Directiva figura ${presidenteComision?.dni || "sin DNI registrado"}.`
             : null,
-          tesoreroComision?.dni !== datosBancarios.tesoreroDni
+          dniCuentaTesorero !== dniComisionTesorero
             ? `Tesorero: el DNI de la cuenta bancaria es ${datosBancarios.tesoreroDni}, pero en la Comisión Directiva figura ${tesoreroComision?.dni || "sin DNI registrado"}.`
             : null,
         ].filter((valor): valor is string => Boolean(valor))
@@ -593,6 +597,10 @@ function AuditoriaLibroPage() {
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
+}
+
+function normalizarDni(valor: string | undefined) {
+  return (valor ?? "").replace(/\D/g, "");
 }
 
 function tituloTipoDocumentoAuditoria(
