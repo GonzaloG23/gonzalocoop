@@ -256,3 +256,50 @@ La fórmula es:
 Este importe no se carga manualmente y no genera por sí mismo un movimiento contable. Representa el dinero que, según la información declarada, permanece en efectivo fuera de la cuenta bancaria.
 
 El panel puede ocultar el recuadro cuando la diferencia sea cero.
+
+
+## Resumen bancario
+
+### GET /api/cooperadoras/:id/resumen-bancario
+
+Obtiene los metadatos del resumen bancario vigente de la cooperadora.
+
+Respuesta:
+
+```json
+{
+  "nombreArchivo": "resumen-bancario-junio-2026.pdf",
+  "tipo": "application/pdf",
+  "tamano": 245678,
+  "actualizadoEn": "2026-06-30T15:20:00Z"
+}
+```
+
+### POST /api/cooperadoras/:id/resumen-bancario
+
+Recibe un multipart/form-data con el campo archivo.
+
+Reglas:
+
+- solamente PDF;
+- tamaño máximo: 3 MB;
+- reemplaza el resumen bancario vigente;
+- registra la fecha/hora y usuario de actualización;
+- requiere autenticación y autorización sobre la cooperadora.
+
+El backend debe almacenar el PDF en el almacenamiento institucional y guardar en PostgreSQL solamente sus metadatos y storage_key.
+
+### GET /api/cooperadoras/:id/resumen-bancario/archivo
+
+Devuelve una URL temporal o mecanismo equivalente para abrir el PDF vigente.
+
+### Vigencia
+
+El resumen bancario debe actualizarse cada 6 meses. La aplicación calcula la fecha límite a partir de actualizadoEn.
+
+En Auditoría se debe generar una alerta cuando:
+
+- no exista ningún resumen bancario cargado; o
+- hayan transcurrido más de 6 meses desde su última actualización.
+
+La vigencia del resumen bancario no modifica los ingresos, egresos ni saldos del Libro Mensual.
