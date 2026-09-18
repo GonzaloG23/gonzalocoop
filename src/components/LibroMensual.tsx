@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Download, FileSpreadsheet, Lock, Plus, Printer, Scale } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  FileSpreadsheet,
+  Lock,
+  Mail,
+  MessageCircle,
+  Plus,
+  Printer,
+  Scale,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { authData } from "@/lib/data/auth";
@@ -23,6 +33,8 @@ import { exportarMesExcel, exportarMesPDF } from "@/lib/exportar";
 import {
   abrirComprobanteIngresoParaImprimir,
   descargarComprobanteIngreso,
+  prepararComprobanteParaEmail,
+  prepararComprobanteParaWhatsApp,
   type DatosComprobanteIngreso,
 } from "@/lib/comprobante-ingreso";
 import { Button } from "@/components/ui/button";
@@ -433,6 +445,8 @@ function FormularioMovimiento({
   const [alumnoDni, setAlumnoDni] = useState("");
   const [alumnoCurso, setAlumnoCurso] = useState("");
   const [comprobanteGenerado, setComprobanteGenerado] = useState<DatosComprobanteIngreso | null>(null);
+  const [correoComprobante, setCorreoComprobante] = useState("");
+  const [whatsappComprobante, setWhatsappComprobante] = useState("");
 
   useEffect(() => {
     if (!abierto) setComprobanteGenerado(null);
@@ -646,9 +660,65 @@ function FormularioMovimiento({
                 <Download className="mr-2 h-4 w-4" /> Descargar comprobante
               </Button>
 
-              <p className="text-xs text-muted-foreground">
-                El PDF descargado se puede adjuntar manualmente a un correo electrónico o a un mensaje de WhatsApp.
-              </p>
+              <div className="rounded-md border border-border p-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Enviar por email</p>
+                  <p className="text-xs text-muted-foreground">
+                    Se descarga el PDF y se abre el correo. El archivo se adjunta manualmente.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    type="email"
+                    value={correoComprobante}
+                    onChange={(e) => setCorreoComprobante(e.target.value)}
+                    placeholder="familia@correo.com"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        prepararComprobanteParaEmail(comprobanteGenerado, correoComprobante);
+                      } catch (error) {
+                        toast.error((error as Error).message);
+                      }
+                    }}
+                  >
+                    <Mail className="mr-2 h-4 w-4" /> Abrir email
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-border p-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Enviar por WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">
+                    Se descarga el PDF y se abre WhatsApp con el mensaje preparado. El archivo se adjunta manualmente.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    inputMode="tel"
+                    value={whatsappComprobante}
+                    onChange={(e) => setWhatsappComprobante(e.target.value)}
+                    placeholder="+54 381 555 5555"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        prepararComprobanteParaWhatsApp(comprobanteGenerado, whatsappComprobante);
+                      } catch (error) {
+                        toast.error((error as Error).message);
+                      }
+                    }}
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" /> Abrir WhatsApp
+                  </Button>
+                </div>
+              </div>
 
             </div>
 
