@@ -94,7 +94,7 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
         saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta ? "saldo_minimo" : null,
       ].filter((valor): valor is "saldo_minimo" | "concesion_kiosco" => Boolean(valor));
 
-      let plazoApertura = null;
+      let plazoApertura: Awaited<ReturnType<typeof asegurarPlazoAperturaCuenta>> | null = null;
       if (!datosInstitucionales.posee_cuenta_bancaria && motivosApertura.length > 0) {
         plazoApertura = await asegurarPlazoAperturaCuenta(coop.id, motivosApertura);
         const textoPlazo = aperturaCuentaVencida(plazoApertura)
