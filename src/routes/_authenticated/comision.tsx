@@ -481,8 +481,8 @@ function ComisionPage() {
                         <DatoMandato titulo="Inicio solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_inicio_solicitada)} />
                         <DatoMandato titulo="Vencimiento solicitado" valor={formatearFecha(solicitudMandatoPendiente.fecha_fin_solicitada)} />
                       </div>
-                      <p className="mt-2 text-xs">Solicitado por ${solicitudMandatoPendiente.usuario_nombre}</p>
-                      <p className="mt-1 text-xs">Motivo: ${solicitudMandatoPendiente.motivo}</p>
+                      <p className="mt-2 text-xs">Solicitado por {solicitudMandatoPendiente.usuario_nombre}{solicitudMandatoPendiente.usuario_email ? ` · ${solicitudMandatoPendiente.usuario_email}` : ""} · {new Date(solicitudMandatoPendiente.solicitada_en).toLocaleString("es-AR")}</p>
+                      <p className="mt-1 text-xs">Motivo: {solicitudMandatoPendiente.motivo}</p>
                     </div>
                   )}
                 </div>
