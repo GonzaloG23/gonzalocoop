@@ -194,6 +194,7 @@ function ConcesionPage() {
   }
 
   const ultimaModificacion = historial.data?.[0];
+  const cambiosCanon = construirHistorialCanon(historial.data ?? []);
 
   return (
     <AppShell
@@ -379,31 +380,118 @@ function ConcesionPage() {
               <span className="text-xs font-normal text-muted-foreground">{historial.data.length} registro{historial.data.length === 1 ? "" : "s"}</span>
             </span>
           </summary>
-          <div className="space-y-2 border-t border-border p-4">
-            {historial.data.map((registro) => (
-              <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
-                <summary className="cursor-pointer list-none text-sm">
-                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="font-medium">{registro.datos.apellido}, {registro.datos.nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
-                  </span>
-                </summary>
-                <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-4">
-                  <DatoConcesion titulo="Apellido" valor={registro.datos.apellido} />
-                  <DatoConcesion titulo="Nombre" valor={registro.datos.nombre} />
-                  <DatoConcesion
-                    titulo="Fecha de firma del contrato"
-                    valor={formatearFechaContrato(registro.datos.fechaFirmaContrato)}
-                  />
-                  <DatoConcesion titulo="Canon" valor={money(num(registro.datos.canon))} />
+          <div className="space-y-4 border-t border-border p-4">
+            {cambiosCanon.length > 0 && (
+              <div className="rounded-sm border border-border">
+                <div className="border-b border-border bg-secondary/40 px-3 py-3">
+                  <p className="text-sm font-medium">Historial de cambios del canon</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Se muestran el valor inicial y cada modificación posterior del canon.
+                  </p>
                 </div>
-              </details>
-            ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                        <th className="px-3 py-2 font-medium">Fecha</th>
+                        <th className="px-3 py-2 font-medium">Movimiento</th>
+                        <th className="px-3 py-2 font-medium">Valor anterior</th>
+                        <th className="px-3 py-2 font-medium">Nuevo valor</th>
+                        <th className="px-3 py-2 font-medium">Usuario</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cambiosCanon.map((cambio) => (
+                        <tr key={cambio.id} className="border-b border-border last:border-0">
+                          <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                            {new Date(cambio.modificadoEn).toLocaleString("es-AR")}
+                          </td>
+                          <td className="px-3 py-2 align-top font-medium">{cambio.etiqueta}</td>
+                          <td className="px-3 py-2 align-top">
+                            {cambio.valorAnterior === null ? "—" : money(cambio.valorAnterior)}
+                          </td>
+                          <td className="px-3 py-2 align-top font-medium">{money(cambio.nuevoValor)}</td>
+                          <td className="px-3 py-2 align-top text-xs">
+                            <span>{cambio.usuarioNombre}</span>
+                            {cambio.usuarioEmail ? (
+                              <span className="block text-muted-foreground">{cambio.usuarioEmail}</span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {historial.data.map((registro) => (
+                <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
+                  <summary className="cursor-pointer list-none text-sm">
+                    <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="font-medium">{registro.datos.apellido}, {registro.datos.nombre}{registro.usuario_email ? ` · ${registro.usuario_email}` : ""}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
+                    </span>
+                  </summary>
+                  <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-4">
+                    <DatoConcesion titulo="Apellido" valor={registro.datos.apellido} />
+                    <DatoConcesion titulo="Nombre" valor={registro.datos.nombre} />
+                    <DatoConcesion
+                      titulo="Fecha de firma del contrato"
+                      valor={formatearFechaContrato(registro.datos.fechaFirmaContrato)}
+                    />
+                    <DatoConcesion titulo="Canon" valor={money(num(registro.datos.canon))} />
+                  </div>
+                </details>
+              ))}
+            </div>
           </div>
         </details>
       )}
     </AppShell>
   );
+}
+
+function construirHistorialCanon(
+  historial: Array<{
+    id: string;
+    datos: ConcesionKiosco;
+    usuario_nombre: string;
+    usuario_email: string | null;
+    modificado_en: string;
+  }>,
+) {
+  const ordenCronologico = [...historial].reverse();
+  const cambios: Array<{
+    id: string;
+    etiqueta: string;
+    valorAnterior: number | null;
+    nuevoValor: number;
+    usuarioNombre: string;
+    usuarioEmail: string | null;
+    modificadoEn: string;
+  }> = [];
+
+  ordenCronologico.forEach((registro, index) => {
+    const nuevoValor = num(registro.datos.canon);
+    const registroAnterior = ordenCronologico[index - 1];
+    const valorAnterior = registroAnterior ? num(registroAnterior.datos.canon) : null;
+
+    if (valorAnterior !== null && valorAnterior === nuevoValor) return;
+
+    cambios.push({
+      id: registro.id,
+      etiqueta: valorAnterior === null ? "Valor inicial" : "Cambio de canon",
+      valorAnterior,
+      nuevoValor,
+      usuarioNombre: registro.usuario_nombre,
+      usuarioEmail: registro.usuario_email,
+      modificadoEn: registro.modificado_en,
+    });
+  });
+
+  return cambios.reverse();
 }
 
 function formatearFechaContrato(valor: string | undefined) {
