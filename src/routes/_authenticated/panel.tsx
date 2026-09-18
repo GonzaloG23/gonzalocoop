@@ -133,7 +133,7 @@ function PanelCooperadora() {
   const resumenBancario = useQuery({
     queryKey: ["resumen-bancario", coop?.id],
     queryFn: () => cargarResumenBancario(coop!.id),
-    enabled: !!coop && datosInstitucionales.data?.posee_cuenta_bancaria === true,
+    enabled: !!coop && datos?.posee_cuenta_bancaria === true,
   });
   const concesion = useQuery({
     queryKey: ["concesion-kiosco", coop?.id],
@@ -143,7 +143,7 @@ function PanelCooperadora() {
   const aperturaCuenta = useQuery({
     queryKey: ["apertura-cuenta-bancaria", coop?.id],
     queryFn: () => cargarAperturaCuentaBancaria(coop!.id),
-    enabled: !!coop && datosInstitucionales.data?.posee_cuenta_bancaria === false,
+    enabled: !!coop && datos?.posee_cuenta_bancaria === false,
   });
   const [datos, setDatos] = useState<DatosInstitucionales | null>(null);
   const [editando, setEditando] = useState(false);
@@ -178,12 +178,7 @@ function PanelCooperadora() {
   }, [datosInstitucionales.data, historialInstitucional.data]);
 
   useEffect(() => {
-    if (datosInstitucionales.data === undefined || cuentaBancaria.data === undefined) return;
-    if (!datosInstitucionales.data.posee_cuenta_bancaria) {
-      setDatosBancarios(null);
-      setEditandoBancaria(false);
-      return;
-    }
+    if (datos?.posee_cuenta_bancaria !== true || cuentaBancaria.data === undefined) return;
     if (cuentaBancaria.data) {
       setDatosBancarios((actual) => actual ?? {
         ...cuentaBancaria.data!,
@@ -202,7 +197,7 @@ function PanelCooperadora() {
       });
       setEditandoBancaria(true);
     }
-  }, [datosInstitucionales.data, cuentaBancaria.data]);
+  }, [datos?.posee_cuenta_bancaria, cuentaBancaria.data]);
 
   useEffect(() => {
     if (!coop || !aperturaRequerida) return;
@@ -231,6 +226,10 @@ function PanelCooperadora() {
       setEditando(false);
       qc.invalidateQueries({ queryKey: ["datos-institucionales", coop?.id] });
       qc.invalidateQueries({ queryKey: ["historial-datos-institucionales", coop?.id] });
+      if (guardados.posee_cuenta_bancaria && coop) {
+        qc.invalidateQueries({ queryKey: ["cuenta-bancaria", coop.id] });
+        qc.invalidateQueries({ queryKey: ["resumen-bancario", coop.id] });
+      }
       toast.success("Información institucional guardada.");
     },
     onError: (error: Error) => toast.error(error.message),
