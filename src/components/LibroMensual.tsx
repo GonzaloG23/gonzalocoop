@@ -690,7 +690,7 @@ function FormularioMovimiento({
                 <div>
                   <p className="text-sm font-medium">Enviar por WhatsApp</p>
                   <p className="text-xs text-muted-foreground">
-                    Se descarga el PDF y se abre WhatsApp con el mensaje preparado. El archivo se adjunta manualmente.
+                    Se prepara el PDF junto con el mensaje para compartirlo en WhatsApp. No se envía el texto por separado.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -703,11 +703,16 @@ function FormularioMovimiento({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        prepararComprobanteParaWhatsApp(comprobanteGenerado, whatsappComprobante);
+                        await prepararComprobanteParaWhatsApp(
+                          comprobanteGenerado,
+                          whatsappComprobante,
+                        );
                       } catch (error) {
-                        toast.error((error as Error).message);
+                        if ((error as DOMException).name !== "AbortError") {
+                          toast.error((error as Error).message);
+                        }
                       }
                     }}
                   >
