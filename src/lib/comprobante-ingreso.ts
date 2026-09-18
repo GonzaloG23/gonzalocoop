@@ -94,16 +94,14 @@ function dibujarComprobante(
       y + 50,
     );
 
-    if (!esOferente) {
-      doc.text(`DNI: ${datos.alumnoDni}`, MARGEN_X + 5, y + 57);
+    doc.text(`DNI: ${datos.alumnoDni}`, MARGEN_X + 5, y + 57);
 
-      if (datos.alumnoCurso) {
-        doc.text(
-          `Curso / grado: ${datos.alumnoCurso}`,
-          MARGEN_X + 75,
-          y + 57,
-        );
-      }
+    if (!esOferente && datos.alumnoCurso) {
+      doc.text(
+        `Curso / grado: ${datos.alumnoCurso}`,
+        MARGEN_X + 75,
+        y + 57,
+      );
     }
   }
 
