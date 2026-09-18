@@ -493,7 +493,7 @@ function AuditoriaLibroPage() {
               </div>
 
               {(solicitudesMandato.data ?? []).filter((solicitud) => solicitud.estado === "pendiente").map((solicitud) => (
-                <div key={solicitud.id} className="rounded-md border border-slate-300 bg-slate-100 p-4 text-slate-700">
+                <div key={solicitud.id} className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-900 shadow-sm">
                   <p className="font-medium">Solicitud de modificación de mandato pendiente</p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-3">
                     <DatoInstitucional titulo="Período actual" valor={String(solicitud.numero_periodo_actual)} />
