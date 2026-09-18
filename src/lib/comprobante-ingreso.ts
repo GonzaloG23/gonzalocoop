@@ -159,3 +159,70 @@ export function abrirComprobanteIngresoParaImprimir(
 
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
+function validarEmail(email: string) {
+  const destino = email.trim();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino)) {
+    throw new Error("Ingresá una dirección de correo electrónico válida.");
+  }
+
+  return destino;
+}
+
+function validarWhatsApp(telefono: string) {
+  const destino = telefono.replace(/\D/g, "");
+
+  if (destino.length < 8) {
+    throw new Error("Ingresá un número de WhatsApp válido con código de país.");
+  }
+
+  return destino;
+}
+
+function mensajeComprobante(datos: DatosComprobanteIngreso) {
+  return [
+    `Comprobante de pago N° ${datos.comprobante}`,
+    `Escuela: ${datos.cooperadora.nombre}`,
+    `Alumno/a: ${datos.alumnoNombre}`,
+    `DNI: ${datos.alumnoDni}`,
+    `Rubro: ${datos.rubro}`,
+    `Monto abonado: ${money(datos.monto)}`,
+    `Fecha: ${fechaCorta(datos.fecha)}`,
+    "",
+    "Se adjunta el comprobante de pago en PDF.",
+  ].join("\n");
+}
+
+export function prepararComprobanteParaEmail(
+  datos: DatosComprobanteIngreso,
+  email: string,
+) {
+  const destino = validarEmail(email);
+  descargarComprobanteIngreso(datos);
+
+  const asunto = `Comprobante de pago N° ${datos.comprobante}`;
+  const cuerpo = mensajeComprobante(datos);
+
+  window.location.href =
+    `mailto:${encodeURIComponent(destino)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+}
+
+export function prepararComprobanteParaWhatsApp(
+  datos: DatosComprobanteIngreso,
+  telefono: string,
+) {
+  const destino = validarWhatsApp(telefono);
+  descargarComprobanteIngreso(datos);
+
+  const ventana = window.open(
+    `https://wa.me/${destino}?text=${encodeURIComponent(mensajeComprobante(datos))}`,
+    "_blank",
+  );
+
+  if (!ventana) {
+    throw new Error(
+      "El navegador bloqueó la apertura de WhatsApp. Permití las ventanas emergentes para continuar.",
+    );
+  }
+}
