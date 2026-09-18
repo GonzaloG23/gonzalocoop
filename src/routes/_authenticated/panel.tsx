@@ -13,6 +13,7 @@ import {
   guardarDatosInstitucionales,
   type DatosInstitucionales,
 } from "@/lib/data/datos-institucionales";
+import { cargarCuentaBancaria, guardarCuentaBancaria, type CuentaBancariaCooperadora } from "@/lib/data/cuenta-bancaria";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -112,8 +113,15 @@ function PanelCooperadora() {
     queryFn: () => cargarHistorialDatosInstitucionales(coop!.id),
     enabled: !!coop,
   });
+  const cuentaBancaria = useQuery({
+    queryKey: ["cuenta-bancaria", coop?.id],
+    queryFn: () => cargarCuentaBancaria(coop!.id),
+    enabled: !!coop,
+  });
   const [datos, setDatos] = useState<DatosInstitucionales | null>(null);
   const [editando, setEditando] = useState(false);
+  const [datosBancarios, setDatosBancarios] = useState<CuentaBancariaCooperadora | null>(null);
+  const [editandoBancaria, setEditandoBancaria] = useState(false);
   const resumen = useMemo(() => {
     if (!coop || !ejercicio.data) return null;
     return calcularEjercicio(num(coop.saldo_inicial_ejercicio), ejercicio.data.periodos, ejercicio.data.movimientos, parametros.data);
@@ -129,6 +137,27 @@ function PanelCooperadora() {
     setDatos((actual) => actual ?? datosInstitucionales.data!);
     if (!(historialInstitucional.data?.length)) setEditando(true);
   }, [datosInstitucionales.data, historialInstitucional.data]);
+
+  useEffect(() => {
+    if (cuentaBancaria.data === undefined) return;
+    if (cuentaBancaria.data) {
+      setDatosBancarios((actual) => actual ?? {
+        ...cuentaBancaria.data!,
+        saldoBancario: String(cuentaBancaria.data!.saldoBancario),
+      });
+    } else {
+      setDatosBancarios((actual) => actual ?? {
+        saldoBancario: "",
+        asesorDirectorNombre: "",
+        asesorDirectorDni: "",
+        presidenteNombre: "",
+        presidenteDni: "",
+        tesoreroNombre: "",
+        tesoreroDni: "",
+      });
+      setEditandoBancaria(true);
+    }
+  }, [cuentaBancaria.data]);
 
   const guardarDatos = useMutation({
     mutationFn: async () => {
@@ -152,6 +181,24 @@ function PanelCooperadora() {
 
   const actualizarDato = (campo: keyof DatosInstitucionales, valor: string) => {
     setDatos((actual) => actual ? { ...actual, [campo]: valor } : actual);
+  };
+
+  const guardarBancarios = useMutation({
+    mutationFn: async () => {
+      if (!coop || !datosBancarios) throw new Error("No hay datos de cuenta bancaria para guardar.");
+      return guardarCuentaBancaria(coop.id, datosBancarios);
+    },
+    onSuccess: (guardados) => {
+      setDatosBancarios({ ...guardados, saldoBancario: String(guardados.saldoBancario) });
+      setEditandoBancaria(false);
+      qc.invalidateQueries({ queryKey: ["cuenta-bancaria", coop?.id] });
+      toast.success("Datos de la cuenta bancaria guardados.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const actualizarDatoBancario = (campo: keyof CuentaBancariaCooperadora, valor: string) => {
+    setDatosBancarios((actual) => actual ? { ...actual, [campo]: valor } : actual);
   };
 
   return (
@@ -216,6 +263,145 @@ function PanelCooperadora() {
                     : "Información registrada"}
                 </p>
                 <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </details>
+
+
+      <details open={editandoBancaria} className="mt-6 rounded-sm border border-border bg-card">
+        <summary className="cursor-pointer list-none px-4 py-4 hover:bg-secondary/50">
+          <span className="flex items-center justify-between gap-3">
+            <span>
+              <span className="flex items-center gap-2 font-serif text-lg">
+                <Wallet className="h-5 w-5 text-primary" />
+                Cuenta bancaria de la cooperadora
+              </span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                Registrá el saldo depositado y los tres titulares de la cuenta.
+              </span>
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">{editandoBancaria ? "Edición" : "Ver información"}</span>
+          </span>
+        </summary>
+        <div className="border-t border-border p-6">
+          {!datosBancarios ? (
+            <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
+          ) : editandoBancaria ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2 lg:col-span-4">
+                <Label htmlFor="panel-saldo-bancario">Dinero depositado en la cuenta bancaria *</Label>
+                <Input
+                  id="panel-saldo-bancario"
+                  inputMode="decimal"
+                  value={datosBancarios.saldoBancario}
+                  onChange={(e) => actualizarDatoBancario("saldoBancario", e.target.value)}
+                  placeholder="Importe depositado"
+                  required
+                />
+              </div>
+
+              <div className="rounded-md border border-primary/20 bg-secondary/30 p-4 md:col-span-2 lg:col-span-4">
+                <p className="font-medium">Titulares registrados en la cuenta</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Deben consignarse el Asesor/Director, Presidente y Tesorero, con sus respectivos DNI.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="panel-banco-asesor-nombre">Asesor/Director *</Label>
+                <Input
+                  id="panel-banco-asesor-nombre"
+                  value={datosBancarios.asesorDirectorNombre}
+                  onChange={(e) => actualizarDatoBancario("asesorDirectorNombre", e.target.value)}
+                  placeholder="Nombre y apellido"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="panel-banco-asesor-dni">DNI Asesor/Director *</Label>
+                <Input
+                  id="panel-banco-asesor-dni"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={datosBancarios.asesorDirectorDni}
+                  onChange={(e) => actualizarDatoBancario("asesorDirectorDni", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="DNI"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="panel-banco-presidente-nombre">Presidente *</Label>
+                <Input
+                  id="panel-banco-presidente-nombre"
+                  value={datosBancarios.presidenteNombre}
+                  onChange={(e) => actualizarDatoBancario("presidenteNombre", e.target.value)}
+                  placeholder="Nombre y apellido"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="panel-banco-presidente-dni">DNI Presidente *</Label>
+                <Input
+                  id="panel-banco-presidente-dni"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={datosBancarios.presidenteDni}
+                  onChange={(e) => actualizarDatoBancario("presidenteDni", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="DNI"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="panel-banco-tesorero-nombre">Tesorero *</Label>
+                <Input
+                  id="panel-banco-tesorero-nombre"
+                  value={datosBancarios.tesoreroNombre}
+                  onChange={(e) => actualizarDatoBancario("tesoreroNombre", e.target.value)}
+                  placeholder="Nombre y apellido"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="panel-banco-tesorero-dni">DNI Tesorero *</Label>
+                <Input
+                  id="panel-banco-tesorero-dni"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={datosBancarios.tesoreroDni}
+                  onChange={(e) => actualizarDatoBancario("tesoreroDni", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="DNI"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2 md:col-span-2 lg:col-span-4">
+                <Button onClick={() => guardarBancarios.mutate()} disabled={guardarBancarios.isPending}>
+                  {guardarBancarios.isPending ? "Guardando…" : "Guardar datos bancarios"}
+                </Button>
+                {cuentaBancaria.data ? (
+                  <Button type="button" variant="outline" onClick={() => setEditandoBancaria(false)} disabled={guardarBancarios.isPending}>
+                    Cancelar
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <DatoInstitucional titulo="Dinero depositado en la cuenta bancaria" valor={money(num(datosBancarios.saldoBancario))} className="sm:col-span-2 lg:col-span-4" />
+                <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
+                <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
+                <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
+                <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
+                <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
+                <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
+              </div>
+              <div className="flex justify-end border-t border-border pt-4">
+                <Button variant="outline" onClick={() => setEditandoBancaria(true)}>Modificar datos bancarios</Button>
               </div>
             </div>
           )}
