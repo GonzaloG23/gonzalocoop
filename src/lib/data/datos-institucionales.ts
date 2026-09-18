@@ -2,6 +2,7 @@ import { ministerioRequest, usingMinisterioApi } from "./index";
 import type { Cooperadora } from "./libro";
 
 export type DatosInstitucionales = {
+  posee_cuenta_bancaria: boolean;
   cue: string;
   nivel: string;
   turno: string;
@@ -40,6 +41,7 @@ function claveHistorial(cooperadoraId: string) {
 
 export async function cargarDatosInstitucionales(cooperadora: Cooperadora): Promise<DatosInstitucionales> {
   const base: DatosInstitucionales = {
+    posee_cuenta_bancaria: false,
     cue: cooperadora.cue ?? "",
     nivel: "",
     turno: "",
@@ -92,6 +94,7 @@ export async function guardarDatosInstitucionales(
   nombreEscuela = "",
 ) {
   const normalizados: DatosInstitucionales = {
+    posee_cuenta_bancaria: Boolean(datos.posee_cuenta_bancaria),
     cue: datos.cue.replace(/\D/g, ""),
     nivel: datos.nivel.trim(),
     turno: datos.turno.trim(),
