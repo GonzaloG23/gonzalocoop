@@ -438,8 +438,6 @@ function PanelCooperadora() {
       ) : null}
 
       {poseeCuentaBancaria ? (
-      ) : null}
-
       <Card className="mt-6">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -710,6 +708,7 @@ function PanelCooperadora() {
 
         </CardContent>
       </Card>
+      ) : null}
 
       <Card className="mt-6">
         <CardHeader><CardTitle className="font-serif text-lg">Registrar movimiento</CardTitle><CardDescription>Accesos directos para registrar ingresos y egresos en el libro mensual.</CardDescription></CardHeader>
