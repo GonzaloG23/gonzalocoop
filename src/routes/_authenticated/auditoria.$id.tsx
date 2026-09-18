@@ -25,8 +25,17 @@ import {
   resumenBancarioVencido,
 } from "@/lib/data/resumen-bancario";
 import { cargarDatosInstitucionales, cargarHistorialDatosInstitucionales } from "@/lib/data/datos-institucionales";
-import { cargarComisionDirectiva, type CargoComision } from "@/lib/data/comision";
-import { cargarHistorialComisionDirectiva } from "@/lib/data/comision-historial";
+import {
+  calcularFinMandato,
+  cargarComisionDirectiva,
+  guardarComisionDirectiva,
+  type CargoComision,
+  type DatosComisionDirectiva,
+} from "@/lib/data/comision";
+import {
+  cargarHistorialComisionDirectiva,
+  registrarModificacionComisionDirectiva,
+} from "@/lib/data/comision-historial";
 import {
   cargarHistorialConcesionKiosco,
   cargarHistorialDocumentosConcesion,
@@ -79,6 +88,9 @@ function AuditoriaLibroPage() {
   const [editandoIdentificacion, setEditandoIdentificacion] = useState(false);
   const [nombre, setNombre] = useState("");
   const [cue, setCue] = useState("");
+  const [editandoMandato, setEditandoMandato] = useState(false);
+  const [fechaInicioMandato, setFechaInicioMandato] = useState("");
+  const [numeroPeriodo, setNumeroPeriodo] = useState("1");
 
   const coop = useQuery({
     queryKey: ["cooperadora", id],
@@ -177,6 +189,54 @@ function AuditoriaLibroPage() {
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
+  const autorizarCambioMandato = useMutation({
+    mutationFn: async () => {
+      if (!ctx) throw new Error("No se pudo identificar al auditor.");
+      if (!comision.data) throw new Error("No hay una Comisión Directiva registrada.");
+
+      const periodo = Number(numeroPeriodo);
+      if (!Number.isInteger(periodo) || periodo < 1 || periodo > 2) {
+        throw new Error("El período debe ser 1 o 2.");
+      }
+      if (!fechaInicioMandato) {
+        throw new Error("Debés indicar la fecha de constitución / inicio del mandato.");
+      }
+
+      const fechaFin = calcularFinMandato(fechaInicioMandato);
+      const guardados = (await guardarComisionDirectiva(id, comision.data.miembros, {
+        fechaInicioMandato,
+        fechaFinMandato: fechaFin,
+        numeroPeriodo: periodo,
+      })) as DatosComisionDirectiva;
+
+      await registrarModificacionComisionDirectiva(
+        id,
+        guardados.miembros,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Auditor",
+          email: ctx.email,
+        },
+        {
+          tipo: "modificacion",
+          fechaInicioMandato,
+          fechaFinMandato: fechaFin,
+          numeroPeriodo: periodo,
+        },
+      );
+
+      return guardados;
+    },
+    onSuccess: () => {
+      setEditandoMandato(false);
+      qc.invalidateQueries({ queryKey: ["comision-directiva", id] });
+      qc.invalidateQueries({ queryKey: ["historial-comision-directiva", id] });
+      qc.invalidateQueries({ queryKey: ["panel-auditor"] });
+      toast.success("Mandato autorizado y actualizado por Auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const actualizarIdentificacion = useMutation({
     mutationFn: () => actualizarDatosIdentificatoriosCooperadora(id, { nombre, cue }),
     onSuccess: () => {
@@ -231,7 +291,7 @@ function AuditoriaLibroPage() {
   const c = coop.data;
   const datos = datosInstitucionales.data;
   const historial = historialInstitucional.data ?? [];
-  const autoridades = comision.data ?? [];
+  const autoridades = comision.data?.miembros ?? [];
   const historialAutoridades = historialComision.data ?? [];
   const datosBancarios = cuentaBancaria.data;
   const poseeCuentaBancaria = Boolean(datos?.posee_cuenta_bancaria);
@@ -379,23 +439,96 @@ function AuditoriaLibroPage() {
           <CardTitle className="flex items-center gap-2 font-serif text-lg">
             <Users className="h-5 w-5 text-primary" /> Comisión Directiva
           </CardTitle>
-          <CardDescription>Autoridades actualmente registradas por la cooperadora.</CardDescription>
+          <CardDescription>
+            Autoridades actualmente registradas por la cooperadora.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {comision.isLoading ? (
             <p className="text-sm text-muted-foreground">Cargando comisión directiva…</p>
           ) : autoridades.length === 0 ? (
             <p className="text-sm text-muted-foreground">No hay integrantes registrados.</p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {autoridades.map((miembro) => (
-                <div key={miembro.cargo} className="rounded-sm border border-border px-3 py-2 text-sm">
-                  <p className="text-xs text-muted-foreground">{ETIQUETAS_CARGO[miembro.cargo]}</p>
-                  <p className="mt-1 font-medium">{miembro.nombre}</p>
-                  {miembro.dni && <p className="text-xs text-muted-foreground">DNI {miembro.dni}</p>}
+            <>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {autoridades.map((miembro) => (
+                  <div key={miembro.cargo} className="rounded-sm border border-border px-3 py-2 text-sm">
+                    <p className="text-xs text-muted-foreground">{ETIQUETAS_CARGO[miembro.cargo]}</p>
+                    <p className="mt-1 font-medium">{miembro.nombre}</p>
+                    {miembro.dni && <p className="text-xs text-muted-foreground">DNI {miembro.dni}</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Vigencia del mandato</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Período {comision.data?.numeroPeriodo || "—"} · Inicio {formatearFechaAuditoria(comision.data?.fechaInicioMandato)} · Vencimiento {formatearFechaAuditoria(comision.data?.fechaFinMandato)}
+                    </p>
+                  </div>
+                  {!editandoMandato && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFechaInicioMandato(comision.data?.fechaInicioMandato ?? "");
+                        setNumeroPeriodo(String(comision.data?.numeroPeriodo || 1));
+                        setEditandoMandato(true);
+                      }}
+                    >
+                      Autorizar modificación
+                    </Button>
+                  )}
                 </div>
-              ))}
-            </div>
+
+                {editandoMandato && (
+                  <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="auditoria-periodo-comision">Período</Label>
+                      <Input
+                        id="auditoria-periodo-comision"
+                        type="number"
+                        min={1}
+                        max={2}
+                        value={numeroPeriodo}
+                        onChange={(e) => setNumeroPeriodo(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">Solo se admiten los períodos 1 y 2.</p>
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="auditoria-inicio-mandato">Fecha de constitución / inicio</Label>
+                      <Input
+                        id="auditoria-inicio-mandato"
+                        type="date"
+                        value={fechaInicioMandato}
+                        onChange={(e) => setFechaInicioMandato(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Al guardar, el vencimiento se calcula automáticamente a 2 años.
+                      </p>
+                    </div>
+                    <div className="flex gap-2 sm:col-span-3">
+                      <Button
+                        onClick={() => autorizarCambioMandato.mutate()}
+                        disabled={autorizarCambioMandato.isPending}
+                      >
+                        {autorizarCambioMandato.isPending ? "Guardando…" : "Autorizar y guardar"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setEditandoMandato(false)}
+                        disabled={autorizarCambioMandato.isPending}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -742,6 +875,11 @@ function AuditoriaLibroPage() {
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
+}
+
+function formatearFechaAuditoria(valor: string | null | undefined) {
+  if (!valor) return "No informada";
+  return new Date(`${valor}T00:00:00`).toLocaleDateString("es-AR");
 }
 
 function normalizarDni(valor: string | undefined) {
