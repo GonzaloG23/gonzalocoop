@@ -441,12 +441,21 @@ function PanelCooperadora() {
                 valor={money(num(datosBancarios.saldoBancario))}
                 destacado
               />
-              <DatoInstitucional titulo="Asesor/Director" valor={datosBancarios.asesorDirectorNombre} />
-              <DatoInstitucional titulo="DNI Asesor/Director" valor={datosBancarios.asesorDirectorDni} />
-              <DatoInstitucional titulo="Presidente" valor={datosBancarios.presidenteNombre} />
-              <DatoInstitucional titulo="DNI Presidente" valor={datosBancarios.presidenteDni} />
-              <DatoInstitucional titulo="Tesorero" valor={datosBancarios.tesoreroNombre} />
-              <DatoInstitucional titulo="DNI Tesorero" valor={datosBancarios.tesoreroDni} />
+              <TitularBancario
+                cargo="Asesor/Director"
+                nombre={datosBancarios.asesorDirectorNombre}
+                dni={datosBancarios.asesorDirectorDni}
+              />
+              <TitularBancario
+                cargo="Presidente"
+                nombre={datosBancarios.presidenteNombre}
+                dni={datosBancarios.presidenteDni}
+              />
+              <TitularBancario
+                cargo="Tesorero"
+                nombre={datosBancarios.tesoreroNombre}
+                dni={datosBancarios.tesoreroDni}
+              />
             </div>
           )}
         </CardContent>
@@ -486,6 +495,24 @@ function PanelCooperadora() {
 
       <Card className="mt-6"><CardHeader><CardTitle className="flex items-center gap-2 font-serif text-lg"><ClipboardList className="h-4 w-4" /> Próximamente</CardTitle><CardDescription>La siguiente etapa puede ampliar este panel sin cambiar la estructura de datos actual.</CardDescription></CardHeader><CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2"><p>• Comprobantes y documentación respaldatoria</p><p>• Presupuesto y seguimiento de ejecución</p><p>• Proveedores</p></CardContent></Card>
     </AppShell>
+  );
+}
+
+function TitularBancario({
+  cargo,
+  nombre,
+  dni,
+}: {
+  cargo: string;
+  nombre: string;
+  dni: string;
+}) {
+  return (
+    <div className="rounded-sm border border-border bg-card px-3 py-3">
+      <p className="text-xs text-muted-foreground">{cargo}</p>
+      <p className="mt-1 text-sm font-medium">{nombre || "No informado"}</p>
+      <p className="mt-1 text-xs text-muted-foreground">DNI {dni || "No informado"}</p>
+    </div>
   );
 }
 
