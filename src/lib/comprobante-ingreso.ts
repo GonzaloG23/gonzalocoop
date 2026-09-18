@@ -109,19 +109,9 @@ function dibujarComprobante(
   doc.setFontSize(7.5);
   doc.setTextColor(80, 80, 80);
   doc.text(
-    "Constancia del ingreso registrado en el Libro Mensual de la Cooperadora.",
-    MARGEN_X + 5,
-    y + 107,
-  );
-  doc.text(
-    "Las anulaciones o devoluciones se registran mediante ajuste contable.",
-    MARGEN_X + 5,
-    y + 114,
-  );
-  doc.text(
     "Conservar este comprobante como constancia del pago.",
     MARGEN_X + 5,
-    y + 123,
+    y + 107,
   );
 
   doc.setTextColor(0, 0, 0);
