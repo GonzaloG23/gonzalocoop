@@ -432,7 +432,7 @@ function PanelCooperadora() {
           {!datosBancarios && (
             <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
           )}
-          {editandoBancaria && (
+          {editandoBancaria && datosBancarios && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2 md:col-span-2 lg:col-span-4">
                 <Label htmlFor="panel-saldo-bancario">Fondos resguardados en cuenta bancaria *</Label>
@@ -545,7 +545,7 @@ function PanelCooperadora() {
               </div>
             </div>
           )}
-          {!editandoBancaria && (
+          {!editandoBancaria && datosBancarios && (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Tarjeta
