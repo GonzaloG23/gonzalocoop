@@ -9,8 +9,20 @@ export type Periodo = { id: string; cooperadora_id: string; anio: number; mes: n
 export type Rubro = { id: string; nombre: string; tipo: Tipo; cooperadora_id: string | null; activo: boolean; orden: number | null };
 export type Movimiento = { id: string; cooperadora_id: string; periodo_id: string; fecha: string; tipo: Tipo; rubro_id: string | null; concepto: string; monto: number | string; medio_pago: string | null; comprobante: string | null; proveedor_cuit: string | null; proveedor_razon_social: string | null; tipo_factura: string | null; observaciones: string | null; ajusta_movimiento_id: string | null; motivo_ajuste: string | null; creado_en: string };
 export type Contexto = { userId: string; email: string | null; nombre: string; cooperadoraId: string | null; esAuditor: boolean; cooperadora: Cooperadora | null };
-export type ParametrosControl = { id: string; dia_limite_cierre: number; tope_egreso: number | string; saldo_minimo_cuenta_bancaria: number | string };
-export const PARAMETROS_POR_DEFECTO: ParametrosControl = { id: "", dia_limite_cierre: 10, tope_egreso: 500000, saldo_minimo_cuenta_bancaria: 0 };
+export type ParametrosControl = {
+  id: string;
+  dia_limite_cierre: number;
+  tope_egreso: number | string;
+  saldo_minimo_cuenta_bancaria: number | string;
+  tope_recibo_gastos_varios: number | string;
+};
+export const PARAMETROS_POR_DEFECTO: ParametrosControl = {
+  id: "",
+  dia_limite_cierre: 10,
+  tope_egreso: 500000,
+  saldo_minimo_cuenta_bancaria: 0,
+  tope_recibo_gastos_varios: 0,
+};
 
 const DEMO_COOPERADORA_ID = "demo-cooperadora-001";
 const DEMO_RUBROS_KEY = "demo-rubros";
@@ -101,10 +113,55 @@ export async function asegurarPeriodo(cooperadoraId: string, anio: number, mes: 
 
 export async function cargarParametros(): Promise<ParametrosControl> {
   if (usingMinisterioApi()) return ministerioRequest<ParametrosControl>("/api/parametros-control");
-  if (!supabaseConfigured()) { try { const guardados = JSON.parse(localStorage.getItem(DEMO_PARAMETROS_KEY) ?? "null") as ParametrosControl | null; if (guardados && Number.isFinite(Number(guardados.dia_limite_cierre)) && Number.isFinite(Number(guardados.tope_egreso)) && Number.isFinite(Number(guardados.saldo_minimo_cuenta_bancaria ?? 0))) return { ...guardados, saldo_minimo_cuenta_bancaria: Number(guardados.saldo_minimo_cuenta_bancaria ?? 0) }; } catch {} return PARAMETROS_POR_DEFECTO; } const { data, error } = await supabase.from("parametros_control").select("id, dia_limite_cierre, tope_egreso, saldo_minimo_cuenta_bancaria").order("created_at").limit(1).maybeSingle(); if (error) throw error; return (data as ParametrosControl | null) ?? PARAMETROS_POR_DEFECTO;
+  if (!supabaseConfigured()) { try { const guardados = JSON.parse(localStorage.getItem(DEMO_PARAMETROS_KEY) ?? "null") as ParametrosControl | null; if (
+      guardados &&
+      Number.isFinite(Number(guardados.dia_limite_cierre)) &&
+      Number.isFinite(Number(guardados.tope_egreso)) &&
+      Number.isFinite(Number(guardados.saldo_minimo_cuenta_bancaria ?? 0))
+    ) {
+      return {
+        ...guardados,
+        saldo_minimo_cuenta_bancaria: Number(guardados.saldo_minimo_cuenta_bancaria ?? 0),
+        tope_recibo_gastos_varios: Number(guardados.tope_recibo_gastos_varios ?? 0),
+      };
+    } } catch {} return PARAMETROS_POR_DEFECTO; } const { data, error } = await supabase
+    .from("parametros_control")
+    .select("id, dia_limite_cierre, tope_egreso, saldo_minimo_cuenta_bancaria, tope_recibo_gastos_varios")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle(); if (error) throw error; return (data as ParametrosControl | null) ?? PARAMETROS_POR_DEFECTO;
 }
 
-export async function guardarParametros(p: { id: string; dia_limite_cierre: number; tope_egreso: number; saldo_minimo_cuenta_bancaria?: number }) {
+export async function guardarParametros(p: {
+  id: string;
+  dia_limite_cierre: number;
+  tope_egreso: number;
+  saldo_minimo_cuenta_bancaria?: number;
+  tope_recibo_gastos_varios?: number;
+}) {
   const saldoMinimoCuenta = Number(p.saldo_minimo_cuenta_bancaria ?? 0);
-  if (usingMinisterioApi()) return ministerioRequest<ParametrosControl>("/api/parametros-control", { method: "PATCH", body: JSON.stringify({ id: p.id, dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso, saldo_minimo_cuenta_bancaria: saldoMinimoCuenta }) });
-  if (!supabaseConfigured()) { const parametros: ParametrosControl = { id: p.id || "demo-parametros", dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso, saldo_minimo_cuenta_bancaria: saldoMinimoCuenta }; localStorage.setItem(DEMO_PARAMETROS_KEY, JSON.stringify(parametros)); return; } if (p.id) { const { error } = await supabase.from("parametros_control").update({ dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso, saldo_minimo_cuenta_bancaria: saldoMinimoCuenta }).eq("id", p.id); if (error) throw error; return; } const { error } = await supabase.from("parametros_control").insert({ dia_limite_cierre: p.dia_limite_cierre, tope_egreso: p.tope_egreso, saldo_minimo_cuenta_bancaria: saldoMinimoCuenta }); if (error) throw error; }
+  const topeReciboGastosVarios = Number(p.tope_recibo_gastos_varios ?? 0);
+  if (usingMinisterioApi()) return ministerioRequest<ParametrosControl>("/api/parametros-control", { method: "PATCH", body: JSON.stringify({
+        id: p.id,
+        dia_limite_cierre: p.dia_limite_cierre,
+        tope_egreso: p.tope_egreso,
+        saldo_minimo_cuenta_bancaria: saldoMinimoCuenta,
+        tope_recibo_gastos_varios: topeReciboGastosVarios,
+      }) });
+  if (!supabaseConfigured()) { const parametros: ParametrosControl = {
+      id: p.id || "demo-parametros",
+      dia_limite_cierre: p.dia_limite_cierre,
+      tope_egreso: p.tope_egreso,
+      saldo_minimo_cuenta_bancaria: saldoMinimoCuenta,
+      tope_recibo_gastos_varios: topeReciboGastosVarios,
+    }; localStorage.setItem(DEMO_PARAMETROS_KEY, JSON.stringify(parametros)); return; } if (p.id) { const { error } = await supabase.from("parametros_control").update({
+      dia_limite_cierre: p.dia_limite_cierre,
+      tope_egreso: p.tope_egreso,
+      saldo_minimo_cuenta_bancaria: saldoMinimoCuenta,
+      tope_recibo_gastos_varios: topeReciboGastosVarios,
+    }).eq("id", p.id); if (error) throw error; return; } const { error } = await supabase.from("parametros_control").insert({
+      dia_limite_cierre: p.dia_limite_cierre,
+      tope_egreso: p.tope_egreso,
+      saldo_minimo_cuenta_bancaria: saldoMinimoCuenta,
+      tope_recibo_gastos_varios: topeReciboGastosVarios,
+    }); if (error) throw error; }
