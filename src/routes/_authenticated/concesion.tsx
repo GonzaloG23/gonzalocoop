@@ -324,9 +324,17 @@ function ConcesionPage() {
               const archivo = archivos[documento.tipo];
               const cargando = subirDocumento.isPending && subirDocumento.variables?.tipo === documento.tipo;
               return (
-                <div key={documento.tipo} className="rounded-sm border border-dashed border-border p-4">
-                  <p className="text-sm font-medium">{documento.titulo}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{documento.descripcion}</p>
+                <div key={documento.tipo} className="overflow-hidden rounded-sm border border-border bg-card">
+                  <div className="flex items-center gap-3 border-b border-border bg-secondary/50 px-4 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
+                      <FileText className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold leading-tight text-foreground">{documento.titulo}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{documento.descripcion}</p>
+                    </div>
+                  </div>
+                  <div className="p-4">
                   <Label htmlFor={`concesion-${documento.tipo}`} className="mt-3 block">Archivo PDF</Label>
                   <Input
                     id={`concesion-${documento.tipo}`}
@@ -366,6 +374,7 @@ function ConcesionPage() {
                     <Upload className="mr-2 h-4 w-4" />
                     {cargando ? "Subiendo…" : `Subir ${documento.titulo.toLowerCase()}`}
                   </Button>
+                  </div>
                 </div>
               );
             })}
