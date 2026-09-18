@@ -401,7 +401,8 @@ function PanelCooperadora() {
                 ? "El plazo de 05 días hábiles se encuentra vencido."
                 : "Plazo para realizar la apertura: hasta el " + new Date(aperturaCuenta.data.fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR") + "."}
             </p>
-            <p className="text-xs text-muted-foreground">Motivo: {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? "concesión de kiosco/cantina" : "saldo del Libro alcanzó el monto establecido por Auditoría"}.</p>\n            <Button type="button" variant="outline" size="sm" onClick={() => setEditando(true)}>Informar que ya posee cuenta bancaria</Button>
+            <p className="text-xs text-muted-foreground">Motivo: {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? "concesión de kiosco/cantina" : "saldo del Libro alcanzó el monto establecido por Auditoría"}.</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditando(true)}>Informar que ya posee cuenta bancaria</Button>
           </CardContent>
         </Card>
       )}
