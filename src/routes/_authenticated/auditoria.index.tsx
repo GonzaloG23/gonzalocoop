@@ -1,17 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, FileSpreadsheet, ShieldCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { toast } from "sonner";
 
 import { cargarCooperadorasAuditoria, otorgarRolAuditor, reclamarRolAuditor } from "@/lib/data/auditoria";
+import { cargarConcesionKiosco } from "@/lib/data/concesion";
+import { cargarDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { AppShell, useContexto } from "@/components/AppShell";
 import {
   calcularEjercicio,
   cargarEjercicio,
   cargarParametros,
+  guardarParametros,
   totalesAnuales,
   type Cooperadora,
 } from "@/lib/libro";
@@ -68,22 +71,51 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
   const hoy = new Date();
 
   const parametros = await cargarParametros();
+  const saldoMinimoCuenta = num(parametros.saldo_minimo_cuenta_bancaria);
 
   return Promise.all(
     coops.map(async (coop) => {
-      const { periodos, movimientos } = await cargarEjercicio(coop.id, coop.ejercicio);
+      const [{ periodos, movimientos }, datosInstitucionales, concesion] = await Promise.all([
+        cargarEjercicio(coop.id, coop.ejercicio),
+        cargarDatosInstitucionales(coop),
+        cargarConcesionKiosco(coop.id),
+      ]);
       const resumen = calcularEjercicio(num(coop.saldo_inicial_ejercicio), periodos, movimientos, parametros);
       const totales = totalesAnuales(resumen);
       const mesTope = coop.ejercicio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
+      const saldoActual = resumen.find((r) => r.mes === mesTope)?.saldoFinal ?? totales.saldoFinal;
+      const alertasCuenta: Alerta[] = [];
+
+      if (!datosInstitucionales.posee_cuenta_bancaria && concesion) {
+        alertasCuenta.push({
+          mes: mesTope,
+          texto: "Posee concesión de kiosco/cantina y no tiene cuenta bancaria declarada.",
+        });
+      }
+
+      if (
+        !datosInstitucionales.posee_cuenta_bancaria &&
+        saldoMinimoCuenta > 0 &&
+        saldoActual >= saldoMinimoCuenta
+      ) {
+        alertasCuenta.push({
+          mes: mesTope,
+          texto: `El saldo actual de ${money(saldoActual)} alcanza el monto de ${money(saldoMinimoCuenta)} que obliga a abrir una cuenta bancaria, y la escuela no tiene cuenta declarada.`,
+        });
+      }
+
       return {
         coop,
-        saldoActual: resumen.find((r) => r.mes === mesTope)?.saldoFinal ?? totales.saldoFinal,
+        saldoActual,
         ingresos: totales.ingresos,
         egresos: totales.egresos,
         mesesCerrados: resumen.filter((r) => r.periodo?.estado === "cerrado").length,
-        alertas: resumen.flatMap((r) =>
-          r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
-        ),
+        alertas: [
+          ...resumen.flatMap((r) =>
+            r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
+          ),
+          ...alertasCuenta,
+        ],
       };
     }),
   );
@@ -127,6 +159,65 @@ function HabilitarAuditor() {
             Habilitar
           </Button>
         </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ParametrosAuditoria() {
+  const qc = useQueryClient();
+  const parametros = useQuery({ queryKey: ["parametros"], queryFn: cargarParametros, staleTime: 30_000 });
+  const [saldoMinimo, setSaldoMinimo] = useState("");
+
+  useEffect(() => {
+    if (parametros.data) setSaldoMinimo(String(parametros.data.saldo_minimo_cuenta_bancaria ?? 0));
+  }, [parametros.data]);
+
+  const guardar = useMutation({
+    mutationFn: async () => {
+      if (!parametros.data) throw new Error("No se pudieron cargar los parámetros de control.");
+      const valor = num(saldoMinimo);
+      if (!Number.isFinite(valor) || valor < 0) {
+        throw new Error("El saldo mínimo debe ser un importe válido mayor o igual a cero.");
+      }
+      await guardarParametros({
+        id: parametros.data.id,
+        dia_limite_cierre: Number(parametros.data.dia_limite_cierre),
+        tope_egreso: num(parametros.data.tope_egreso),
+        saldo_minimo_cuenta_bancaria: valor,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["parametros"] });
+      toast.success("Parámetro de cuenta bancaria actualizado.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  return (
+    <Card className="mb-6 max-w-2xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="font-serif text-lg">Parámetros de control</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-2">
+          <label htmlFor="saldo-minimo-cuenta" className="text-sm font-medium">
+            Saldo mínimo que obliga a abrir una cuenta bancaria
+          </label>
+          <Input
+            id="saldo-minimo-cuenta"
+            inputMode="decimal"
+            value={saldoMinimo}
+            onChange={(e) => setSaldoMinimo(e.target.value)}
+            placeholder="Importe"
+          />
+          <p className="text-xs text-muted-foreground">
+            Cuando el saldo actual del Libro sea igual o superior a este monto y la escuela no tenga cuenta, se genera una alerta para Auditoría. Con 0, este criterio queda desactivado.
+          </p>
+        </div>
+        <Button onClick={() => guardar.mutate()} disabled={guardar.isPending || parametros.isLoading}>
+          {guardar.isPending ? "Guardando…" : "Guardar parámetro"}
+        </Button>
       </CardContent>
     </Card>
   );
@@ -204,6 +295,7 @@ function AuditoriaPage() {
       }
     >
       <HabilitarAuditor />
+      <ParametrosAuditoria />
       {filas.isLoading && <p className="text-sm text-muted-foreground">Cargando cooperadoras…</p>}
 
       {!filas.isLoading && datos.length === 0 && (
