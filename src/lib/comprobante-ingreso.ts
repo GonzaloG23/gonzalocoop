@@ -1,6 +1,5 @@
 import { jsPDF } from "jspdf";
 
-import { ministerioApiConfigured, ministerioRequest } from "./data";
 import { fechaCorta, money } from "./formato";
 import type { Cooperadora } from "./libro";
 
@@ -159,90 +158,4 @@ export function abrirComprobanteIngresoParaImprimir(
   }
 
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
-function validarEmail(email: string) {
-  const destino = email.trim();
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino)) {
-    throw new Error("Ingresá una dirección de correo electrónico válida.");
-  }
-
-  return destino;
-}
-
-function validarWhatsApp(telefono: string) {
-  const destino = telefono.replace(/\D/g, "");
-
-  if (destino.length < 8) {
-    throw new Error(
-      "Ingresá un número de WhatsApp válido con código de país.",
-    );
-  }
-
-  return destino;
-}
-
-function mensajeComprobante(datos: DatosComprobanteIngreso) {
-  return [
-    `Comprobante de pago N° ${datos.comprobante}`,
-    `Escuela: ${datos.cooperadora.nombre}`,
-    `Alumno/a: ${datos.alumnoNombre}`,
-    `DNI: ${datos.alumnoDni}`,
-    `Rubro: ${datos.rubro}`,
-    `Monto abonado: ${money(datos.monto)}`,
-    `Fecha: ${fechaCorta(datos.fecha)}`,
-  ].join("\n");
-}
-
-async function enviarComprobante(
-  path: string,
-  campoDestino: string,
-  destino: string,
-  datos: DatosComprobanteIngreso,
-) {
-  if (!ministerioApiConfigured()) {
-    throw new Error(
-      "El envío automático requiere la API del Ministerio configurada. No se utilizará mailto ni WhatsApp Web porque no pueden adjuntar el PDF automáticamente.",
-    );
-  }
-
-  const { blob, nombreArchivo } = generarComprobanteIngreso(datos);
-  const form = new FormData();
-  form.append("archivo", blob, nombreArchivo);
-  form.append(campoDestino, destino);
-  form.append("numero_comprobante", datos.comprobante);
-  form.append("asunto", `Comprobante de pago N° ${datos.comprobante}`);
-  form.append("mensaje", mensajeComprobante(datos));
-
-  await ministerioRequest<{ message?: string }>(path, {
-    method: "POST",
-    body: form,
-  });
-}
-
-export async function enviarComprobantePorEmail(
-  datos: DatosComprobanteIngreso,
-  email: string,
-) {
-  const destino = validarEmail(email);
-  await enviarComprobante(
-    "/api/comprobantes/email",
-    "email",
-    destino,
-    datos,
-  );
-}
-
-export async function enviarComprobantePorWhatsApp(
-  datos: DatosComprobanteIngreso,
-  telefono: string,
-) {
-  const destino = validarWhatsApp(telefono);
-  await enviarComprobante(
-    "/api/comprobantes/whatsapp",
-    "telefono",
-    destino,
-    datos,
-  );
 }
