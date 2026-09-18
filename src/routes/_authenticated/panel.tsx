@@ -303,101 +303,6 @@ function PanelCooperadora() {
 
 
 
-      <Card className="mt-4 border-primary/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 font-serif text-base">
-            <FileText className="h-5 w-5 text-primary" />
-            Resumen bancario
-          </CardTitle>
-          <CardDescription>
-            Adjuntá el resumen bancario de la cuenta. Debe actualizarse cada 6 meses.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input
-            id="panel-resumen-bancario"
-            className="sr-only"
-            type="file"
-            accept="application/pdf,.pdf"
-            onChange={(e) => setArchivoResumenBancario(e.target.files?.[0] ?? null)}
-          />
-
-          <div className="flex flex-wrap items-center gap-2">
-            <label
-              htmlFor="panel-resumen-bancario"
-              className="inline-flex cursor-pointer items-center justify-center rounded-md border border-primary/20 bg-secondary px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-secondary/80"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {resumenBancario.data ? "Modificar resumen bancario" : "Seleccionar resumen bancario"}
-            </label>
-
-            {archivoResumenBancario ? (
-              <span className="text-sm text-muted-foreground">
-                Archivo seleccionado: <span className="font-medium text-foreground">{archivoResumenBancario.name}</span>
-              </span>
-            ) : null}
-          </div>
-
-          {resumenBancario.data ? (
-            <div className="rounded-sm border border-border bg-secondary/30 p-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium break-all">{resumenBancario.data.nombreArchivo}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Última actualización: {new Date(resumenBancario.data.actualizadoEn).toLocaleString("es-AR")}
-                  </p>
-                  {(() => {
-                    const proxima = calcularProximaActualizacionResumenBancario(resumenBancario.data.actualizadoEn);
-                    return proxima ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Próxima actualización: {proxima.toLocaleDateString("es-AR")}
-                      </p>
-                    ) : null;
-                  })()}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => abrirResumenBancario(coop!.id).catch((error: Error) => toast.error(error.message))}
-                  >
-                    <FileText className="mr-2 h-4 w-4" /> Ver PDF
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => guardarResumen.mutate()}
-                    disabled={!archivoResumenBancario || guardarResumen.isPending}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {guardarResumen.isPending ? "Subiendo…" : "Actualizar resumen"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {!resumenBancario.data ? (
-            <p className="text-xs text-muted-foreground">
-              Todavía no hay un resumen bancario cargado. El documento debe renovarse cada 6 meses.
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              El resumen bancario debe actualizarse cada 6 meses.
-            </p>
-          )}
-
-          {!resumenBancario.data && archivoResumenBancario ? (
-            <Button
-              onClick={() => guardarResumen.mutate()}
-              disabled={guardarResumen.isPending}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {guardarResumen.isPending ? "Subiendo…" : "Subir resumen bancario"}
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
-
       {historialInstitucional.data && historialInstitucional.data.length > 0 && (
         <details className="mt-6 rounded-sm border border-border bg-card">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
@@ -615,6 +520,101 @@ function PanelCooperadora() {
               ) : null}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4 border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 font-serif text-base">
+            <FileText className="h-5 w-5 text-primary" />
+            Resumen bancario
+          </CardTitle>
+          <CardDescription>
+            Adjuntá el resumen bancario de la cuenta. Debe actualizarse cada 6 meses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input
+            id="panel-resumen-bancario"
+            className="sr-only"
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(e) => setArchivoResumenBancario(e.target.files?.[0] ?? null)}
+          />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <label
+              htmlFor="panel-resumen-bancario"
+              className="inline-flex cursor-pointer items-center justify-center rounded-md border border-primary/20 bg-secondary px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-secondary/80"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {resumenBancario.data ? "Modificar resumen bancario" : "Seleccionar resumen bancario"}
+            </label>
+
+            {archivoResumenBancario ? (
+              <span className="text-sm text-muted-foreground">
+                Archivo seleccionado: <span className="font-medium text-foreground">{archivoResumenBancario.name}</span>
+              </span>
+            ) : null}
+          </div>
+
+          {resumenBancario.data ? (
+            <div className="rounded-sm border border-border bg-secondary/30 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium break-all">{resumenBancario.data.nombreArchivo}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Última actualización: {new Date(resumenBancario.data.actualizadoEn).toLocaleString("es-AR")}
+                  </p>
+                  {(() => {
+                    const proxima = calcularProximaActualizacionResumenBancario(resumenBancario.data.actualizadoEn);
+                    return proxima ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Próxima actualización: {proxima.toLocaleDateString("es-AR")}
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => abrirResumenBancario(coop!.id).catch((error: Error) => toast.error(error.message))}
+                  >
+                    <FileText className="mr-2 h-4 w-4" /> Ver PDF
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => guardarResumen.mutate()}
+                    disabled={!archivoResumenBancario || guardarResumen.isPending}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {guardarResumen.isPending ? "Subiendo…" : "Actualizar resumen"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!resumenBancario.data ? (
+            <p className="text-xs text-muted-foreground">
+              Todavía no hay un resumen bancario cargado. El documento debe renovarse cada 6 meses.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              El resumen bancario debe actualizarse cada 6 meses.
+            </p>
+          )}
+
+          {!resumenBancario.data && archivoResumenBancario ? (
+            <Button
+              onClick={() => guardarResumen.mutate()}
+              disabled={guardarResumen.isPending}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {guardarResumen.isPending ? "Subiendo…" : "Subir resumen bancario"}
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
 
