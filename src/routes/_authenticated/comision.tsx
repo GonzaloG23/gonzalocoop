@@ -395,6 +395,20 @@ function ComisionPage() {
       descripcion={`${cooperadora.nombre}${cooperadora.localidad ? ` · ${cooperadora.localidad}` : ""}`}
     >
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        {diasMandato !== null && diasMandato < 0 && (
+          <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-900 shadow-sm lg:col-span-2">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+              <div>
+                <p className="font-semibold">Mandato de la Comisión Directiva vencido</p>
+                <p className="mt-1 text-sm">
+                  El mandato vigente venció el {formatearFecha(comision.data?.fechaFinMandato ?? null)}.
+                  Debe registrarse la renovación o nueva conformación de la Comisión Directiva.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <details open={editando} className="self-start rounded-sm border border-border bg-card">
           <summary className={`cursor-pointer list-none hover:bg-secondary/50 ${editando ? "px-4 py-4" : "px-3 py-2"}`}>
             <span className="flex items-center justify-between gap-2">
