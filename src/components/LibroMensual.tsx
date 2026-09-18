@@ -457,14 +457,19 @@ function FormularioMovimiento({
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
-  const requiereComprobanteAlumno =
+  const generaComprobanteIngreso =
     !ajusta &&
     tipo === "ingreso" &&
-    (rubroNormalizado === "matricula" || rubroNormalizado.replace(/\s+/g, "") === "ayudaescolar/cooperadora");
+    (rubroNormalizado === "matricula" ||
+      rubroNormalizado.replace(/\s+/g, "") === "ayudaescolar/cooperadora" ||
+      rubroNormalizado.startsWith("certificados voluntarios:") ||
+      rubroNormalizado === "venta de pliegos");
+  const requiereDatosAlumno =
+    generaComprobanteIngreso && rubroNormalizado !== "venta de pliegos";
   const faltanDatosAlumno =
-    requiereComprobanteAlumno &&
+    requiereDatosAlumno &&
     (!alumnoNombre.trim() || alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8);
-  const faltaConcepto = !requiereComprobanteAlumno && !concepto.trim();
+  const faltaConcepto = !generaComprobanteIngreso && !concepto.trim();
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -483,10 +488,10 @@ function FormularioMovimiento({
         fecha,
         tipo,
         rubro_id: rubroId || null,
-        concepto: requiereComprobanteAlumno ? "" : concepto.trim(),
+        concepto: generaComprobanteIngreso ? "" : concepto.trim(),
         monto: Number(monto),
         medio_pago: medioPago || null,
-        comprobante: requiereComprobanteAlumno ? null : comprobante.trim() || null,
+        comprobante: generaComprobanteIngreso ? null : comprobante.trim() || null,
         proveedor_cuit: tipo === "egreso" ? cuitDigitos : null,
         proveedor_razon_social: tipo === "egreso" ? proveedorRazon.trim() : null,
         tipo_factura: tipo === "egreso" ? tipoFactura : null,
@@ -494,10 +499,10 @@ function FormularioMovimiento({
         ajusta_movimiento_id: ajusta?.id ?? null,
         motivo_ajuste: ajusta ? motivo : null,
         creado_por: userData.user.id,
-        generar_comprobante: requiereComprobanteAlumno,
+        generar_comprobante: generaComprobanteIngreso,
       });
 
-      if (requiereComprobanteAlumno && !movimientoRegistrado?.comprobante) {
+      if (generaComprobanteIngreso && !movimientoRegistrado?.comprobante) {
         throw new Error(
           "El movimiento se registró, pero no se recibió el número correlativo del comprobante.",
         );
@@ -533,7 +538,7 @@ function FormularioMovimiento({
       setAlumnoDni("");
       setAlumnoCurso("");
 
-      if (requiereComprobanteAlumno) {
+      if (generaComprobanteIngreso) {
         setComprobanteGenerado(datosComprobante);
       } else {
         onCerrar();
@@ -599,14 +604,18 @@ function FormularioMovimiento({
                   <p className="text-xs text-muted-foreground">N° de comprobante</p>
                   <p className="text-sm font-semibold tabular">{comprobanteGenerado.comprobante}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Alumno/a</p>
-                  <p className="text-sm font-medium">{comprobanteGenerado.alumnoNombre}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">DNI</p>
-                  <p className="text-sm font-medium">{comprobanteGenerado.alumnoDni}</p>
-                </div>
+                {comprobanteGenerado.alumnoNombre && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Alumno/a</p>
+                    <p className="text-sm font-medium">{comprobanteGenerado.alumnoNombre}</p>
+                  </div>
+                )}
+                {comprobanteGenerado.alumnoDni && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">DNI</p>
+                    <p className="text-sm font-medium">{comprobanteGenerado.alumnoDni}</p>
+                  </div>
+                )}
                 {comprobanteGenerado.alumnoCurso && (
                   <div>
                     <p className="text-xs text-muted-foreground">Curso / grado</p>
@@ -770,15 +779,17 @@ function FormularioMovimiento({
             </Select>
           </div>
 
-          {requiereComprobanteAlumno && (
+          {generaComprobanteIngreso && (
             <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
               <div>
-                <p className="text-sm font-medium">Datos del alumno para el comprobante</p>
+                <p className="text-sm font-medium">
+                  {requiereDatosAlumno ? "Datos del alumno para el comprobante" : "Comprobante de ingreso"}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Se generará un comprobante al registrar este ingreso.
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              {requiereDatosAlumno ?               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="alumno-nombre">Nombre y apellido del alumno *</Label>
                   <Input
@@ -813,11 +824,12 @@ function FormularioMovimiento({
                     placeholder="Ej. 5° grado"
                   />
                 </div>
+ : null}
               </div>
             </div>
           )}
 
-          {!requiereComprobanteAlumno && (
+          {!generaComprobanteIngreso && (
             <div className="space-y-2">
               <Label htmlFor="concepto">Concepto</Label>
               <Input
@@ -862,7 +874,7 @@ function FormularioMovimiento({
               />
             </div>
             <div className="space-y-2">
-              {!requiereComprobanteAlumno ? (
+              {!generaComprobanteIngreso ? (
                 <>
                   <Label htmlFor="comprobante">
                     N° Comprobante{tipo === "egreso" ? "" : " (opcional)"}
