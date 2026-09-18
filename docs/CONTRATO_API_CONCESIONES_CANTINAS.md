@@ -143,3 +143,41 @@ PostgreSQL no debe recibir el contenido binario del PDF. Debe persistirse:
 - fecha/hora de actualización.
 
 El almacenamiento concreto queda a definición del Ministerio (servidor de archivos, objeto institucional u otra solución aprobada).
+
+
+## Historial de documentación
+
+### GET `/api/cooperadoras/:id/concesion-kiosco/historial-documentos`
+
+Devuelve el historial de cargas y reemplazos de los tres documentos de la concesión.
+
+Ejemplo:
+
+```json
+[
+  {
+    "id": "uuid",
+    "tipo": "contrato_sellado",
+    "nombreArchivo": "sellado-2026.pdf",
+    "accion": "reemplazo",
+    "usuario_id": "uuid",
+    "usuario_nombre": "Juan Pérez",
+    "usuario_email": "usuario@dominio.gob.ar",
+    "modificado_en": "2026-09-18T12:30:00Z"
+  }
+]
+```
+
+### POST `/api/cooperadoras/:id/concesion-kiosco/historial-documentos`
+
+Registra una carga o reemplazo de documentación.
+
+El backend debe validar que:
+
+- el usuario esté autenticado y autorizado;
+- el tipo de documento sea válido;
+- `accion` sea `carga` o `reemplazo`;
+- el documento corresponda a la cooperadora indicada;
+- la operación quede registrada con usuario y fecha/hora.
+
+El historial no se elimina cuando el documento vigente se reemplaza.
