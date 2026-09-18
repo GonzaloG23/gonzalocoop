@@ -12,6 +12,7 @@ import {
   guardarActaConstitucion,
   guardarComisionDirectiva,
   calcularFinMandato,
+  diasParaVencimientoMandato,
   type CargoComision,
   type DatosComisionDirectiva,
   type MiembroComision,
@@ -70,6 +71,7 @@ function ComisionPage() {
   );
   const [archivo, setArchivo] = useState<File | null>(null);
   const [fechaInicioMandato, setFechaInicioMandato] = useState("");
+  const [modoNuevaConformacion, setModoNuevaConformacion] = useState(false);
 
   const comision = useQuery({
     queryKey: ["comision-directiva", cooperadora?.id],
@@ -144,13 +146,42 @@ function ComisionPage() {
         !comision.data?.fechaFinMandato ||
         !comision.data?.numeroPeriodo;
 
-      if (esPrimerMandato && !fechaInicioMandato) {
+      if ((esPrimerMandato || modoNuevaConformacion) && !fechaInicioMandato) {
         throw new Error("Debés indicar la fecha de inicio del mandato.");
       }
 
-      const inicio = esPrimerMandato ? fechaInicioMandato : comision.data!.fechaInicioMandato!;
-      const fin = esPrimerMandato ? calcularFinMandato(inicio) : comision.data!.fechaFinMandato!;
-      const periodo = esPrimerMandato ? 1 : comision.data!.numeroPeriodo;
+      if (modoNuevaConformacion) {
+        const historialMandatos = (historialComision.data ?? []).filter((registro) => registro.tipo === "mandato");
+        const usadosPorDni = new Map<string, number>();
+        for (const registro of historialMandatos) {
+          for (const miembro of registro.miembros) {
+            const dni = miembro.dni.trim();
+            if (dni) usadosPorDni.set(dni, (usadosPorDni.get(dni) ?? 0) + 1);
+          }
+        }
+        if (datos.some((miembro) => miembro.dni.trim() && (usadosPorDni.get(miembro.dni.trim()) ?? 0) >= 2)) {
+          const bloqueados = datos
+            .filter((miembro) => miembro.dni.trim() && (usadosPorDni.get(miembro.dni.trim()) ?? 0) >= 2)
+            .map((miembro) => miembro.nombre)
+            .join(", ");
+          throw new Error(`No se puede registrar la nueva conformación porque ${bloqueados} ya cumplió dos períodos de mandato.`);
+        }
+        if (datos.some((miembro) => !miembro.dni.trim())) {
+          throw new Error("Para registrar una nueva conformación, todos los integrantes deben tener DNI informado.");
+        }
+      }
+
+      const inicio = esPrimerMandato || modoNuevaConformacion
+        ? fechaInicioMandato
+        : comision.data!.fechaInicioMandato!;
+      const fin = esPrimerMandato || modoNuevaConformacion
+        ? calcularFinMandato(inicio)
+        : comision.data!.fechaFinMandato!;
+      const periodo = esPrimerMandato
+        ? 1
+        : modoNuevaConformacion
+          ? comision.data!.numeroPeriodo + 1
+          : comision.data!.numeroPeriodo;
 
       const guardados = (await guardarComisionDirectiva(cooperadora.id, datos, {
         fechaInicioMandato: inicio,
@@ -167,7 +198,7 @@ function ComisionPage() {
           email: ctx.email,
         },
         {
-          tipo: esPrimerMandato ? "mandato" : "modificacion",
+          tipo: esPrimerMandato || modoNuevaConformacion ? "mandato" : "modificacion",
           fechaInicioMandato: inicio,
           fechaFinMandato: fin,
           numeroPeriodo: periodo,
@@ -193,6 +224,7 @@ function ComisionPage() {
       });
       setFechaInicioMandato(guardados.fechaInicioMandato ?? fechaInicioMandato);
       setEditando(false);
+      setModoNuevaConformacion(false);
       qc.invalidateQueries({ queryKey: ["comision-directiva", cooperadora?.id] });
       qc.invalidateQueries({ queryKey: ["historial-comision-directiva", cooperadora?.id] });
       toast.success("Datos de la comisión directiva guardados.");
@@ -259,7 +291,6 @@ function ComisionPage() {
     },
     onSuccess: (guardados) => {
       setFechaInicioMandato(guardados.fechaInicioMandato ?? "");
-      setEditandoMandato(false);
       qc.invalidateQueries({ queryKey: ["comision-directiva", cooperadora?.id] });
       qc.invalidateQueries({ queryKey: ["historial-comision-directiva", cooperadora?.id] });
       toast.success("Reelección registrada por un nuevo período de 2 años.");
@@ -313,6 +344,7 @@ function ComisionPage() {
     );
   }
 
+  const diasMandato = diasParaVencimientoMandato(comision.data?.fechaFinMandato ?? null);
   const ultimaModificacion = historialComision.data?.[0];
   const nombreFicha = (cargo: CargoComision) => miembros[cargo]?.nombre || "No informado";
   const dniFicha = (cargo: CargoComision) => miembros[cargo]?.dni || "";
@@ -348,7 +380,7 @@ function ComisionPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-3 rounded-md border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
                   <p className="font-medium">Mandato de la Comisión Directiva</p>
-                  {!comision.data?.fechaInicioMandato || !comision.data?.numeroPeriodo ? (
+                  {!comision.data?.fechaInicioMandato || !comision.data?.numeroPeriodo || modoNuevaConformacion ? (
                     <>
                       <Label htmlFor="fecha-inicio-mandato">Fecha de inicio del mandato</Label>
                       <Input
@@ -360,6 +392,7 @@ function ComisionPage() {
                       />
                       <p className="text-xs text-muted-foreground">
                         La duración se calcula automáticamente por 2 años.
+                        {modoNuevaConformacion && " Los integrantes que ya cumplieron dos períodos no pueden volver a integrar la Comisión."}
                       </p>
                     </>
                   ) : (
@@ -432,7 +465,7 @@ function ComisionPage() {
                     {guardar.isPending ? "Guardando…" : "Guardar comisión directiva"}
                   </Button>
                   {historialComision.data?.length ? (
-                    <Button type="button" variant="outline" onClick={() => setEditando(false)} disabled={guardar.isPending}>
+                    <Button type="button" variant="outline" onClick={() => { setModoNuevaConformacion(false); setEditando(false); }} disabled={guardar.isPending}>
                       Cancelar
                     </Button>
                   ) : null}
@@ -459,6 +492,37 @@ function ComisionPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
                     {comision.data?.numeroPeriodo === 1 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => registrarReeleccion.mutate()}
+                        disabled={registrarReeleccion.isPending}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        {registrarReeleccion.isPending ? "Registrando…" : "Registrar reelección"}
+                      </Button>
+                    )}
+                    {comision.data?.numeroPeriodo === 2 && diasMandato !== null && diasMandato <= 10 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const iniciales = Object.fromEntries(
+                            CARGOS.map(({ cargo }) => [
+                              cargo,
+                              cargo === "asesor_director"
+                                ? { nombre: directorNombre, dni: directorDni }
+                                : { nombre: "", dni: "" },
+                            ]),
+                          ) as Record<CargoComision, { nombre: string; dni: string }>;
+                          setMiembros(iniciales);
+                          setFechaInicioMandato(comision.data?.fechaFinMandato ?? "");
+                          setModoNuevaConformacion(true);
+                          setEditando(true);
+                        }}
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Nueva conformación
+                      </Button>
+                    )}
                       <Button
                         variant="outline"
                         onClick={() => registrarReeleccion.mutate()}
