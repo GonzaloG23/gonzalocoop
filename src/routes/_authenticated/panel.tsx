@@ -19,7 +19,6 @@ import {
   calcularProximaActualizacionResumenBancario,
   cargarResumenBancario,
   guardarResumenBancario,
-  type ResumenBancario,
 } from "@/lib/data/resumen-bancario";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
