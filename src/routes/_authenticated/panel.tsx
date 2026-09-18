@@ -438,6 +438,8 @@ function PanelCooperadora() {
       ) : null}
 
       {poseeCuentaBancaria ? (
+      ) : null}
+
       <Card className="mt-6">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -685,9 +687,7 @@ function PanelCooperadora() {
                 </div>
               </div>
             </div>
-          ) : null}
-
-          {!resumenBancario.data ? (
+              {!resumenBancario.data ? (
             <p className="text-xs text-muted-foreground">
               Todavía no hay un resumen bancario cargado. El documento debe renovarse cada 6 meses.
             </p>
