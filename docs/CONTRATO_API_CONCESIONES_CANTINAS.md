@@ -187,7 +187,7 @@ El historial no se elimina cuando el documento vigente se reemplaza.
 
 ### GET `/api/cooperadoras/:id/cuenta-bancaria`
 
-Obtiene el saldo registrado y los titulares de la cuenta bancaria de la cooperadora.
+Obtiene el importe de fondos de la Cooperadora que se encuentra resguardado en la cuenta bancaria y sus titulares. Este importe es informativo y no constituye un ingreso ni un egreso adicional del Libro Mensual.
 
 Respuesta:
 
@@ -233,3 +233,13 @@ Validaciones obligatorias:
 - usuario autenticado y autorizado sobre la cooperadora.
 
 La comparación con la Comisión Directiva se realiza en la vista de Auditoría: el DNI del Presidente de la cuenta debe coincidir con el DNI del Presidente registrado en la Comisión Directiva, y lo mismo para el Tesorero. Si no coinciden, Auditoría debe mostrar una alerta.
+
+
+## Naturaleza de los fondos resguardados
+
+El importe informado en la cuenta bancaria representa fondos de la Cooperadora depositados como medida de resguardo.
+
+- Los ingresos y egresos económicos de la Cooperadora se registran exclusivamente mediante los movimientos del Libro Mensual y sus conceptos correspondientes.
+- Depositar fondos en la cuenta bancaria no genera un nuevo ingreso.
+- Retirar fondos de la cuenta bancaria para utilizarlos no genera por sí mismo un nuevo egreso; el egreso se registra cuando corresponde al concepto real de la operación.
+- El importe de fondos resguardados es un dato informativo de custodia y puede diferir del saldo contable del Libro Mensual.
