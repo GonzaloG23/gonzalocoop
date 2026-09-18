@@ -262,7 +262,6 @@ function ParametrosPage() {
           </CardContent>
         </Card>
       )}
-}
     </AppShell>
   );
 }
