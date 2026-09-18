@@ -165,32 +165,17 @@ function PanelCooperadora() {
   const hayEfectivoEnMano =
     efectivoEnMano !== null && Math.abs(efectivoEnMano) > 0.009;
   const poseeCuentaBancaria = Boolean(datos?.posee_cuenta_bancaria);
-  const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
   const saldoMinimoCuenta = num(parametros.data?.saldo_minimo_cuenta_bancaria ?? 0);
   const aperturaRequerida =
     datos?.posee_cuenta_bancaria === false &&
-    (
-      Boolean(concesion.data) ||
-      (saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta)
-    );
+    (Boolean(concesion.data) || (saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta));
+  const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
 
   useEffect(() => {
     if (!datosInstitucionales.data) return;
     setDatos((actual) => actual ?? datosInstitucionales.data!);
     if (!(historialInstitucional.data?.length)) setEditando(true);
   }, [datosInstitucionales.data, historialInstitucional.data]);
-
-  useEffect(() => {
-    if (!coop || !aperturaRequerida) return;
-    const motivos = [
-      concesion.data ? "concesion_kiosco" : null,
-      saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta ? "saldo_minimo" : null,
-    ].filter((valor): valor is "saldo_minimo" | "concesion_kiosco" => Boolean(valor));
-    if (motivos.length === 0) return;
-    asegurarPlazoAperturaCuenta(coop.id, motivos)
-      .then(() => qc.invalidateQueries({ queryKey: ["apertura-cuenta-bancaria", coop.id] }))
-      .catch((error: Error) => toast.error(error.message));
-  }, [coop?.id, aperturaRequerida, concesion.data, saldoMinimoCuenta, saldoActual, qc]);
 
   useEffect(() => {
     if (datosInstitucionales.data === undefined || cuentaBancaria.data === undefined) return;
@@ -218,6 +203,18 @@ function PanelCooperadora() {
       setEditandoBancaria(true);
     }
   }, [datosInstitucionales.data, cuentaBancaria.data]);
+
+  useEffect(() => {
+    if (!coop || !aperturaRequerida) return;
+    const motivos = [
+      concesion.data ? "concesion_kiosco" : null,
+      saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta ? "saldo_minimo" : null,
+    ].filter((valor): valor is "saldo_minimo" | "concesion_kiosco" => Boolean(valor));
+    if (motivos.length === 0) return;
+    asegurarPlazoAperturaCuenta(coop.id, motivos)
+      .then(() => qc.invalidateQueries({ queryKey: ["apertura-cuenta-bancaria", coop.id] }))
+      .catch((error: Error) => toast.error(error.message));
+  }, [coop?.id, aperturaRequerida, concesion.data, saldoMinimoCuenta, saldoActual, qc]);
 
   const guardarDatos = useMutation({
     mutationFn: async () => {
@@ -315,27 +312,15 @@ function PanelCooperadora() {
                 <Label>¿La Cooperadora posee cuenta bancaria? *</Label>
                 <div className="flex flex-wrap gap-6 rounded-md border border-border bg-secondary/20 px-4 py-3">
                   <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="posee-cuenta-bancaria"
-                      checked={datos.posee_cuenta_bancaria === true}
-                      onChange={() => actualizarDato("posee_cuenta_bancaria", true)}
-                    />
+                    <input type="radio" name="posee-cuenta-bancaria" checked={datos.posee_cuenta_bancaria === true} onChange={() => actualizarDato("posee_cuenta_bancaria", true)} />
                     Sí
                   </label>
                   <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="posee-cuenta-bancaria"
-                      checked={datos.posee_cuenta_bancaria === false}
-                      onChange={() => actualizarDato("posee_cuenta_bancaria", false)}
-                    />
+                    <input type="radio" name="posee-cuenta-bancaria" checked={datos.posee_cuenta_bancaria === false} onChange={() => actualizarDato("posee_cuenta_bancaria", false)} />
                     No
                   </label>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Si seleccionás “No”, el módulo de cuenta bancaria se oculta del panel.
-                </p>
+                <p className="text-xs text-muted-foreground">Si seleccionás “No”, el módulo bancario se oculta del panel.</p>
               </div>
               <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora *</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." required /></div>
               <div className="flex flex-wrap gap-2 md:col-span-2 lg:col-span-4">
@@ -401,41 +386,25 @@ function PanelCooperadora() {
         <Tarjeta titulo="Saldo final proyectado" valor={money(totales?.saldoFinal ?? 0)} />
       </div>
 
-      {!poseeCuentaBancaria && aperturaCuenta.data ? (
+      {!poseeCuentaBancaria && aperturaCuenta.data && (
         <Card className="mt-6 border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
               <span>⚠</span> Apertura de cuenta bancaria requerida
             </CardTitle>
-            <CardDescription>
-              La Cooperadora debe realizar la apertura de una cuenta bancaria dentro de 05 días hábiles.
-            </CardDescription>
+            <CardDescription>La Cooperadora debe realizar la apertura de una cuenta bancaria dentro de 05 días hábiles.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p>
-              Fecha de notificación:{" "}
-              <span className="font-medium">
-                {new Date(aperturaCuenta.data.fechaNotificacion + "T00:00:00").toLocaleDateString("es-AR")}
-              </span>
-            </p>
+            <p>Fecha de notificación: <span className="font-medium">{new Date(aperturaCuenta.data.fechaNotificacion + "T00:00:00").toLocaleDateString("es-AR")}</span></p>
             <p className={aperturaCuentaVencida(aperturaCuenta.data) ? "font-semibold text-destructive" : ""}>
               {aperturaCuentaVencida(aperturaCuenta.data)
                 ? "El plazo de 05 días hábiles se encuentra vencido."
                 : "Plazo para realizar la apertura: hasta el " + new Date(aperturaCuenta.data.fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR") + "."}
             </p>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Motivo de la obligación:</p>
-              <div className="mt-1 space-y-1 text-xs text-muted-foreground">
-                {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? <p>• La escuela posee concesión de kiosco/cantina.</p> : null}
-                {aperturaCuenta.data.motivos.includes("saldo_minimo") ? <p>• El saldo del Libro alcanzó el monto establecido por Auditoría.</p> : null}
-              </div>
-            </div>
-            <p className="pt-1 text-xs text-muted-foreground">
-              Una vez realizada la apertura, seleccioná “Sí posee cuenta bancaria” en los datos del establecimiento y completá los datos de la cuenta.
-            </p>
+            <p className="text-xs text-muted-foreground">Motivo: {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? "concesión de kiosco/cantina" : "saldo del Libro alcanzó el monto establecido por Auditoría"}.</p>
           </CardContent>
         </Card>
-      ) : null}
+      )}
 
       {poseeCuentaBancaria && (
       <Card className="mt-6">
@@ -459,9 +428,9 @@ function PanelCooperadora() {
         </CardHeader>
 
         <CardContent>
-          {!datosBancarios ? (
+          {!datosBancarios && (
             <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
-          ) : editandoBancaria ? (
+          {editandoBancaria && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2 md:col-span-2 lg:col-span-4">
                 <Label htmlFor="panel-saldo-bancario">Fondos resguardados en cuenta bancaria *</Label>
@@ -555,7 +524,7 @@ function PanelCooperadora() {
                 <Button onClick={() => guardarBancarios.mutate()} disabled={guardarBancarios.isPending}>
                   {guardarBancarios.isPending ? "Guardando…" : "Guardar datos bancarios"}
                 </Button>
-                {cuentaBancaria.data ? (
+                {cuentaBancaria.data && (
                   <Button
                     type="button"
                     variant="outline"
@@ -570,10 +539,10 @@ function PanelCooperadora() {
                   >
                     Cancelar
                   </Button>
-                ) : null}
+                )}
               </div>
             </div>
-          ) : (
+          {!editandoBancaria && (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Tarjeta
@@ -649,7 +618,7 @@ function PanelCooperadora() {
             ) : null}
           </div>
 
-          {resumenBancario.data ? (
+          {resumenBancario.data && (
             <div className="rounded-sm border border-border bg-secondary/30 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -685,19 +654,15 @@ function PanelCooperadora() {
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
-          {!resumenBancario.data ? (
+          {!resumenBancario.data && (
             <p className="text-xs text-muted-foreground">
               Todavía no hay un resumen bancario cargado. El documento debe renovarse cada 6 meses.
             </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              El resumen bancario debe actualizarse cada 6 meses.
-            </p>
           )}
 
-          {!resumenBancario.data && archivoResumenBancario ? (
+          {!resumenBancario.data && archivoResumenBancario && (
             <Button
               onClick={() => guardarResumen.mutate()}
               disabled={guardarResumen.isPending}
@@ -705,7 +670,7 @@ function PanelCooperadora() {
               <Upload className="mr-2 h-4 w-4" />
               {guardarResumen.isPending ? "Subiendo…" : "Subir resumen bancario"}
             </Button>
-          ) : null}
+          )}
         </div>
 
         </CardContent>
@@ -725,7 +690,6 @@ function PanelCooperadora() {
           </Link>
         </CardContent>
       </Card>
-      ) : null}
 
       <Card className="mt-6">
         <CardHeader><CardTitle className="font-serif text-lg">Consultas y control</CardTitle><CardDescription>Accesos para consultar la información registrada y controlar el ejercicio.</CardDescription></CardHeader>
