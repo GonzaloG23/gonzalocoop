@@ -55,9 +55,18 @@ function dibujarComprobante(
     y + 17,
   );
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text(datos.cooperadora.nombre, MARGEN_X + 5, y + 24);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(85, 85, 85);
+  doc.text("COOPERADORA ESCOLAR", MARGEN_X + 5, y + 25);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(0, 0, 0);
+  const nombreInstitucional = doc.splitTextToSize(datos.cooperadora.nombre, 175);
+  doc.text(nombreInstitucional, MARGEN_X + 5, y + 32, {
+    lineHeightFactor: 1,
+  });
 
   const institucion = [
     datos.cooperadora.cue ? `CUE ${datos.cooperadora.cue}` : null,
@@ -67,11 +76,15 @@ function dibujarComprobante(
     .join("  ·  ");
 
   if (institucion) {
-    doc.text(institucion, MARGEN_X + 5, y + 30);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(70, 70, 70);
+    doc.text(institucion, MARGEN_X + 5, y + 39);
   }
 
   doc.setDrawColor(200, 200, 200);
-  doc.line(MARGEN_X + 5, y + 34, ANCHO_A4 - MARGEN_X - 5, y + 34);
+  doc.line(MARGEN_X + 5, y + 43, ANCHO_A4 - MARGEN_X - 5, y + 43);
+  doc.setTextColor(0, 0, 0);
 
   const tieneDatosPersona =
     Boolean(datos.alumnoNombre || datos.alumnoDni || datos.alumnoCurso);
@@ -83,7 +96,7 @@ function dibujarComprobante(
     doc.text(
       esOferente ? "DATOS DEL OFERENTE" : "DATOS DEL ALUMNO",
       MARGEN_X + 5,
-      y + 42,
+      y + 51,
     );
 
     doc.setFont("helvetica", "normal");
@@ -91,16 +104,16 @@ function dibujarComprobante(
     doc.text(
       `Nombre y apellido: ${datos.alumnoNombre}`,
       MARGEN_X + 5,
-      y + 50,
+      y + 59,
     );
 
-    doc.text(`DNI: ${datos.alumnoDni}`, MARGEN_X + 5, y + 57);
+    doc.text(`DNI: ${datos.alumnoDni}`, MARGEN_X + 5, y + 66);
 
     if (!esOferente && datos.alumnoCurso) {
       doc.text(
         `Curso / grado: ${datos.alumnoCurso}`,
         MARGEN_X + 75,
-        y + 57,
+        y + 66,
       );
     }
   }
@@ -108,16 +121,16 @@ function dibujarComprobante(
   const desplazamientoPago = tieneDatosPersona ? 0 : -27;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("DATOS DEL PAGO", MARGEN_X + 5, y + 69 + desplazamientoPago);
+  doc.text("DATOS DEL PAGO", MARGEN_X + 5, y + 78 + desplazamientoPago);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.text(`Fecha: ${fechaCorta(datos.fecha)}`, MARGEN_X + 5, y + 77 + desplazamientoPago);
+  doc.text(`Fecha: ${fechaCorta(datos.fecha)}`, MARGEN_X + 5, y + 86 + desplazamientoPago);
 
   doc.text(
     `Medio de pago: ${datos.medioPago || "No informado"}`,
     MARGEN_X + 5,
-    y + 84 + desplazamientoPago,
+    y + 93 + desplazamientoPago,
   );
 
   doc.setFont("helvetica", "bold");
@@ -125,15 +138,15 @@ function dibujarComprobante(
   doc.text(
     `MONTO ABONADO: ${money(datos.monto)}`,
     MARGEN_X + 5,
-    y + 98 + desplazamientoPago,
+    y + 107 + desplazamientoPago,
   );
 
   doc.setDrawColor(190, 190, 190);
   doc.line(
     MARGEN_X + 5,
-    y + 104 + desplazamientoPago,
+    y + 113 + desplazamientoPago,
     ANCHO_A4 - MARGEN_X - 5,
-    y + 97 + desplazamientoPago,
+    y + 106 + desplazamientoPago,
   );
 
   doc.setFont("helvetica", "normal");
@@ -142,7 +155,7 @@ function dibujarComprobante(
   doc.text(
     "Conservar este comprobante como constancia del pago.",
     MARGEN_X + 5,
-    y + 114 + desplazamientoPago,
+    y + 123 + desplazamientoPago,
   );
 
   doc.setTextColor(0, 0, 0);
