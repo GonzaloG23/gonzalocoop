@@ -116,6 +116,12 @@ function AuditoriaLibroPage() {
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
+  const contratoSellado = useQuery({
+    queryKey: ["documento-concesion", id, "contrato_sellado"],
+    queryFn: () => cargarDocumentoConcesion(id, "contrato_sellado"),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
   const buenaConducta = useQuery({
     queryKey: ["documento-concesion", id, "buena_conducta"],
     queryFn: () => cargarDocumentoConcesion(id, "buena_conducta"),
@@ -180,6 +186,8 @@ function AuditoriaLibroPage() {
   const historialAutoridades = historialComision.data ?? [];
   const datosConcesion = concesion.data;
   const historialConcesionData = historialConcesion.data ?? [];
+  const cambiosCanonAuditoria = construirHistorialCanonAuditoria(historialConcesionData);
+  const hayReduccionCanon = cambiosCanonAuditoria.some((cambio) => cambio.esBaja);
 
   const iniciarEdicionIdentificacion = () => {
     setNombre(c.nombre ?? "");
@@ -338,9 +346,13 @@ function AuditoriaLibroPage() {
           ) : !datosConcesion ? (
             <p className="text-sm text-muted-foreground">No hay datos de concesión registrados.</p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <DatoInstitucional titulo="Apellido" valor={datosConcesion.apellido} />
               <DatoInstitucional titulo="Nombre" valor={datosConcesion.nombre} />
+              <DatoInstitucional
+                titulo="Fecha de firma del contrato"
+                valor={formatearFechaContratoAuditoria(datosConcesion.fechaFirmaContrato)}
+              />
               <DatoInstitucional titulo="Canon" valor={money(num(datosConcesion.canon))} />
             </div>
           )}
@@ -352,6 +364,11 @@ function AuditoriaLibroPage() {
               onOpen={() => abrirDocumentoConcesion(id, "contrato").catch((error: Error) => toast.error(error.message))}
             />
             <DocumentoAuditoria
+              titulo="Sellado de contrato"
+              documento={contratoSellado.data}
+              onOpen={() => abrirDocumentoConcesion(id, "contrato_sellado").catch((error: Error) => toast.error(error.message))}
+            />
+            <DocumentoAuditoria
               titulo="Certificado de buena conducta"
               documento={buenaConducta.data}
               onOpen={() => abrirDocumentoConcesion(id, "buena_conducta").catch((error: Error) => toast.error(error.message))}
@@ -359,6 +376,46 @@ function AuditoriaLibroPage() {
           </div>
         </CardContent>
       </Card>
+
+      {hayReduccionCanon && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
+              <span>⚠</span> Alerta de reducción del canon
+            </CardTitle>
+            <CardDescription>
+              Se detectó una modificación en la que el nuevo canon es menor al valor registrado anteriormente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                    <th className="px-3 py-2 font-medium">Fecha</th>
+                    <th className="px-3 py-2 font-medium">Valor anterior</th>
+                    <th className="px-3 py-2 font-medium">Nuevo valor</th>
+                    <th className="px-3 py-2 font-medium">Usuario</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cambiosCanonAuditoria.filter((cambio) => cambio.esBaja).map((cambio) => (
+                    <tr key={cambio.id} className="border-b border-destructive/20 last:border-0">
+                      <td className="px-3 py-2 text-xs">{new Date(cambio.modificadoEn).toLocaleString("es-AR")}</td>
+                      <td className="px-3 py-2">{money(cambio.valorAnterior)}</td>
+                      <td className="px-3 py-2 font-medium text-destructive">{money(cambio.nuevoValor)}</td>
+                      <td className="px-3 py-2 text-xs">
+                        <span>{cambio.usuarioNombre}</span>
+                        {cambio.usuarioEmail ? <span className="block text-muted-foreground">{cambio.usuarioEmail}</span> : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {historialConcesionData.length > 0 && (
         <details className="mb-6 rounded-sm border border-border bg-card">
@@ -391,6 +448,55 @@ function AuditoriaLibroPage() {
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
   );
+}
+
+function construirHistorialCanonAuditoria(
+  historial: Array<{
+    id: string;
+    datos: { canon: number | string };
+    usuario_nombre: string;
+    usuario_email: string | null;
+    modificado_en: string;
+  }>,
+) {
+  const cronologico = [...historial].reverse();
+  const cambios: Array<{
+    id: string;
+    valorAnterior: number;
+    nuevoValor: number;
+    esBaja: boolean;
+    usuarioNombre: string;
+    usuarioEmail: string | null;
+    modificadoEn: string;
+  }> = [];
+
+  cronologico.forEach((registro, index) => {
+    const nuevoValor = num(registro.datos.canon);
+    const anterior = cronologico[index - 1];
+
+    if (!anterior) return;
+    const valorAnterior = num(anterior.datos.canon);
+    if (valorAnterior === nuevoValor) return;
+
+    cambios.push({
+      id: registro.id,
+      valorAnterior,
+      nuevoValor,
+      esBaja: nuevoValor < valorAnterior,
+      usuarioNombre: registro.usuario_nombre,
+      usuarioEmail: registro.usuario_email,
+      modificadoEn: registro.modificado_en,
+    });
+  });
+
+  return cambios.reverse();
+}
+
+function formatearFechaContratoAuditoria(valor: string | undefined) {
+  if (!valor) return "No informado";
+  const [anio, mes, dia] = valor.split("-");
+  if (!anio || !mes || !dia) return valor;
+  return [dia, mes, anio].join("/");
 }
 
 function DatoInstitucional({ titulo, valor, className = "" }: { titulo: string; valor: string; className?: string }) {
