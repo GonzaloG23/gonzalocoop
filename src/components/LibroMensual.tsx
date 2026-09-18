@@ -446,7 +446,7 @@ function FormularioMovimiento({
   const rubroSeleccionado = rubros.find((r) => r.id === rubroId);
   const rubroNormalizado = (rubroSeleccionado?.nombre ?? "")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
   const requiereComprobanteAlumno =
