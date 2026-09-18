@@ -130,6 +130,12 @@ function PanelCooperadora() {
   const hoy = new Date();
   const mesActual = anio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
   const saldoActual = resumen?.find((r) => r.mes === mesActual)?.saldoFinal ?? 0;
+  const efectivoEnMano =
+    datosBancarios && datosBancarios.saldoBancario !== ""
+      ? saldoActual - num(datosBancarios.saldoBancario)
+      : null;
+  const hayEfectivoEnMano =
+    efectivoEnMano !== null && Math.abs(efectivoEnMano) > 0.009;
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
 
   useEffect(() => {
@@ -435,27 +441,45 @@ function PanelCooperadora() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Tarjeta
-                titulo="Fondos resguardados"
-                valor={money(num(datosBancarios.saldoBancario))}
-                destacado
-              />
-              <TitularBancario
-                cargo="Asesor/Director"
-                nombre={datosBancarios.asesorDirectorNombre}
-                dni={datosBancarios.asesorDirectorDni}
-              />
-              <TitularBancario
-                cargo="Presidente"
-                nombre={datosBancarios.presidenteNombre}
-                dni={datosBancarios.presidenteDni}
-              />
-              <TitularBancario
-                cargo="Tesorero"
-                nombre={datosBancarios.tesoreroNombre}
-                dni={datosBancarios.tesoreroDni}
-              />
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Tarjeta
+                  titulo="Fondos resguardados"
+                  valor={money(num(datosBancarios.saldoBancario))}
+                  destacado
+                />
+                <TitularBancario
+                  cargo="Asesor/Director"
+                  nombre={datosBancarios.asesorDirectorNombre}
+                  dni={datosBancarios.asesorDirectorDni}
+                />
+                <TitularBancario
+                  cargo="Presidente"
+                  nombre={datosBancarios.presidenteNombre}
+                  dni={datosBancarios.presidenteDni}
+                />
+                <TitularBancario
+                  cargo="Tesorero"
+                  nombre={datosBancarios.tesoreroNombre}
+                  dni={datosBancarios.tesoreroDni}
+                />
+              </div>
+
+              {hayEfectivoEnMano ? (
+                <div className="rounded-sm border border-primary/20 bg-secondary/30 px-4 py-3">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Efectivo en mano</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Diferencia entre el saldo actual del Libro y los fondos resguardados en banco.
+                      </p>
+                    </div>
+                    <p className="font-serif text-xl font-semibold">
+                      {money(efectivoEnMano ?? 0)}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </CardContent>
