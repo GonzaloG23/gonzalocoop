@@ -452,7 +452,7 @@ function FormularioMovimiento({
   const requiereComprobanteAlumno =
     !ajusta &&
     tipo === "ingreso" &&
-    (rubroNormalizado === "matricula" || rubroNormalizado === "ayuda escolar/cooperadora");
+    (rubroNormalizado === "matricula" || rubroNormalizado.replace(/\s+/g, "") === "ayudaescolar/cooperadora");
   const faltanDatosAlumno =
     requiereComprobanteAlumno &&
     (!alumnoNombre.trim() || alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8);
@@ -915,8 +915,8 @@ function FormularioMovimiento({
               {guardar.isPending ? "Guardando…" : ajusta ? "Registrar ajuste" : "Registrar movimiento"}
             </Button>
           </DialogFooter>
-
-        )}        </form>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
