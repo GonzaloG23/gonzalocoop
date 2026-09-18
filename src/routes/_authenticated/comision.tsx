@@ -465,7 +465,28 @@ function ComisionPage() {
                     {guardar.isPending ? "Guardando…" : "Guardar comisión directiva"}
                   </Button>
                   {historialComision.data?.length ? (
-                    <Button type="button" variant="outline" onClick={() => { setModoNuevaConformacion(false); setEditando(false); }} disabled={guardar.isPending}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setModoNuevaConformacion(false);
+                        const actuales = Object.fromEntries(
+                          CARGOS.map(({ cargo }) => {
+                            const miembro = comision.data?.miembros.find((item) => item.cargo === cargo);
+                            return [
+                              cargo,
+                              cargo === "asesor_director"
+                                ? { nombre: directorNombre, dni: directorDni }
+                                : { nombre: miembro?.nombre ?? "", dni: miembro?.dni ?? "" },
+                            ];
+                          }),
+                        ) as Record<CargoComision, { nombre: string; dni: string }>;
+                        setMiembros(actuales);
+                        setFechaInicioMandato(comision.data?.fechaInicioMandato ?? "");
+                        setEditando(false);
+                      }}
+                      disabled={guardar.isPending}
+                    >
                       Cancelar
                     </Button>
                   ) : null}
