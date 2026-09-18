@@ -305,10 +305,10 @@ function PanelCooperadora() {
             <div>
               <CardTitle className="flex items-center gap-2 font-serif text-lg">
                 <Wallet className="h-5 w-5 text-primary" />
-                Cuenta bancaria
+                Fondos resguardados en cuenta bancaria
               </CardTitle>
               <CardDescription>
-                Dinero depositado y titulares registrados de la cuenta de la cooperadora.
+                Dinero de la Cooperadora depositado como medida de resguardo. Este importe no constituye un ingreso ni un egreso adicional del Libro.
               </CardDescription>
             </div>
             {!editandoBancaria && datosBancarios ? (
@@ -325,7 +325,7 @@ function PanelCooperadora() {
           ) : editandoBancaria ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2 md:col-span-2 lg:col-span-4">
-                <Label htmlFor="panel-saldo-bancario">Dinero depositado en la cuenta bancaria *</Label>
+                <Label htmlFor="panel-saldo-bancario">Fondos resguardados en cuenta bancaria *</Label>
                 <Input
                   id="panel-saldo-bancario"
                   inputMode="decimal"
@@ -437,7 +437,7 @@ function PanelCooperadora() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Tarjeta
-                titulo="Dinero depositado"
+                titulo="Fondos resguardados"
                 valor={money(num(datosBancarios.saldoBancario))}
                 destacado
               />
