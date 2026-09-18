@@ -466,15 +466,26 @@ function PanelCooperadora() {
               </div>
 
               {hayEfectivoEnMano ? (
-                <div className="rounded-sm border border-primary/20 bg-secondary/30 px-4 py-3">
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="overflow-hidden rounded-md border-2 border-primary/50 bg-primary/5 shadow-md ring-1 ring-primary/10">
+                  <div className="border-b border-primary/20 bg-primary/10 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Wallet className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-wide text-primary">Efectivo en mano</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Dinero disponible fuera de la cuenta bancaria</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">Efectivo en mano</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Diferencia entre el saldo actual del Libro y los fondos resguardados en banco.
+                      <p className="text-sm font-medium">Diferencia entre el saldo del Libro y los fondos resguardados.</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Este importe se calcula automáticamente y no genera un movimiento contable.
                       </p>
                     </div>
-                    <p className="font-serif text-xl font-semibold">
+                    <p className="font-serif text-3xl font-bold tracking-tight text-primary sm:text-4xl">
                       {money(efectivoEnMano ?? 0)}
                     </p>
                   </div>
