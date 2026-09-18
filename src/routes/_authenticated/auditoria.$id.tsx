@@ -36,6 +36,7 @@ import {
   cargarHistorialComisionDirectiva,
   registrarModificacionComisionDirectiva,
 } from "@/lib/data/comision-historial";
+import { cargarSolicitudesCambioMandato, resolverSolicitudCambioMandato } from "@/lib/data/comision-mandatos-solicitudes";
 import {
   cargarHistorialConcesionKiosco,
   cargarHistorialDocumentosConcesion,
