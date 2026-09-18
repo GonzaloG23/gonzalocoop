@@ -383,7 +383,18 @@ function PanelCooperadora() {
                   {guardarBancarios.isPending ? "Guardando…" : "Guardar datos bancarios"}
                 </Button>
                 {cuentaBancaria.data ? (
-                  <Button type="button" variant="outline" onClick={() => setEditandoBancaria(false)} disabled={guardarBancarios.isPending}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const guardados = cuentaBancaria.data;
+                      if (guardados) {
+                        setDatosBancarios({ ...guardados, saldoBancario: String(guardados.saldoBancario) });
+                      }
+                      setEditandoBancaria(false);
+                    }}
+                    disabled={guardarBancarios.isPending}
+                  >
                     Cancelar
                   </Button>
                 ) : null}
