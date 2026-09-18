@@ -14,6 +14,10 @@ export type ModificacionComision = {
   usuario_nombre: string;
   usuario_email: string | null;
   modificado_en: string;
+  tipo: "modificacion" | "mandato";
+  fecha_inicio_mandato: string | null;
+  fecha_fin_mandato: string | null;
+  numero_periodo: number;
 };
 
 const DEMO_KEY_PREFIX = "demo-historial-comision-directiva-";
@@ -45,6 +49,12 @@ export async function registrarModificacionComisionDirectiva(
   cooperadoraId: string,
   miembros: MiembroComision[],
   actor: ActorModificacionComision,
+  mandato: {
+    tipo: "modificacion" | "mandato";
+    fechaInicioMandato: string | null;
+    fechaFinMandato: string | null;
+    numeroPeriodo: number;
+  },
 ): Promise<ModificacionComision> {
   const registro: ModificacionComision = {
     id: `demo-comision-${Date.now()}`,
@@ -53,6 +63,10 @@ export async function registrarModificacionComisionDirectiva(
     usuario_nombre: actor.nombre,
     usuario_email: actor.email,
     modificado_en: new Date().toISOString(),
+    tipo: mandato.tipo,
+    fecha_inicio_mandato: mandato.fechaInicioMandato,
+    fecha_fin_mandato: mandato.fechaFinMandato,
+    numero_periodo: mandato.numeroPeriodo,
   };
 
   if (usingMinisterioApi()) {
@@ -60,7 +74,14 @@ export async function registrarModificacionComisionDirectiva(
       `/api/cooperadoras/${cooperadoraId}/comision-directiva/historial`,
       {
         method: "POST",
-        body: JSON.stringify({ miembros, modificado_por: actor }),
+        body: JSON.stringify({
+          miembros,
+          modificado_por: actor,
+          tipo: mandato.tipo,
+          fecha_inicio_mandato: mandato.fechaInicioMandato,
+          fecha_fin_mandato: mandato.fechaFinMandato,
+          numero_periodo: mandato.numeroPeriodo,
+        }),
       },
     );
   }
