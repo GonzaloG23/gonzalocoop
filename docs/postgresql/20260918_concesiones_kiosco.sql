@@ -74,3 +74,22 @@ CREATE INDEX IF NOT EXISTS idx_concesion_historial_concesion
 -- Los PDF no se guardan dentro de PostgreSQL. El backend debe almacenarlos
 -- en el almacenamiento institucional definido por el Ministerio y conservar
 -- aquí solamente su referencia (storage_key) y metadatos.
+
+
+-- Cuenta bancaria de la cooperadora: saldo y titulares registrados.
+CREATE TABLE IF NOT EXISTS cuentas_bancarias_cooperadora (
+  id uuid PRIMARY KEY,
+  cooperadora_id uuid NOT NULL UNIQUE,
+  saldo_bancario numeric(14,2) NOT NULL CHECK (saldo_bancario >= 0),
+  asesor_director_nombre text NOT NULL,
+  asesor_director_dni text NOT NULL CHECK (asesor_director_dni ~ '^[0-9]{8}$'),
+  presidente_nombre text NOT NULL,
+  presidente_dni text NOT NULL CHECK (presidente_dni ~ '^[0-9]{8}$'),
+  tesorero_nombre text NOT NULL,
+  tesorero_dni text NOT NULL CHECK (tesorero_dni ~ '^[0-9]{8}$'),
+  actualizado_por uuid NOT NULL,
+  actualizado_en timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cuentas_bancarias_cooperadora
+  ON cuentas_bancarias_cooperadora(cooperadora_id);
