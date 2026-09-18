@@ -474,7 +474,10 @@ function FormularioMovimiento({
       (!alumnoNombre.trim() ||
         alumnoDniDigitos.length < 7 ||
         alumnoDniDigitos.length > 8)) ||
-    (requiereDatosOferente && !alumnoNombre.trim());
+    (requiereDatosOferente &&
+      (!alumnoNombre.trim() ||
+        alumnoDniDigitos.length < 7 ||
+        alumnoDniDigitos.length > 8));
   const faltaConcepto = !generaComprobanteIngreso && !concepto.trim();
 
   const guardar = useMutation({
@@ -482,7 +485,7 @@ function FormularioMovimiento({
       if (faltanDatosPersona) {
         throw new Error(
           requiereDatosOferente
-            ? "Completá el nombre y apellido del oferente para generar el comprobante."
+            ? "Completá nombre y DNI del oferente para generar el comprobante."
             : "Completá nombre y DNI del alumno para generar el comprobante.",
         );
       }
@@ -824,10 +827,12 @@ function FormularioMovimiento({
                     />
                   </div>
 
-                  {requiereDatosAlumno && (
+                  {(requiereDatosAlumno || requiereDatosOferente) && (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="alumno-dni">DNI del alumno *</Label>
+                        <Label htmlFor="alumno-dni">
+                          {requiereDatosOferente ? "DNI del oferente *" : "DNI del alumno *"}
+                        </Label>
                         <Input
                           id="alumno-dni"
                           required
@@ -842,15 +847,17 @@ function FormularioMovimiento({
                             <p className="text-xs text-destructive">El DNI debe tener 7 u 8 dígitos.</p>
                           )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="alumno-curso">Curso / grado</Label>
-                        <Input
-                          id="alumno-curso"
-                          value={alumnoCurso}
-                          onChange={(e) => setAlumnoCurso(e.target.value)}
-                          placeholder="Ej. 5° grado"
-                        />
-                      </div>
+                      {requiereDatosAlumno && (
+                        <div className="space-y-2">
+                          <Label htmlFor="alumno-curso">Curso / grado</Label>
+                          <Input
+                            id="alumno-curso"
+                            value={alumnoCurso}
+                            onChange={(e) => setAlumnoCurso(e.target.value)}
+                            placeholder="Ej. 5° grado"
+                          />
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
