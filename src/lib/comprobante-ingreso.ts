@@ -128,16 +128,18 @@ function dibujarComprobante(
 }
 
 function crearDocumento(datos: DatosComprobanteIngreso) {
-  return new jsPDF({
+  const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
   });
+
+  dibujarComprobante(doc, datos, 8);
+  return doc;
 }
 
 export function generarComprobanteIngreso(datos: DatosComprobanteIngreso) {
   const doc = crearDocumento(datos);
-  dibujarComprobante(doc, datos, 8);
   const nombreArchivo = `comprobante-ingreso-${datos.comprobante.replace(/[^0-9-]/g, "")}.pdf`;
 
   return {
@@ -150,23 +152,6 @@ export function descargarComprobanteIngreso(datos: DatosComprobanteIngreso) {
   const doc = crearDocumento(datos);
   const nombreArchivo = `comprobante-ingreso-${datos.comprobante.replace(/[^0-9-]/g, "")}.pdf`;
   doc.save(nombreArchivo);
-}
-
-export function abrirComprobantesIngresoParaImprimir(
-  comprobantes: [DatosComprobanteIngreso, DatosComprobanteIngreso],
-) {
-  const { blob } = generarDosComprobantesIngreso(comprobantes);
-  const url = URL.createObjectURL(blob);
-  const ventana = window.open(url, "_blank");
-
-  if (!ventana) {
-    URL.revokeObjectURL(url);
-    throw new Error(
-      "El navegador bloqueó la apertura del comprobante. Permití las ventanas emergentes para imprimirlo.",
-    );
-  }
-
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function abrirComprobanteIngresoParaImprimir(
