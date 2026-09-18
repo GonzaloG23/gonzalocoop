@@ -13,6 +13,7 @@ import {
   aperturaCuentaVencida,
 } from "@/lib/data/apertura-cuenta-bancaria";
 import { cargarDatosInstitucionales } from "@/lib/data/datos-institucionales";
+import { cargarComisionDirectiva, diasParaVencimientoMandato } from "@/lib/data/comision";
 import { AppShell, useContexto } from "@/components/AppShell";
 import {
   calcularEjercicio,
@@ -79,16 +80,29 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
 
   return Promise.all(
     coops.map(async (coop) => {
-      const [{ periodos, movimientos }, datosInstitucionales, concesion] = await Promise.all([
+      const [{ periodos, movimientos }, datosInstitucionales, concesion, comision] = await Promise.all([
         cargarEjercicio(coop.id, coop.ejercicio),
         cargarDatosInstitucionales(coop),
         cargarConcesionKiosco(coop.id),
+        cargarComisionDirectiva(coop.id),
       ]);
       const resumen = calcularEjercicio(num(coop.saldo_inicial_ejercicio), periodos, movimientos, parametros);
       const totales = totalesAnuales(resumen);
       const mesTope = coop.ejercicio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
       const saldoActual = resumen.find((r) => r.mes === mesTope)?.saldoFinal ?? totales.saldoFinal;
       const alertasCuenta: Alerta[] = [];
+      const diasMandato = diasParaVencimientoMandato(comision?.fechaFinMandato ?? null);
+      const alertasMandato: Alerta[] = [];
+      if (diasMandato !== null && diasMandato < 0) {
+        const mesVencimiento = Number(comision?.fechaFinMandato?.slice(5, 7)) || mesTope;
+        const fechaVencimiento = comision?.fechaFinMandato
+          ? new Date(`${comision.fechaFinMandato}T00:00:00`).toLocaleDateString("es-AR")
+          : "";
+        alertasMandato.push({
+          mes: mesVencimiento,
+          texto: `El mandato de la Comisión Directiva se encuentra vencido desde el ${fechaVencimiento}.`,
+        });
+      }
       const motivosApertura = [
         concesion ? "concesion_kiosco" : null,
         saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta ? "saldo_minimo" : null,
@@ -156,6 +170,7 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
             r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
           ),
           ...alertasCuenta,
+          ...alertasMandato,
           ...alertasRecibos.map((a) => ({
             ...a,
             texto: a.texto.startsWith("Se registraron")
