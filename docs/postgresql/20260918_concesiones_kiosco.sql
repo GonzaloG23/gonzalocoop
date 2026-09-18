@@ -49,6 +49,24 @@ CREATE TABLE IF NOT EXISTS concesiones_kiosco_historial (
   modificado_en timestamptz NOT NULL DEFAULT now()
 );
 
+
+CREATE TABLE IF NOT EXISTS documentos_concesion_historial (
+  id uuid PRIMARY KEY,
+  concesion_id uuid NOT NULL REFERENCES concesiones_kiosco(id) ON DELETE CASCADE,
+  tipo text NOT NULL CHECK (
+    tipo IN ('contrato', 'contrato_sellado', 'buena_conducta')
+  ),
+  nombre_archivo text NOT NULL,
+  accion text NOT NULL CHECK (accion IN ('carga', 'reemplazo')),
+  usuario_id uuid NOT NULL,
+  usuario_nombre text NOT NULL,
+  usuario_email text,
+  modificado_en timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_documentos_concesion_historial
+  ON documentos_concesion_historial(concesion_id, modificado_en DESC);
+
 CREATE INDEX IF NOT EXISTS idx_concesion_historial_concesion
   ON concesiones_kiosco_historial(concesion_id, modificado_en DESC);
 
