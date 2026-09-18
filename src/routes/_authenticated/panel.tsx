@@ -14,6 +14,12 @@ import {
   type DatosInstitucionales,
 } from "@/lib/data/datos-institucionales";
 import { cargarCuentaBancaria, guardarCuentaBancaria, type CuentaBancariaCooperadora } from "@/lib/data/cuenta-bancaria";
+import { cargarConcesionKiosco } from "@/lib/data/concesion";
+import {
+  asegurarPlazoAperturaCuenta,
+  cargarAperturaCuentaBancaria,
+  aperturaCuentaVencida,
+} from "@/lib/data/apertura-cuenta-bancaria";
 import {
   abrirResumenBancario,
   calcularProximaActualizacionResumenBancario,
@@ -127,7 +133,17 @@ function PanelCooperadora() {
   const resumenBancario = useQuery({
     queryKey: ["resumen-bancario", coop?.id],
     queryFn: () => cargarResumenBancario(coop!.id),
+    enabled: !!coop && Boolean(datos?.posee_cuenta_bancaria),
+  });
+  const concesion = useQuery({
+    queryKey: ["concesion-kiosco", coop?.id],
+    queryFn: () => cargarConcesionKiosco(coop!.id),
     enabled: !!coop,
+  });
+  const aperturaCuenta = useQuery({
+    queryKey: ["apertura-cuenta-bancaria", coop?.id],
+    queryFn: () => cargarAperturaCuentaBancaria(coop!.id),
+    enabled: !!coop && datos?.posee_cuenta_bancaria === false,
   });
   const [datos, setDatos] = useState<DatosInstitucionales | null>(null);
   const [editando, setEditando] = useState(false);
@@ -150,12 +166,31 @@ function PanelCooperadora() {
     efectivoEnMano !== null && Math.abs(efectivoEnMano) > 0.009;
   const poseeCuentaBancaria = Boolean(datos?.posee_cuenta_bancaria);
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
+  const saldoMinimoCuenta = num(parametros.data?.saldo_minimo_cuenta_bancaria ?? 0);
+  const aperturaRequerida =
+    datos?.posee_cuenta_bancaria === false &&
+    (
+      Boolean(concesion.data) ||
+      (saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta)
+    );
 
   useEffect(() => {
     if (!datosInstitucionales.data) return;
     setDatos((actual) => actual ?? datosInstitucionales.data!);
     if (!(historialInstitucional.data?.length)) setEditando(true);
   }, [datosInstitucionales.data, historialInstitucional.data]);
+
+  useEffect(() => {
+    if (!coop || !aperturaRequerida) return;
+    const motivos = [
+      concesion.data ? "concesion_kiosco" : null,
+      saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta ? "saldo_minimo" : null,
+    ].filter((valor): valor is "saldo_minimo" | "concesion_kiosco" => Boolean(valor));
+    if (motivos.length === 0) return;
+    asegurarPlazoAperturaCuenta(coop.id, motivos)
+      .then(() => qc.invalidateQueries({ queryKey: ["apertura-cuenta-bancaria", coop.id] }))
+      .catch((error: Error) => toast.error(error.message));
+  }, [coop?.id, aperturaRequerida, concesion.data, saldoMinimoCuenta, saldoActual, qc]);
 
   useEffect(() => {
     if (datosInstitucionales.data === undefined || cuentaBancaria.data === undefined) return;
@@ -365,6 +400,42 @@ function PanelCooperadora() {
         <Tarjeta titulo="Egresos del ejercicio" valor={money(totales?.egresos ?? 0)} />
         <Tarjeta titulo="Saldo final proyectado" valor={money(totales?.saldoFinal ?? 0)} />
       </div>
+
+      {!poseeCuentaBancaria && aperturaCuenta.data ? (
+        <Card className="mt-6 border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
+              <span>⚠</span> Apertura de cuenta bancaria requerida
+            </CardTitle>
+            <CardDescription>
+              La Cooperadora debe realizar la apertura de una cuenta bancaria dentro de 05 días hábiles.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>
+              Fecha de notificación:{" "}
+              <span className="font-medium">
+                {new Date(aperturaCuenta.data.fechaNotificacion + "T00:00:00").toLocaleDateString("es-AR")}
+              </span>
+            </p>
+            <p className={aperturaCuentaVencida(aperturaCuenta.data) ? "font-semibold text-destructive" : ""}>
+              {aperturaCuentaVencida(aperturaCuenta.data)
+                ? "El plazo de 05 días hábiles se encuentra vencido."
+                : "Plazo para realizar la apertura: hasta el " + new Date(aperturaCuenta.data.fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR") + "."}
+            </p>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Motivo de la obligación:</p>
+              <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+                {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? <p>• La escuela posee concesión de kiosco/cantina.</p> : null}
+                {aperturaCuenta.data.motivos.includes("saldo_minimo") ? <p>• El saldo del Libro alcanzó el monto establecido por Auditoría.</p> : null}
+              </div>
+            </div>
+            <p className="pt-1 text-xs text-muted-foreground">
+              Una vez realizada la apertura, seleccioná “Sí posee cuenta bancaria” en los datos del establecimiento y completá los datos de la cuenta.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {poseeCuentaBancaria ? (
       <Card className="mt-6">
