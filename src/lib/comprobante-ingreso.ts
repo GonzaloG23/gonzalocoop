@@ -160,16 +160,6 @@ export function abrirComprobanteIngresoParaImprimir(
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-function validarEmail(email: string) {
-  const destino = email.trim();
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino)) {
-    throw new Error("Ingresá una dirección de correo electrónico válida.");
-  }
-
-  return destino;
-}
-
 function validarWhatsApp(telefono: string) {
   const destino = telefono.replace(/\D/g, "");
 
@@ -192,20 +182,6 @@ function mensajeComprobante(datos: DatosComprobanteIngreso) {
     "",
     "Se adjunta el comprobante de pago en PDF.",
   ].join("\n");
-}
-
-export function prepararComprobanteParaEmail(
-  datos: DatosComprobanteIngreso,
-  email: string,
-) {
-  const destino = validarEmail(email);
-  descargarComprobanteIngreso(datos);
-
-  const asunto = `Comprobante de pago N° ${datos.comprobante}`;
-  const cuerpo = mensajeComprobante(datos);
-
-  window.location.href =
-    `mailto:${encodeURIComponent(destino)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
 }
 
 export function prepararComprobanteParaWhatsApp(
