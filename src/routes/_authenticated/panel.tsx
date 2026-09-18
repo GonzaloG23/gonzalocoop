@@ -685,7 +685,9 @@ function PanelCooperadora() {
                 </div>
               </div>
             </div>
-              {!resumenBancario.data ? (
+          ) : null}
+
+          {!resumenBancario.data ? (
             <p className="text-xs text-muted-foreground">
               Todavía no hay un resumen bancario cargado. El documento debe renovarse cada 6 meses.
             </p>
