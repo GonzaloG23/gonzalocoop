@@ -789,43 +789,45 @@ function FormularioMovimiento({
                   Se generará un comprobante al registrar este ingreso.
                 </p>
               </div>
-              {requiereDatosAlumno ?               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="alumno-nombre">Nombre y apellido del alumno *</Label>
-                  <Input
-                    id="alumno-nombre"
-                    required
-                    value={alumnoNombre}
-                    onChange={(e) => setAlumnoNombre(e.target.value)}
-                    placeholder="Nombre y apellido"
-                  />
+              {requiereDatosAlumno && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="alumno-nombre">Nombre y apellido del alumno *</Label>
+                    <Input
+                      id="alumno-nombre"
+                      required
+                      value={alumnoNombre}
+                      onChange={(e) => setAlumnoNombre(e.target.value)}
+                      placeholder="Nombre y apellido"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="alumno-dni">DNI del alumno *</Label>
+                    <Input
+                      id="alumno-dni"
+                      required
+                      inputMode="numeric"
+                      maxLength={8}
+                      value={alumnoDni}
+                      onChange={(e) => setAlumnoDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                      placeholder="Número de DNI"
+                    />
+                    {alumnoDni.length > 0 &&
+                      (alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8) && (
+                        <p className="text-xs text-destructive">El DNI debe tener 7 u 8 dígitos.</p>
+                      )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="alumno-curso">Curso / grado</Label>
+                    <Input
+                      id="alumno-curso"
+                      value={alumnoCurso}
+                      onChange={(e) => setAlumnoCurso(e.target.value)}
+                      placeholder="Ej. 5° grado"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="alumno-dni">DNI del alumno *</Label>
-                  <Input
-                    id="alumno-dni"
-                    required
-                    inputMode="numeric"
-                    maxLength={8}
-                    value={alumnoDni}
-                    onChange={(e) => setAlumnoDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    placeholder="Número de DNI"
-                  />
-                  {alumnoDni.length > 0 && (alumnoDniDigitos.length < 7 || alumnoDniDigitos.length > 8) && (
-                    <p className="text-xs text-destructive">El DNI debe tener 7 u 8 dígitos.</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="alumno-curso">Curso / grado</Label>
-                  <Input
-                    id="alumno-curso"
-                    value={alumnoCurso}
-                    onChange={(e) => setAlumnoCurso(e.target.value)}
-                    placeholder="Ej. 5° grado"
-                  />
-                </div>
- : null}
-              </div>
+              )}
             </div>
           )}
 
