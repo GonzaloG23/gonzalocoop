@@ -53,6 +53,11 @@ const DOCUMENTOS: DocumentoInfo[] = [
     descripcion: "Contrato firmado de concesión del kiosco o cantina.",
   },
   {
+    tipo: "contrato_sellado",
+    titulo: "Sellado de contrato",
+    descripcion: "Constancia o ejemplar del contrato con el sellado correspondiente.",
+  },
+  {
     tipo: "buena_conducta",
     titulo: "Certificado de buena conducta",
     descripcion: "Certificado correspondiente al concesionario registrado.",
@@ -64,7 +69,12 @@ function ConcesionPage() {
   const qc = useQueryClient();
   const cooperadora = ctx?.cooperadora;
   const [editando, setEditando] = useState(false);
-  const [datos, setDatos] = useState<ConcesionKiosco>({ apellido: "", nombre: "", canon: "" });
+  const [datos, setDatos] = useState<ConcesionKiosco>({
+    apellido: "",
+    nombre: "",
+    canon: "",
+    fechaFirmaContrato: "",
+  });
   const [archivos, setArchivos] = useState<Record<TipoDocumentoConcesion, File | null>>({
     contrato: null,
     buena_conducta: null,
@@ -100,6 +110,7 @@ function ConcesionPage() {
         apellido: concesion.data.apellido ?? "",
         nombre: concesion.data.nombre ?? "",
         canon: String(concesion.data.canon ?? ""),
+        fechaFirmaContrato: concesion.data.fechaFirmaContrato ?? "",
       });
     }
     if (!historial.data?.length) setEditando(true);
@@ -137,7 +148,8 @@ function ConcesionPage() {
     onSuccess: (_documento, variables) => {
       setArchivos((actual) => ({ ...actual, [variables.tipo]: null }));
       qc.invalidateQueries({ queryKey: ["documento-concesion", cooperadora?.id, variables.tipo] });
-      toast.success(`${variables.tipo === "contrato" ? "Contrato de concesión" : "Certificado de buena conducta"} cargado.`);
+      const titulo = DOCUMENTOS.find((documento) => documento.tipo === variables.tipo)?.titulo ?? "Documento";
+      toast.success(`${titulo} cargado.`);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -224,6 +236,18 @@ function ConcesionPage() {
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="concesion-fecha-firma">Fecha de firma del contrato *</Label>
+                  <Input
+                    id="concesion-fecha-firma"
+                    type="date"
+                    value={datos.fechaFirmaContrato}
+                    onChange={(e) =>
+                      setDatos((actual) => ({ ...actual, fechaFirmaContrato: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="concesion-canon">Canon *</Label>
                   <Input
                     id="concesion-canon"
@@ -251,6 +275,11 @@ function ConcesionPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <DatoConcesion titulo="Apellido" valor={datos.apellido} />
                   <DatoConcesion titulo="Nombre" valor={datos.nombre} />
+                  <DatoConcesion
+                    titulo="Fecha de firma del contrato"
+                    valor={formatearFechaContrato(datos.fechaFirmaContrato)}
+                    className="sm:col-span-2"
+                  />
                   <DatoConcesion titulo="Canon" valor={money(num(datos.canon))} className="sm:col-span-2" />
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -272,7 +301,7 @@ function ConcesionPage() {
               <FileText className="h-5 w-5 text-primary" /> Documentación de la concesión
             </CardTitle>
             <CardDescription>
-              Subí el contrato y el certificado de buena conducta en formato PDF.
+              Subí el contrato, el sellado del contrato y el certificado de buena conducta en formato PDF.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -347,9 +376,13 @@ function ConcesionPage() {
                     <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
                   </span>
                 </summary>
-                <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-3">
+                <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-4">
                   <DatoConcesion titulo="Apellido" valor={registro.datos.apellido} />
                   <DatoConcesion titulo="Nombre" valor={registro.datos.nombre} />
+                  <DatoConcesion
+                    titulo="Fecha de firma del contrato"
+                    valor={formatearFechaContrato(registro.datos.fechaFirmaContrato)}
+                  />
                   <DatoConcesion titulo="Canon" valor={money(num(registro.datos.canon))} />
                 </div>
               </details>
@@ -359,6 +392,13 @@ function ConcesionPage() {
       )}
     </AppShell>
   );
+}
+
+function formatearFechaContrato(valor: string | undefined) {
+  if (!valor) return "No informado";
+  const [anio, mes, dia] = valor.split("-");
+  if (!anio || !mes || !dia) return valor;
+  return [dia, mes, anio].join("/");
 }
 
 function DatoConcesion({ titulo, valor, className = "" }: { titulo: string; valor: string; className?: string }) {
