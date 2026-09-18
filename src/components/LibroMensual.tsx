@@ -480,7 +480,11 @@ function FormularioMovimiento({
   const guardar = useMutation({
     mutationFn: async () => {
       if (faltanDatosPersona) {
-        throw new Error("Completá nombre y DNI del alumno para generar el comprobante.");
+        throw new Error(
+          requiereDatosOferente
+            ? "Completá el nombre y apellido del oferente para generar el comprobante."
+            : "Completá nombre y DNI del alumno para generar el comprobante.",
+        );
       }
 
       const periodo = await asegurarPeriodo(cooperadora.id, anio, mes);
