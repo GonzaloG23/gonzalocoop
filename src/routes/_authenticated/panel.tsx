@@ -148,6 +148,7 @@ function PanelCooperadora() {
       : null;
   const hayEfectivoEnMano =
     efectivoEnMano !== null && Math.abs(efectivoEnMano) > 0.009;
+  const poseeCuentaBancaria = Boolean(datos?.posee_cuenta_bancaria);
   const pendientes = resumen?.filter((r) => r.mes <= mesActual && r.periodo?.estado !== "cerrado") ?? [];
 
   useEffect(() => {
@@ -157,12 +158,18 @@ function PanelCooperadora() {
   }, [datosInstitucionales.data, historialInstitucional.data]);
 
   useEffect(() => {
-    if (cuentaBancaria.data === undefined) return;
+    if (datosInstitucionales.data === undefined || cuentaBancaria.data === undefined) return;
+    if (!datosInstitucionales.data.posee_cuenta_bancaria) {
+      setDatosBancarios(null);
+      setEditandoBancaria(false);
+      return;
+    }
     if (cuentaBancaria.data) {
       setDatosBancarios((actual) => actual ?? {
         ...cuentaBancaria.data!,
         saldoBancario: String(cuentaBancaria.data!.saldoBancario),
       });
+      setEditandoBancaria(false);
     } else {
       setDatosBancarios((actual) => actual ?? {
         saldoBancario: "",
@@ -175,7 +182,7 @@ function PanelCooperadora() {
       });
       setEditandoBancaria(true);
     }
-  }, [cuentaBancaria.data]);
+  }, [datosInstitucionales.data, cuentaBancaria.data]);
 
   const guardarDatos = useMutation({
     mutationFn: async () => {
@@ -197,7 +204,7 @@ function PanelCooperadora() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const actualizarDato = (campo: keyof DatosInstitucionales, valor: string) => {
+  const actualizarDato = (campo: keyof DatosInstitucionales, valor: string | boolean) => {
     setDatos((actual) => actual ? { ...actual, [campo]: valor } : actual);
   };
 
@@ -269,6 +276,32 @@ function PanelCooperadora() {
               <div className="space-y-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a *</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" required /></div>
               <div className="space-y-2"><Label htmlFor="panel-director-dni">DNI de Director/a *</Label><Input id="panel-director-dni" inputMode="numeric" maxLength={8} value={datos.director_dni} onChange={(e) => actualizarDato("director_dni", e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="Número de DNI" required /></div>
               <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-supervisor">Nombre y Apellido de Supervisor/a</Label><Input id="panel-supervisor" value={datos.supervisor_nombre} onChange={(e) => actualizarDato("supervisor_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
+              <div className="space-y-2 md:col-span-2 lg:col-span-4">
+                <Label>¿La Cooperadora posee cuenta bancaria? *</Label>
+                <div className="flex flex-wrap gap-6 rounded-md border border-border bg-secondary/20 px-4 py-3">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="posee-cuenta-bancaria"
+                      checked={datos.posee_cuenta_bancaria === true}
+                      onChange={() => actualizarDato("posee_cuenta_bancaria", true)}
+                    />
+                    Sí
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="posee-cuenta-bancaria"
+                      checked={datos.posee_cuenta_bancaria === false}
+                      onChange={() => actualizarDato("posee_cuenta_bancaria", false)}
+                    />
+                    No
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Si seleccionás “No”, el módulo de cuenta bancaria se oculta del panel.
+                </p>
+              </div>
               <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora *</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." required /></div>
               <div className="flex flex-wrap gap-2 md:col-span-2 lg:col-span-4">
                 <Button onClick={() => guardarDatos.mutate()} disabled={guardarDatos.isPending}>{guardarDatos.isPending ? "Guardando…" : "Guardar información"}</Button>
@@ -286,7 +319,8 @@ function PanelCooperadora() {
                 <DatoInstitucional titulo="Nombre y Apellido de Director/a" valor={datos.director_nombre} />
                 <DatoInstitucional titulo="DNI de Director/a" valor={datos.director_dni} />
                 <DatoInstitucional titulo="Nombre y Apellido de Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
-                <DatoInstitucional titulo="Email Oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
+                <DatoInstitucional titulo="Cuenta bancaria" valor={datos.posee_cuenta_bancaria ? "Sí posee" : "No posee"} className="sm:col-span-2" />
+                <DatoInstitucional titulo="Email Oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-2" />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                 <p className="text-xs text-muted-foreground">
@@ -332,6 +366,7 @@ function PanelCooperadora() {
         <Tarjeta titulo="Saldo final proyectado" valor={money(totales?.saldoFinal ?? 0)} />
       </div>
 
+      {poseeCuentaBancaria ? (
       <Card className="mt-6">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -618,6 +653,7 @@ function PanelCooperadora() {
           </Link>
         </CardContent>
       </Card>
+      ) : null}
 
       <Card className="mt-6">
         <CardHeader><CardTitle className="font-serif text-lg">Consultas y control</CardTitle><CardDescription>Accesos para consultar la información registrada y controlar el ejercicio.</CardDescription></CardHeader>
