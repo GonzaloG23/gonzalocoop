@@ -4,8 +4,20 @@ import { siguienteNumeroComprobanteIngreso } from "../numeracion-comprobantes";
 
 const supabase = supabaseData.client;
 const DEMO_COOPERADORA_ID = "demo-cooperadora-001";
-export const DEMO_MOVIMIENTOS_KEY = "demo-movimientos";
-export const DEMO_PERIODOS_CERRADOS_KEY = "demo-periodos-cerrados";
+export const DEMO_MOVIMIENTOS_KEY = "demo-movimientos-v2";
+export const DEMO_PERIODOS_CERRADOS_KEY = "demo-periodos-cerrados-v2";
+const DEMO_DATOS_ANTERIORES = [
+  "demo-movimientos",
+  "demo-periodos-cerrados",
+] as const;
+
+function limpiarDatosDePruebaAnteriores() {
+  if (typeof window === "undefined") return;
+  for (const key of DEMO_DATOS_ANTERIORES) {
+    localStorage.removeItem(key);
+  }
+}
+
 
 export async function cerrarPeriodo(periodoId: string) {
   if (usingMinisterioApi()) {
@@ -69,6 +81,7 @@ export async function insertarMovimiento(input: NuevoMovimiento) {
   }
 
   if (!supabaseConfigured() && input.cooperadora_id === DEMO_COOPERADORA_ID) {
+    limpiarDatosDePruebaAnteriores();
     const cerrados = JSON.parse(
       localStorage.getItem(DEMO_PERIODOS_CERRADOS_KEY) ?? "[]",
     ) as string[];
