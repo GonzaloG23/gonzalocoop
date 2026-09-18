@@ -219,7 +219,7 @@ function PanelCooperadora() {
             <span>
               <span className="flex items-center gap-2 font-serif text-lg">
                 <Building2 className="h-5 w-5 text-primary" />
-                Datos institucionales de la escuela
+                Datos del Establecimiento Escolar
               </span>
               <span className="mt-1 block text-sm text-muted-foreground">
                 {editando
