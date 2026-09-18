@@ -58,7 +58,7 @@ function dibujarComprobante(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(85, 85, 85);
-  doc.text("COOPERADORA ESCOLAR", MARGEN_X + 5, y + 25);
+  doc.text("COOPERADORA / ESCUELA", MARGEN_X + 5, y + 25);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -146,7 +146,7 @@ function dibujarComprobante(
     MARGEN_X + 5,
     y + 113 + desplazamientoPago,
     ANCHO_A4 - MARGEN_X - 5,
-    y + 106 + desplazamientoPago,
+    y + 113 + desplazamientoPago,
   );
 
   doc.setFont("helvetica", "normal");
