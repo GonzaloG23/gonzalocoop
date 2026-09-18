@@ -8,6 +8,10 @@ import { toast } from "sonner";
 
 import { cargarCooperadorasAuditoria, otorgarRolAuditor, reclamarRolAuditor } from "@/lib/data/auditoria";
 import { cargarConcesionKiosco } from "@/lib/data/concesion";
+import {
+  asegurarPlazoAperturaCuenta,
+  aperturaCuentaVencida,
+} from "@/lib/data/apertura-cuenta-bancaria";
 import { cargarDatosInstitucionales } from "@/lib/data/datos-institucionales";
 import { AppShell, useContexto } from "@/components/AppShell";
 import {
@@ -85,23 +89,31 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
       const mesTope = coop.ejercicio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
       const saldoActual = resumen.find((r) => r.mes === mesTope)?.saldoFinal ?? totales.saldoFinal;
       const alertasCuenta: Alerta[] = [];
+      const motivosApertura = [
+        concesion ? "concesion_kiosco" : null,
+        saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta ? "saldo_minimo" : null,
+      ].filter((valor): valor is "saldo_minimo" | "concesion_kiosco" => Boolean(valor));
 
-      if (!datosInstitucionales.posee_cuenta_bancaria && concesion) {
-        alertasCuenta.push({
-          mes: mesTope,
-          texto: "Posee concesión de kiosco/cantina y no tiene cuenta bancaria declarada.",
-        });
-      }
+      let plazoApertura = null;
+      if (!datosInstitucionales.posee_cuenta_bancaria && motivosApertura.length > 0) {
+        plazoApertura = await asegurarPlazoAperturaCuenta(coop.id, motivosApertura);
+        const textoPlazo = aperturaCuentaVencida(plazoApertura)
+          ? " El plazo de 05 días hábiles se encuentra vencido."
+          : ` El plazo vence el ${new Date(plazoApertura.fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR")}.`;
 
-      if (
-        !datosInstitucionales.posee_cuenta_bancaria &&
-        saldoMinimoCuenta > 0 &&
-        saldoActual >= saldoMinimoCuenta
-      ) {
-        alertasCuenta.push({
-          mes: mesTope,
-          texto: `El saldo actual de ${money(saldoActual)} alcanza el monto de ${money(saldoMinimoCuenta)} que obliga a abrir una cuenta bancaria, y la escuela no tiene cuenta declarada.`,
-        });
+        if (concesion) {
+          alertasCuenta.push({
+            mes: mesTope,
+            texto: "Posee concesión de kiosco/cantina y no tiene cuenta bancaria declarada." + textoPlazo,
+          });
+        }
+
+        if (saldoMinimoCuenta > 0 && saldoActual >= saldoMinimoCuenta) {
+          alertasCuenta.push({
+            mes: mesTope,
+            texto: `El saldo actual de ${money(saldoActual)} alcanza el monto de ${money(saldoMinimoCuenta)} que obliga a abrir una cuenta bancaria, y la escuela no tiene cuenta declarada.${textoPlazo}`,
+          });
+        }
       }
 
       return {
