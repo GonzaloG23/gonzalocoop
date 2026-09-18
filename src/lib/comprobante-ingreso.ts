@@ -208,15 +208,32 @@ export function prepararComprobanteParaEmail(
     `mailto:${encodeURIComponent(destino)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
 }
 
-export function prepararComprobanteParaWhatsApp(
+export async function prepararComprobanteParaWhatsApp(
   datos: DatosComprobanteIngreso,
   telefono: string,
 ) {
   const destino = validarWhatsApp(telefono);
+  const { blob, nombreArchivo } = generarComprobanteIngreso(datos);
+  const archivo = new File([blob], nombreArchivo, { type: "application/pdf" });
+  const mensaje = mensajeComprobante(datos);
+
+  if (
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [archivo] })
+  ) {
+    await navigator.share({
+      files: [archivo],
+      text: mensaje,
+      title: `Comprobante de pago N° ${datos.comprobante}`,
+    });
+    return;
+  }
+
   descargarComprobanteIngreso(datos);
 
   const ventana = window.open(
-    `https://wa.me/${destino}?text=${encodeURIComponent(mensajeComprobante(datos))}`,
+    `https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`,
     "_blank",
   );
 
