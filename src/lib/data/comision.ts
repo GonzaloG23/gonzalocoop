@@ -15,6 +15,13 @@ export type MiembroComision = {
   dni: string;
 };
 
+export type DatosComisionDirectiva = {
+  miembros: MiembroComision[];
+  fechaInicioMandato: string | null;
+  fechaFinMandato: string | null;
+  numeroPeriodo: number;
+};
+
 export type ActaConstitucion = {
   nombreArchivo: string;
   tipo: string;
@@ -31,6 +38,29 @@ function claveComision(cooperadoraId: string) {
 
 function claveActa(cooperadoraId: string) {
   return `${DEMO_ACTA_KEY_PREFIX}${cooperadoraId}`;
+}
+
+function fechaLocalISO(fecha: Date) {
+  return [
+    fecha.getFullYear(),
+    String(fecha.getMonth() + 1).padStart(2, "0"),
+    String(fecha.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+export function calcularFinMandato(fechaInicio: string) {
+  const fecha = new Date(`${fechaInicio}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) throw new Error("La fecha de inicio del mandato no es válida.");
+  fecha.setFullYear(fecha.getFullYear() + 2);
+  return fechaLocalISO(fecha);
+}
+
+export function diasParaVencimientoMandato(fechaFin: string | null, hoy = new Date()) {
+  if (!fechaFin) return null;
+  const fin = new Date(`${fechaFin}T00:00:00`);
+  const actual = new Date(`${fechaLocalISO(hoy)}T00:00:00`);
+  if (Number.isNaN(fin.getTime()) || Number.isNaN(actual.getTime())) return null;
+  return Math.ceil((fin.getTime() - actual.getTime()) / 86_400_000);
 }
 
 function indexedDbDisponible() {
@@ -50,26 +80,46 @@ async function abrirDb() {
   });
 }
 
-export async function cargarComisionDirectiva(cooperadoraId: string): Promise<MiembroComision[]> {
+export async function cargarComisionDirectiva(cooperadoraId: string): Promise<DatosComisionDirectiva | null> {
   if (usingMinisterioApi()) {
-    return ministerioRequest<MiembroComision[]>(
+    return ministerioRequest<DatosComisionDirectiva | null>(
       `/api/cooperadoras/${cooperadoraId}/comision-directiva`,
     );
   }
 
   try {
     const raw = localStorage.getItem(claveComision(cooperadoraId));
-    if (!raw) return [];
-    const datos = JSON.parse(raw) as MiembroComision[];
-    return Array.isArray(datos) ? datos : [];
+    if (!raw) return null;
+    const datos = JSON.parse(raw) as DatosComisionDirectiva | MiembroComision[];
+
+    if (Array.isArray(datos)) {
+      return {
+        miembros: datos,
+        fechaInicioMandato: null,
+        fechaFinMandato: null,
+        numeroPeriodo: 0,
+      };
+    }
+
+    return {
+      miembros: Array.isArray(datos.miembros) ? datos.miembros : [],
+      fechaInicioMandato: datos.fechaInicioMandato ?? null,
+      fechaFinMandato: datos.fechaFinMandato ?? null,
+      numeroPeriodo: Number(datos.numeroPeriodo) || 0,
+    };
   } catch {
-    return [];
+    return null;
   }
 }
 
 export async function guardarComisionDirectiva(
   cooperadoraId: string,
   miembros: MiembroComision[],
+  mandato?: {
+    fechaInicioMandato: string | null;
+    fechaFinMandato: string | null;
+    numeroPeriodo: number;
+  },
 ) {
   const datos = miembros
     .map((miembro) => ({
@@ -99,17 +149,29 @@ export async function guardarComisionDirectiva(
   }
 
   if (usingMinisterioApi()) {
-    return ministerioRequest<MiembroComision[]>(
+    return ministerioRequest<DatosComisionDirectiva>(
       `/api/cooperadoras/${cooperadoraId}/comision-directiva`,
       {
         method: "PUT",
-        body: JSON.stringify({ miembros: datos }),
+        body: JSON.stringify({
+          miembros: datos,
+          fecha_inicio_mandato: mandato?.fechaInicioMandato ?? null,
+          fecha_fin_mandato: mandato?.fechaFinMandato ?? null,
+          numero_periodo: mandato?.numeroPeriodo ?? 0,
+        }),
       },
     );
   }
 
-  localStorage.setItem(claveComision(cooperadoraId), JSON.stringify(datos));
-  return datos;
+  const actual: DatosComisionDirectiva = {
+    miembros: datos,
+    fechaInicioMandato: mandato?.fechaInicioMandato ?? null,
+    fechaFinMandato: mandato?.fechaFinMandato ?? null,
+    numeroPeriodo: mandato?.numeroPeriodo ?? 0,
+  };
+
+  localStorage.setItem(claveComision(cooperadoraId), JSON.stringify(actual));
+  return actual;
 }
 
 export async function cargarActaConstitucion(cooperadoraId: string): Promise<ActaConstitucion | null> {
