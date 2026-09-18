@@ -430,6 +430,7 @@ function PanelCooperadora() {
         <CardContent>
           {!datosBancarios && (
             <p className="text-sm text-muted-foreground">Cargando datos de la cuenta bancaria…</p>
+          )}
           {editandoBancaria && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2 md:col-span-2 lg:col-span-4">
@@ -542,6 +543,7 @@ function PanelCooperadora() {
                 )}
               </div>
             </div>
+          )}
           {!editandoBancaria && (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
