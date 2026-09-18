@@ -320,7 +320,7 @@ function PanelCooperadora() {
                     No
                   </label>
                 </div>
-                <p className="text-xs text-muted-foreground">Si seleccionás “No”, el módulo bancario se oculta del panel.</p>
+                <p className="text-xs text-muted-foreground">Si seleccionás “No”, el módulo bancario se oculta del panel. Al volver a seleccionar “Sí” y guardar, se muestra nuevamente la información bancaria registrada, incluido el saldo resguardado y el resumen bancario.</p>
               </div>
               <div className="space-y-2 md:col-span-2 lg:col-span-4"><Label htmlFor="panel-email">Email Oficial de Cooperadora *</Label><Input id="panel-email" type="email" value={datos.email_oficial} onChange={(e) => actualizarDato("email_oficial", e.target.value)} placeholder="cooperadora@..." required /></div>
               <div className="flex flex-wrap gap-2 md:col-span-2 lg:col-span-4">
@@ -401,7 +401,7 @@ function PanelCooperadora() {
                 ? "El plazo de 05 días hábiles se encuentra vencido."
                 : "Plazo para realizar la apertura: hasta el " + new Date(aperturaCuenta.data.fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR") + "."}
             </p>
-            <p className="text-xs text-muted-foreground">Motivo: {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? "concesión de kiosco/cantina" : "saldo del Libro alcanzó el monto establecido por Auditoría"}.</p>
+            <p className="text-xs text-muted-foreground">Motivo: {aperturaCuenta.data.motivos.includes("concesion_kiosco") ? "concesión de kiosco/cantina" : "saldo del Libro alcanzó el monto establecido por Auditoría"}.</p>\n            <Button type="button" variant="outline" size="sm" onClick={() => setEditando(true)}>Informar que ya posee cuenta bancaria</Button>
           </CardContent>
         </Card>
       )}
