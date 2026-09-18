@@ -16,7 +16,9 @@ import {
 } from "@/lib/data/concesion";
 import {
   cargarHistorialConcesionKiosco,
+  cargarHistorialDocumentosConcesion,
   registrarModificacionConcesionKiosco,
+  registrarModificacionDocumentoConcesion,
 } from "@/lib/data/concesion-historial";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
@@ -93,6 +95,12 @@ function ConcesionPage() {
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
+  const historialDocumentos = useQuery({
+    queryKey: ["historial-documentos-concesion", cooperadora?.id],
+    queryFn: () => cargarHistorialDocumentosConcesion(cooperadora!.id),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
   const contrato = useQuery({
     queryKey: ["documento-concesion", cooperadora?.id, "contrato"],
     queryFn: () => cargarDocumentoConcesion(cooperadora!.id, "contrato"),
@@ -149,15 +157,35 @@ function ConcesionPage() {
   const subirDocumento = useMutation({
     mutationFn: async ({ tipo }: { tipo: TipoDocumentoConcesion }) => {
       if (!cooperadora) throw new Error("No hay una cooperadora registrada.");
+      if (!ctx) throw new Error("No se pudo identificar al usuario que realiza la modificación.");
       const archivo = archivos[tipo];
       if (!archivo) throw new Error("Seleccioná un archivo PDF.");
-      return guardarDocumentoConcesion(cooperadora.id, tipo, archivo);
+
+      const documentoExistente =
+        tipo === "contrato"
+          ? contrato.data
+          : tipo === "contrato_sellado"
+            ? contratoSellado.data
+            : buenaConducta.data;
+
+      const documento = await guardarDocumentoConcesion(cooperadora.id, tipo, archivo);
+      await registrarModificacionDocumentoConcesion(cooperadora.id, {
+        tipo,
+        nombreArchivo: documento.nombreArchivo,
+        accion: documentoExistente ? "reemplazo" : "carga",
+        usuario_id: ctx.userId,
+        usuario_nombre: ctx.nombre || "Usuario",
+        usuario_email: ctx.email,
+      });
+
+      return documento;
     },
     onSuccess: (_documento, variables) => {
       setArchivos((actual) => ({ ...actual, [variables.tipo]: null }));
       qc.invalidateQueries({ queryKey: ["documento-concesion", cooperadora?.id, variables.tipo] });
+      qc.invalidateQueries({ queryKey: ["historial-documentos-concesion", cooperadora?.id] });
       const titulo = DOCUMENTOS.find((documento) => documento.tipo === variables.tipo)?.titulo ?? "Documento";
-      toast.success(`${titulo} cargado.`);
+      toast.success(`${titulo} ${_documento && variables.tipo ? "actualizado" : "cargado"}.`);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -341,11 +369,20 @@ function ConcesionPage() {
                   <Label htmlFor={`concesion-${documento.tipo}`} className="mt-3 block">Archivo PDF</Label>
                   <Input
                     id={`concesion-${documento.tipo}`}
-                    className="mt-2"
+                    className="sr-only"
                     type="file"
                     accept="application/pdf,.pdf"
-                    onChange={(e) => setArchivos((actual) => ({ ...actual, [documento.tipo]: e.target.files?.[0] ?? null }))}
+                    onChange={(e) =>
+                      setArchivos((actual) => ({ ...actual, [documento.tipo]: e.target.files?.[0] ?? null }))
+                    }
                   />
+                  <Label
+                    htmlFor={`concesion-${documento.tipo}`}
+                    className="mt-2 inline-flex cursor-pointer items-center justify-center rounded-md border border-primary/20 bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-secondary/80"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {metadata ? "Modificar archivo" : "Seleccionar archivo"}
+                  </Label>
                   <p className="mt-2 text-xs text-muted-foreground">Tamaño máximo: 3 MB.</p>
 
                   {archivo && (
@@ -385,12 +422,14 @@ function ConcesionPage() {
         </Card>
       </div>
 
-      {historial.data && historial.data.length > 0 && (
+      {(historial.data?.length || historialDocumentos.data?.length) ? (
         <details className="mt-6 rounded-sm border border-border bg-card">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
             <span className="flex items-center justify-between gap-3">
               <span>Historial de modificaciones</span>
-              <span className="text-xs font-normal text-muted-foreground">{historial.data.length} registro{historial.data.length === 1 ? "" : "s"}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {(historial.data?.length ?? 0) + (historialDocumentos.data?.length ?? 0)} registro{(historial.data?.length ?? 0) + (historialDocumentos.data?.length ?? 0) === 1 ? "" : "s"}
+              </span>
             </span>
           </summary>
           <div className="space-y-4 border-t border-border p-4">
@@ -438,6 +477,39 @@ function ConcesionPage() {
               </div>
             )}
 
+            {historialDocumentos.data && historialDocumentos.data.length > 0 && (
+              <div className="rounded-sm border border-border">
+                <div className="border-b border-border bg-secondary/40 px-3 py-3">
+                  <p className="text-sm font-medium">Historial de documentación</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Registra cada carga y reemplazo de los archivos respaldatorios.
+                  </p>
+                </div>
+                <div className="divide-y divide-border">
+                  {historialDocumentos.data.map((registro) => (
+                    <div key={registro.id} className="flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="font-medium">{tituloTipoDocumentoConcesion(registro.tipo)}</p>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">{registro.nombreArchivo}</p>
+                      </div>
+                      <div className="shrink-0 text-left sm:text-right">
+                        <p className="text-sm font-medium">
+                          {registro.accion === "reemplazo" ? "Archivo modificado" : "Archivo cargado"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {registro.usuario_nombre}
+                          {registro.usuario_email ? ` · ${registro.usuario_email}` : ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(registro.modificado_en).toLocaleString("es-AR")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               {historial.data.map((registro) => (
                 <details key={registro.id} className="rounded-sm border border-border px-3 py-2">
@@ -464,6 +536,12 @@ function ConcesionPage() {
       )}
     </AppShell>
   );
+}
+
+function tituloTipoDocumentoConcesion(tipo: TipoDocumentoConcesion) {
+  if (tipo === "contrato") return "Contrato de concesión";
+  if (tipo === "contrato_sellado") return "Sellado de contrato";
+  return "Certificado de buena conducta";
 }
 
 function construirHistorialCanon(
