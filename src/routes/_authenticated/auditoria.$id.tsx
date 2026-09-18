@@ -16,6 +16,7 @@ import {
   cargarDocumentoConcesion,
 } from "@/lib/data/concesion";
 import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
+import { calcularEjercicio, cargarEjercicio, cargarParametros } from "@/lib/libro";
 import {
   abrirResumenBancario,
   calcularProximaActualizacionResumenBancario,
@@ -111,6 +112,19 @@ function AuditoriaLibroPage() {
   const cuentaBancaria = useQuery({
     queryKey: ["cuenta-bancaria", id],
     queryFn: () => cargarCuentaBancaria(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const parametros = useQuery({
+    queryKey: ["parametros"],
+    queryFn: cargarParametros,
+    staleTime: 30_000,
+    enabled: !!ctx?.esAuditor,
+  });
+
+  const ejercicio = useQuery({
+    queryKey: ["ejercicio-auditoria", id, coop.data?.ejercicio],
+    queryFn: () => cargarEjercicio(id, coop.data!.ejercicio),
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
@@ -213,7 +227,19 @@ function AuditoriaLibroPage() {
   const autoridades = comision.data ?? [];
   const historialAutoridades = historialComision.data ?? [];
   const datosBancarios = cuentaBancaria.data;
+  const poseeCuentaBancaria = Boolean(datos?.posee_cuenta_bancaria);
   const resumenBancarioData = resumenBancario.data;
+  const hoyAuditoria = new Date();
+  const mesActualAuditoria =
+    c.ejercicio === hoyAuditoria.getFullYear() ? hoyAuditoria.getMonth() + 1 : 12;
+  const resumenAuditoria = ejercicio.data
+    ? calcularEjercicio(num(c.saldo_inicial_ejercicio), ejercicio.data.periodos, ejercicio.data.movimientos, parametros.data)
+    : [];
+  const saldoActualAuditoria =
+    resumenAuditoria.find((r) => r.mes === mesActualAuditoria)?.saldoFinal ??
+    resumenAuditoria[resumenAuditoria.length - 1]?.saldoFinal ??
+    num(c.saldo_inicial_ejercicio);
+  const saldoMinimoCuenta = num(parametros.data?.saldo_minimo_cuenta_bancaria ?? 0);
   const resumenBancarioDesactualizado =
     !resumenBancario.isLoading && resumenBancarioVencido(resumenBancarioData);
   const proximaActualizacionResumen = resumenBancarioData
@@ -236,7 +262,7 @@ function AuditoriaLibroPage() {
   const dniCuentaTesorero = normalizarDni(datosBancarios?.tesoreroDni);
   const dniComisionTesorero = normalizarDni(tesoreroComision?.dni);
   const alertasDniCuentaBancaria =
-    !cuentaBancaria.isLoading && datosBancarios
+    !cuentaBancaria.isLoading && datosBancarios && poseeCuentaBancaria
       ? [
           dniCuentaPresidente !== dniComisionPresidente
             ? `Presidente: el DNI de la cuenta bancaria es ${datosBancarios.presidenteDni}, pero en la Comisión Directiva figura ${presidenteComision?.dni || "sin DNI registrado"}.`
@@ -246,6 +272,15 @@ function AuditoriaLibroPage() {
             : null,
         ].filter((valor): valor is string => Boolean(valor))
       : [];
+
+  const alertasCuentaBancaria = [
+    !poseeCuentaBancaria && datosConcesion
+      ? "La escuela posee concesión de kiosco/cantina y no tiene cuenta bancaria declarada."
+      : null,
+    !poseeCuentaBancaria && saldoMinimoCuenta > 0 && saldoActualAuditoria >= saldoMinimoCuenta
+      ? `El saldo actual de ${money(saldoActualAuditoria)} alcanza el monto de ${money(saldoMinimoCuenta)} que obliga a abrir una cuenta bancaria, y la escuela no tiene cuenta declarada.`
+      : null,
+  ].filter((valor): valor is string => Boolean(valor));
 
   const iniciarEdicionIdentificacion = () => {
     setNombre(c.nombre ?? "");
@@ -355,7 +390,26 @@ function AuditoriaLibroPage() {
               ))}
             </div>
           )}
-        </CardContent>
+        </      {alertasCuentaBancaria.length > 0 && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
+              <span>⚠</span> Alerta sobre la cuenta bancaria
+            </CardTitle>
+            <CardDescription>
+              La situación requiere revisión de Auditoría según los criterios de cuenta bancaria establecidos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {alertasCuentaBancaria.map((alerta) => (
+              <p key={alerta} className="text-sm text-destructive">• {alerta}</p>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {poseeCuentaBancaria ? (
+CardContent>
       </Card>
 
 
@@ -384,8 +438,9 @@ function AuditoriaLibroPage() {
           )}
         </CardContent>
       </Card>
+      ) : null}
 
-      {resumenBancarioDesactualizado && (
+      {poseeCuentaBancaria && resumenBancarioDesactualizado && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
@@ -436,7 +491,7 @@ function AuditoriaLibroPage() {
         </Card>
       )}
 
-      {alertasDniCuentaBancaria.length > 0 && (
+      {poseeCuentaBancaria && alertasDniCuentaBancaria.length > 0 && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-serif text-lg text-destructive">
