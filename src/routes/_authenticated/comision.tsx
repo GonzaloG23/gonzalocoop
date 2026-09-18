@@ -382,7 +382,7 @@ function ComisionPage() {
                   <p className="font-medium">Mandato de la Comisión Directiva</p>
                   {!comision.data?.fechaInicioMandato || !comision.data?.numeroPeriodo || modoNuevaConformacion ? (
                     <>
-                      <Label htmlFor="fecha-inicio-mandato">Fecha de inicio del mandato</Label>
+                      <Label htmlFor="fecha-inicio-mandato">Fecha de constitución / inicio del mandato</Label>
                       <Input
                         id="fecha-inicio-mandato"
                         type="date"
@@ -473,6 +473,14 @@ function ComisionPage() {
               </div>
             ) : (
               <div className="space-y-5">
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+                  <p className="font-medium">Vigencia del mandato</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <DatoMandato titulo="Período" valor={comision.data?.numeroPeriodo ? String(comision.data.numeroPeriodo) : "No informado"} />
+                    <DatoMandato titulo="Constitución / inicio" valor={formatearFecha(comision.data?.fechaInicioMandato ?? null)} />
+                    <DatoMandato titulo="Vencimiento" valor={formatearFecha(comision.data?.fechaFinMandato ?? null)} />
+                  </div>
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {CARGOS.map(({ cargo, etiqueta }, index) => (
                     <FichaComision
