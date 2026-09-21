@@ -336,50 +336,6 @@ function ConcesionPage() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-sm border border-border bg-card px-4 py-3 sm:col-span-2">
-                  <input
-                    id="concesion-prorroga"
-                    type="checkbox"
-                    checked={datos.tieneProrroga}
-                    onChange={(e) =>
-                      setDatos((actual) => ({
-                        ...actual,
-                        tieneProrroga: e.target.checked,
-                        canonProrroga: e.target.checked ? actual.canonProrroga : "",
-                        fechaInicioProrroga: e.target.checked ? actual.fechaInicioProrroga : "",
-                        fechaVencimientoProrroga: e.target.checked ? actual.fechaVencimientoProrroga : "",
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-border"
-                  />
-                  <Label htmlFor="concesion-prorroga" className="cursor-pointer">
-                    La concesión tiene una prórroga de 1 año
-                  </Label>
-                </div>
-                {datos.tieneProrroga && (
-                  <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
-                    <p className="text-sm font-medium">Prórroga</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Ingresá nuevamente la fecha de inicio. El vencimiento se calcula automáticamente por 1 año.</p>
-                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="concesion-fecha-inicio-prorroga">Fecha de inicio de la prórroga *</Label>
-                        <Input
-                          id="concesion-fecha-inicio-prorroga"
-                          type="date"
-                          value={datos.fechaInicioProrroga}
-                          onChange={(e) =>
-                            setDatos((actual) => ({ ...actual, fechaInicioProrroga: e.target.value }))
-                          }
-                          required
-                        />
-                      </div>
-                      <DatoConcesion
-                        titulo="Vigente hasta"
-                        valor={formatearFechaContrato(vencimientoProrroga)}
-                      />
-                    </div>
-                  </div>
-                )}
                 {!datos.tieneProrroga ? (
                   <>
                     <div className="space-y-2">
@@ -540,6 +496,54 @@ function ConcesionPage() {
                           </p>
                         </div>
                       ) : null}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-2 rounded-sm border-2 border-border bg-secondary/20 p-4 sm:col-span-2">
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="concesion-prorroga"
+                      type="checkbox"
+                      checked={datos.tieneProrroga}
+                      onChange={(e) =>
+                        setDatos((actual) => ({
+                          ...actual,
+                          tieneProrroga: e.target.checked,
+                          canonProrroga: e.target.checked ? actual.canonProrroga : "",
+                          fechaInicioProrroga: e.target.checked ? actual.fechaInicioProrroga : "",
+                          fechaVencimientoProrroga: e.target.checked ? actual.fechaVencimientoProrroga : "",
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-border"
+                    />
+                    <Label htmlFor="concesion-prorroga" className="cursor-pointer font-medium">
+                      La concesión tiene una prórroga de 1 año
+                    </Label>
+                  </div>
+                </div>
+
+                {datos.tieneProrroga && (
+                  <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
+                    <p className="text-sm font-medium">Prórroga</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Ingresá nuevamente la fecha de inicio. El vencimiento se calcula automáticamente por 1 año.</p>
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="concesion-fecha-inicio-prorroga">Fecha de inicio de la prórroga *</Label>
+                        <Input
+                          id="concesion-fecha-inicio-prorroga"
+                          type="date"
+                          value={datos.fechaInicioProrroga}
+                          onChange={(e) =>
+                            setDatos((actual) => ({ ...actual, fechaInicioProrroga: e.target.value }))
+                          }
+                          required
+                        />
+                      </div>
+                      <DatoConcesion
+                        titulo="Vigente hasta"
+                        valor={formatearFechaContrato(vencimientoProrroga)}
+                      />
                     </div>
                   </div>
                 )}
