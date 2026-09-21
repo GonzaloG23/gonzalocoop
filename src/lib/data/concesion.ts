@@ -227,13 +227,14 @@ export async function guardarConcesionKiosco(
   }
 
   if (usingMinisterioApi()) {
-    return ministerioRequest<ConcesionKiosco>(
+    const respuesta = await ministerioRequest<ConcesionKiosco | null>(
       `/api/cooperadoras/${cooperadoraId}/concesion-kiosco`,
       {
         method: "PUT",
         body: JSON.stringify({ datos: normalizados }),
       },
     );
+    return respuesta ? normalizarConcesion(respuesta) : normalizados;
   }
 
   localStorage.setItem(claveConcesion(cooperadoraId), JSON.stringify(normalizados));
