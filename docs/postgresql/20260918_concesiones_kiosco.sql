@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS concesiones_kiosco (
   nombre text NOT NULL,
   canon numeric(14,2) NOT NULL CHECK (canon >= 0),
   fecha_firma_contrato date NOT NULL,
+  fecha_vencimiento_contrato date NOT NULL,
+  fecha_inicio_prorroga date,
+  fecha_vencimiento_prorroga date,
   creado_por uuid NOT NULL,
   creado_en timestamptz NOT NULL DEFAULT now(),
   actualizado_por uuid NOT NULL,
@@ -43,10 +46,18 @@ CREATE TABLE IF NOT EXISTS concesiones_kiosco_historial (
   nombre text NOT NULL,
   canon numeric(14,2) NOT NULL CHECK (canon >= 0),
   fecha_firma_contrato date NOT NULL,
+  fecha_vencimiento_contrato date NOT NULL,
+  fecha_inicio_prorroga date,
+  fecha_vencimiento_prorroga date,
   usuario_id uuid NOT NULL,
   usuario_nombre text NOT NULL,
   usuario_email text,
-  modificado_en timestamptz NOT NULL DEFAULT now()
+  modificado_en timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ck_concesiones_kiosco_prorroga CHECK (
+    (fecha_inicio_prorroga IS NULL AND fecha_vencimiento_prorroga IS NULL)
+    OR
+    (fecha_inicio_prorroga IS NOT NULL AND fecha_vencimiento_prorroga IS NOT NULL)
+  )
 );
 
 
