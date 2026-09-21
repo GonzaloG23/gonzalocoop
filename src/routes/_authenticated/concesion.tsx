@@ -423,6 +423,16 @@ function ConcesionPage() {
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
   const contratoVencido = concesionKioscoEstaVencida(datos);
   const fechaVencimientoVigente = fechaVencimientoVigenteConcesion(datos);
+  const solicitudModificacionPendiente = [...(solicitudesModificacion.data ?? [])]
+    .filter((solicitud) => solicitud.estado === "pendiente")
+    .sort((a, b) => new Date(b.solicitada_en).getTime() - new Date(a.solicitada_en).getTime())[0];
+  const solicitudModificacionRechazada = [...(solicitudesModificacion.data ?? [])]
+    .filter((solicitud) => solicitud.estado === "rechazada")
+    .sort(
+      (a, b) =>
+        new Date(b.resuelta_en ?? b.solicitada_en).getTime() -
+        new Date(a.resuelta_en ?? a.solicitada_en).getTime(),
+    )[0];
 
   return (
     <AppShell
