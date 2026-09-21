@@ -191,7 +191,6 @@ function nombreArchivoComprobante(datos: DatosComprobanteIngreso) {
     : "";
 
   return [
-    "Comprobante_Ingreso",
     concepto,
     numero,
     persona,
