@@ -101,33 +101,51 @@ function dibujarGraficoCircular(
     return;
   }
 
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 320;
+  const contexto = canvas.getContext("2d");
+
+  if (!contexto) {
+    throw new Error("No se pudo crear el gráfico de movimientos.");
+  }
+
+  const centro = 160;
+  const radioCanvas = 130;
   let anguloActual = -Math.PI / 2;
 
   segmentos.forEach((segmento, indice) => {
     const amplitud = (segmento.porcentaje / 100) * Math.PI * 2;
     const color = COLORES_GRAFICO[indice % COLORES_GRAFICO.length];
 
-    const puntos: Array<[number, number]> = [[0, 0]];
-    const pasos = Math.max(4, Math.ceil(amplitud * 24));
-    let anteriorX = 0;
-    let anteriorY = 0;
+    contexto.beginPath();
+    contexto.moveTo(centro, centro);
+    contexto.arc(
+      centro,
+      centro,
+      radioCanvas,
+      anguloActual,
+      anguloActual + amplitud,
+    );
+    contexto.closePath();
+    contexto.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+    contexto.fill();
 
-    for (let paso = 0; paso <= pasos; paso += 1) {
-      const angulo = anguloActual + (amplitud * paso) / pasos;
-      const x = radio * Math.cos(angulo);
-      const y = radio * Math.sin(angulo);
-      puntos.push([x - anteriorX, y - anteriorY]);
-      anteriorX = x;
-      anteriorY = y;
-    }
-
-    doc.setFillColor(...color);
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.3);
-    doc.lines(puntos, centroX, centroY, 1, "F", true);
+    contexto.strokeStyle = "#ffffff";
+    contexto.lineWidth = 2;
+    contexto.stroke();
 
     anguloActual += amplitud;
   });
+
+  doc.addImage(
+    canvas.toDataURL("image/png"),
+    "PNG",
+    centroX - radio,
+    centroY - radio,
+    radio * 2,
+    radio * 2,
+  );
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
