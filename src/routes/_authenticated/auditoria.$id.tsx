@@ -14,6 +14,7 @@ import {
   abrirDocumentoConcesion,
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
+  calcularVencimientoConcesion,
   concesionKioscoEstaVencida,
   fechaVencimientoVigenteConcesion,
 } from "@/lib/data/concesion";
@@ -965,6 +966,14 @@ function AuditoriaLibroPage() {
                 titulo="Fecha de firma del contrato"
                 valor={formatearFechaContratoAuditoria(datosConcesion.fechaFirmaContrato)}
               />
+              <DatoInstitucional
+                titulo="Contrato vigente hasta"
+                valor={formatearFechaContratoAuditoria(
+                  datosConcesion.fechaVencimientoContrato ||
+                    calcularVencimientoConcesion(datosConcesion.fechaFirmaContrato, 2),
+                )}
+                className="border-2 border-amber-500 bg-amber-50"
+              />
               <DatoInstitucional titulo="Canon inicial" valor={money(num(datosConcesion.canon))} />
               <DatoInstitucional
                 titulo="1.º canon actualizado"
@@ -976,10 +985,20 @@ function AuditoriaLibroPage() {
               />
               <DatoInstitucional titulo="Canon vigente" valor={money(num(datosConcesion.canonVigente))} />
               {datosConcesion.tieneProrroga ? (
-                <DatoInstitucional
-                  titulo="Canon de la prórroga"
-                  valor={money(num(datosConcesion.canonProrrogaVigente || datosConcesion.canonProrroga))}
-                />
+                <>
+                  <DatoInstitucional
+                    titulo="Canon de la prórroga"
+                    valor={money(num(datosConcesion.canonProrrogaVigente || datosConcesion.canonProrroga))}
+                  />
+                  <DatoInstitucional
+                    titulo="Fecha de finalización de la prórroga"
+                    valor={formatearFechaContratoAuditoria(
+                      datosConcesion.fechaVencimientoProrroga ||
+                        calcularVencimientoConcesion(datosConcesion.fechaInicioProrroga, 1),
+                    )}
+                    className="border-2 border-amber-500 bg-amber-50"
+                  />
+                </>
               ) : null}
             </div>
           )}
