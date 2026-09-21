@@ -14,7 +14,11 @@ Respuesta:
   "apellido": "Pérez",
   "nombre": "Juan",
   "canon": 125000,
-  "fechaFirmaContrato": "2026-09-15"
+  "fechaFirmaContrato": "2026-09-15",
+  "fechaVencimientoContrato": "2028-09-15",
+  "tieneProrroga": false,
+  "fechaInicioProrroga": "",
+  "fechaVencimientoProrroga": ""
 }
 ```
 
@@ -32,7 +36,11 @@ Body:
     "apellido": "Pérez",
     "nombre": "Juan",
     "canon": 125000,
-    "fechaFirmaContrato": "2026-09-15"
+    "fechaFirmaContrato": "2026-09-15",
+    "fechaVencimientoContrato": "2028-09-15",
+    "tieneProrroga": true,
+    "fechaInicioProrroga": "2028-09-15",
+    "fechaVencimientoProrroga": "2029-09-15"
   }
 }
 ```
@@ -44,6 +52,10 @@ Validaciones obligatorias:
 - canon mayor o igual a cero;
 - `fechaFirmaContrato` obligatoria;
 - `fechaFirmaContrato` válida;
+- `fechaVencimientoContrato` calculada automáticamente como 2 años desde `fechaFirmaContrato`;
+- cuando `tieneProrroga` es verdadero, `fechaInicioProrroga` es obligatoria;
+- `fechaVencimientoProrroga` se calcula automáticamente como 1 año desde `fechaInicioProrroga`;
+- si no existe prórroga, las fechas de prórroga deben quedar vacías;
 - usuario autenticado;
 - usuario autorizado para la cooperadora indicada.
 
