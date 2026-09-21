@@ -820,7 +820,10 @@ function ConcesionPage() {
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setEditando(true)}
+                              onClick={() => {
+                                setModoEdicion("ipc");
+                                setEditando(true);
+                              }}
                               className="border-red-500/40 bg-red-50 text-red-700 hover:bg-red-100"
                             >
                               Actualizar canon
@@ -830,6 +833,49 @@ function ConcesionPage() {
                       </div>
                     </div>
                   ) : null}
+
+                  {solicitudModificacionPendiente ? (
+                    <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-900 shadow-sm sm:col-span-2">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                        <div>
+                          <p className="font-semibold">Modificación de datos pendiente de aprobación</p>
+                          <p className="mt-1 text-sm">
+                            La corrección fue enviada a Auditoría y los datos actuales continúan vigentes hasta su resolución.
+                          </p>
+                          <p className="mt-2 text-xs text-red-700">
+                            Solicitado por {solicitudModificacionPendiente.usuario_nombre} · {new Date(solicitudModificacionPendiente.solicitada_en).toLocaleString("es-AR")}
+                          </p>
+                          <p className="mt-1 text-xs text-red-700">
+                            Motivo: {solicitudModificacionPendiente.motivo}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {solicitudModificacionRechazada ? (
+                    <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-900 shadow-sm sm:col-span-2">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                        <div className="min-w-0">
+                          <p className="font-semibold">Solicitud de modificación de concesión rechazada</p>
+                          <p className="mt-1 text-sm">Auditoría rechazó la corrección solicitada. Los datos vigentes no fueron modificados.</p>
+                          {solicitudModificacionRechazada.comentario_resolucion ? (
+                            <p className="mt-2 text-sm">
+                              <span className="font-medium">Observación de Auditoría:</span>{" "}
+                              {solicitudModificacionRechazada.comentario_resolucion}
+                            </p>
+                          ) : null}
+                          <p className="mt-2 text-xs text-red-700">
+                            Resuelto por {solicitudModificacionRechazada.resuelta_por_nombre || "Auditoría"} ·{" "}
+                            {new Date(solicitudModificacionRechazada.resuelta_en ?? solicitudModificacionRechazada.solicitada_en).toLocaleString("es-AR")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
                   <DatoConcesion titulo="Apellido" valor={datos.apellido} />
                   <DatoConcesion titulo="Nombre" valor={datos.nombre} />
                   <DatoConcesion
@@ -892,7 +938,18 @@ function ConcesionPage() {
                       ? `Última modificación: ${ultimaModificacion.usuario_nombre}${ultimaModificacion.usuario_email ? ` · ${ultimaModificacion.usuario_email}` : ""} · ${new Date(ultimaModificacion.modificado_en).toLocaleString("es-AR")}`
                       : "Información registrada"}
                   </p>
-                  <Button variant="outline" onClick={() => setEditando(true)}>Modificar información</Button>
+                  {!solicitudModificacionPendiente ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setMotivoModificacion("");
+                        setModoEdicion("rectificacion");
+                        setEditando(true);
+                      }}
+                    >
+                      Modificar información
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             )}
