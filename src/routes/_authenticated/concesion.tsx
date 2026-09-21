@@ -568,9 +568,20 @@ function ConcesionPage() {
                           <p className="mt-1 text-xs text-red-700/80">
                             La actualización corresponde al cumplirse el aniversario indicado. El canon vigente se actualiza con el IPC oficial.
                           </p>
-                          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-red-700/80">
-                            {contratoPendienteIPC ? <span>Contrato: desde {formatearFechaContrato(proximaActualizacionContrato)}</span> : null}
-                            {prorrogaPendienteIPC ? <span>Prórroga: desde {formatearFechaContrato(proximaActualizacionProrroga)}</span> : null}
+                          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-red-700/80">
+                            <div className="flex flex-wrap gap-x-5 gap-y-1">
+                              {contratoPendienteIPC ? <span>Contrato: desde {formatearFechaContrato(proximaActualizacionContrato)}</span> : null}
+                              {prorrogaPendienteIPC ? <span>Prórroga: desde {formatearFechaContrato(proximaActualizacionProrroga)}</span> : null}
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditando(true)}
+                              className="border-red-500/40 bg-red-50 text-red-700 hover:bg-red-100"
+                            >
+                              Actualizar canon
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -1028,14 +1039,19 @@ function calcularProximaActualizacionCanonSimple(fechaInicio: string) {
   if (!fechaInicio) return "";
   const [anio, mes, dia] = fechaInicio.split("-").map(Number);
   if (!anio || !mes || !dia) return "";
+
   const hoy = new Date();
-  const candidato = new Date(anio + 1, mes - 1, dia);
-  const aniosCumplidos = hoy >= candidato ? hoy.getFullYear() - anio + 1 : 1;
-  const proxima = new Date(anio + aniosCumplidos, mes - 1, dia);
+  hoy.setHours(0, 0, 0, 0);
+
+  // Si el contrato comenzó este mismo año y todavía no cumplió un año,
+  // la primera actualización será en el aniversario del año siguiente.
+  const anioObjetivo = hoy.getFullYear() <= anio ? anio + 1 : hoy.getFullYear();
+  const aniversario = new Date(anioObjetivo, mes - 1, dia);
+
   return [
-    proxima.getFullYear(),
-    String(proxima.getMonth() + 1).padStart(2, "0"),
-    String(proxima.getDate()).padStart(2, "0"),
+    aniversario.getFullYear(),
+    String(aniversario.getMonth() + 1).padStart(2, "0"),
+    String(aniversario.getDate()).padStart(2, "0"),
   ].join("-");
 }
 
@@ -1043,9 +1059,12 @@ function canonNecesitaActualizacionSimple(fechaObjetivo: string) {
   if (!fechaObjetivo) return false;
   const [anio, mes, dia] = fechaObjetivo.split("-").map(Number);
   if (!anio || !mes || !dia) return false;
+
   const objetivo = new Date(anio, mes - 1, dia);
+  objetivo.setHours(0, 0, 0, 0);
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
+
   return hoy >= objetivo;
 }
 
