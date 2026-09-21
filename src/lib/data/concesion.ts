@@ -5,6 +5,10 @@ export type ConcesionKiosco = {
   nombre: string;
   canon: number | string;
   fechaFirmaContrato: string;
+  fechaVencimientoContrato: string;
+  tieneProrroga: boolean;
+  fechaInicioProrroga: string;
+  fechaVencimientoProrroga: string;
 };
 
 export type DocumentoConcesion = {
@@ -15,6 +19,49 @@ export type DocumentoConcesion = {
 };
 
 export type TipoDocumentoConcesion = "contrato" | "contrato_sellado" | "buena_conducta";
+
+function fechaValida(valor: string) {
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(valor) &&
+    !Number.isNaN(new Date(valor + "T00:00:00").getTime())
+  );
+}
+
+export function calcularVencimientoConcesion(fechaInicio: string, duracionAnios: number) {
+  if (!fechaValida(fechaInicio)) return "";
+  const [anio, mes, dia] = fechaInicio.split("-").map(Number);
+  const resultado = new Date(Date.UTC(anio, mes - 1, dia));
+  resultado.setUTCFullYear(resultado.getUTCFullYear() + duracionAnios);
+
+  return [
+    resultado.getUTCFullYear(),
+    String(resultado.getUTCMonth() + 1).padStart(2, "0"),
+    String(resultado.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+export function normalizarConcesion(datos: Partial<ConcesionKiosco>): ConcesionKiosco {
+  const fechaFirmaContrato = String(datos.fechaFirmaContrato ?? "").trim();
+  const tieneProrroga = Boolean(datos.tieneProrroga);
+  const fechaInicioProrroga = tieneProrroga ? String(datos.fechaInicioProrroga ?? "").trim() : "";
+
+  return {
+    apellido: String(datos.apellido ?? "").trim(),
+    nombre: String(datos.nombre ?? "").trim(),
+    canon: datos.canon ?? "",
+    fechaFirmaContrato,
+    fechaVencimientoContrato:
+      String(datos.fechaVencimientoContrato ?? "").trim() ||
+      calcularVencimientoConcesion(fechaFirmaContrato, 2),
+    tieneProrroga,
+    fechaInicioProrroga,
+    fechaVencimientoProrroga:
+      tieneProrroga
+        ? String(datos.fechaVencimientoProrroga ?? "").trim() ||
+          calcularVencimientoConcesion(fechaInicioProrroga, 1)
+        : "",
+  };
+}
 
 const DEMO_CONCESION_KEY_PREFIX = "demo-concesion-kiosco-";
 const DEMO_DOCUMENTO_KEY_PREFIX = "demo-documento-concesion-";
@@ -46,15 +93,16 @@ async function abrirDb() {
 
 export async function cargarConcesionKiosco(cooperadoraId: string): Promise<ConcesionKiosco | null> {
   if (usingMinisterioApi()) {
-    return ministerioRequest<ConcesionKiosco | null>(
+    const datos = await ministerioRequest<ConcesionKiosco | null>(
       `/api/cooperadoras/${cooperadoraId}/concesion-kiosco`,
     );
+    return datos ? normalizarConcesion(datos) : null;
   }
 
   try {
     const raw = localStorage.getItem(claveConcesion(cooperadoraId));
     if (!raw) return null;
-    return JSON.parse(raw) as ConcesionKiosco;
+    return normalizarConcesion(JSON.parse(raw) as Partial<ConcesionKiosco>);
   } catch {
     return null;
   }
@@ -70,16 +118,31 @@ export async function guardarConcesionKiosco(
   if (!canonTexto) throw new Error("Debés completar el canon.");
   if (!fechaFirmaContrato) throw new Error("Debés completar la fecha de firma del contrato.");
 
-  const fechaValida =
-    /^\d{4}-\d{2}-\d{2}$/.test(fechaFirmaContrato) &&
-    !Number.isNaN(new Date(fechaFirmaContrato + "T00:00:00").getTime());
-  if (!fechaValida) throw new Error("La fecha de firma del contrato no es válida.");
+  if (!fechaValida(fechaFirmaContrato)) {
+    throw new Error("La fecha de firma del contrato no es válida.");
+  }
+
+  const tieneProrroga = Boolean(datos.tieneProrroga);
+  const fechaInicioProrroga = tieneProrroga ? String(datos.fechaInicioProrroga ?? "").trim() : "";
+
+  if (tieneProrroga && !fechaInicioProrroga) {
+    throw new Error("Debés completar la fecha de inicio de la prórroga.");
+  }
+  if (fechaInicioProrroga && !fechaValida(fechaInicioProrroga)) {
+    throw new Error("La fecha de inicio de la prórroga no es válida.");
+  }
 
   const normalizados: ConcesionKiosco = {
     apellido: datos.apellido.trim(),
     nombre: datos.nombre.trim(),
     canon: Number(canonTexto),
     fechaFirmaContrato,
+    fechaVencimientoContrato: calcularVencimientoConcesion(fechaFirmaContrato, 2),
+    tieneProrroga,
+    fechaInicioProrroga,
+    fechaVencimientoProrroga: tieneProrroga
+      ? calcularVencimientoConcesion(fechaInicioProrroga, 1)
+      : "",
   };
 
   if (!normalizados.apellido) throw new Error("Debés completar el apellido del concesionario.");
