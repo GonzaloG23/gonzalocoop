@@ -328,6 +328,10 @@ function ConcesionPage() {
 
   const ultimaModificacion = historial.data?.[0];
   const cambiosCanon = construirHistorialCanon(historial.data ?? []);
+  const actualizacionesCanon = construirActualizacionesCanon(historial.data ?? [], "contrato");
+  const actualizacionesCanonProrroga = datos.tieneProrroga
+    ? construirActualizacionesCanon(historial.data ?? [], "prorroga")
+    : [];
   const vencimientoContrato = calcularVencimientoConcesion(datos.fechaFirmaContrato, 2);
   const vencimientoProrroga = datos.tieneProrroga
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
@@ -738,6 +742,14 @@ function ConcesionPage() {
                     valor={money(num(datos.canon))}
                   />
                   <DatoConcesion
+                    titulo="1.º canon actualizado"
+                    valor={actualizacionesCanon[0] ? money(actualizacionesCanon[0].valor) : "No actualizado todavía"}
+                  />
+                  <DatoConcesion
+                    titulo="2.º canon actualizado"
+                    valor={actualizacionesCanon[1] ? money(actualizacionesCanon[1].valor) : "No actualizado todavía"}
+                  />
+                  <DatoConcesion
                     titulo="Canon vigente"
                     valor={money(num(datos.canonVigente))}
                   />
@@ -748,7 +760,18 @@ function ConcesionPage() {
                   {datos.tieneProrroga ? (
                     <>
                       <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
-                      <DatoConcesion titulo="Canon vigente de la prórroga" valor={money(num(datos.canonProrrogaVigente))} />
+                      <DatoConcesion
+                        titulo="1.º canon actualizado de la prórroga"
+                        valor={actualizacionesCanonProrroga[0] ? money(actualizacionesCanonProrroga[0].valor) : "No actualizado todavía"}
+                      />
+                      <DatoConcesion
+                        titulo="2.º canon actualizado de la prórroga"
+                        valor={actualizacionesCanonProrroga[1] ? money(actualizacionesCanonProrroga[1].valor) : "No actualizado todavía"}
+                      />
+                      <DatoConcesion
+                        titulo="Canon vigente de la prórroga"
+                        valor={money(num(datos.canonProrrogaVigente))}
+                      />
                       <DatoConcesion
                         titulo="Próxima actualización de la prórroga"
                         valor={formatearFechaContrato(proximaActualizacionProrroga)}
@@ -1211,6 +1234,42 @@ function tituloTipoDocumentoConcesion(tipo: TipoDocumentoConcesion) {
   if (tipo === "contrato") return "Contrato de concesión";
   if (tipo === "contrato_sellado") return "Sellado de contrato";
   return "Certificado de buena conducta";
+}
+
+function construirActualizacionesCanon(
+  historial: Array<{
+    datos: ConcesionKiosco;
+    modificado_en: string;
+  }>,
+  tipo: "contrato" | "prorroga",
+) {
+  const cronologico = [...historial].reverse();
+  const actualizaciones: Array<{ valor: number; fecha: string }> = [];
+
+  for (let i = 1; i < cronologico.length; i += 1) {
+    const anterior = cronologico[i - 1]?.datos;
+    const actual = cronologico[i]?.datos;
+    if (!anterior || !actual) continue;
+
+    const valorAnterior =
+      tipo === "prorroga"
+        ? Number(anterior.canonProrrogaVigente ?? anterior.canonProrroga)
+        : Number(anterior.canonVigente ?? anterior.canon);
+    const valorActual =
+      tipo === "prorroga"
+        ? Number(actual.canonProrrogaVigente ?? actual.canonProrroga)
+        : Number(actual.canonVigente ?? actual.canon);
+
+    if (!Number.isFinite(valorAnterior) || !Number.isFinite(valorActual)) continue;
+    if (valorAnterior === valorActual) continue;
+
+    actualizaciones.push({
+      valor: valorActual,
+      fecha: cronologico[i]?.modificado_en ?? "",
+    });
+  }
+
+  return actualizaciones.slice(0, 2);
 }
 
 function construirHistorialCanon(
