@@ -12,6 +12,8 @@ import {
   cargarDocumentoConcesion,
   calcularVencimientoConcesion,
   calcularCanonConPorcentaje,
+  concesionKioscoEstaVencida,
+  fechaVencimientoVigenteConcesion,
   guardarConcesionKiosco,
   guardarDocumentoConcesion,
   type ConcesionKiosco,
@@ -349,12 +351,34 @@ function ConcesionPage() {
     : false;
   const prorrogaPendienteIPC = prorrogaAniversarioVencido && !prorrogaActualizada;
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
+  const contratoVencido = concesionKioscoEstaVencida(datos);
+  const fechaVencimientoVigente = fechaVencimientoVigenteConcesion(datos);
 
   return (
     <AppShell
       titulo="Concesión de kioscos y cantinas"
       descripcion={`${cooperadora.nombre}${cooperadora.localidad ? ` · ${cooperadora.localidad}` : ""}`}
     >
+      {contratoVencido ? (
+        <Card className="mb-6 border-2 border-red-500 bg-red-50 text-red-900 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Contrato de concesión vencido
+            </CardTitle>
+            <CardDescription className="text-red-800/80">
+              La concesión ya no tiene un contrato o prórroga vigente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">
+              La vigencia finalizó el{" "}
+              <span className="font-semibold">{formatearFechaContrato(fechaVencimientoVigente)}</span>.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
         <details open={editando} className="self-start rounded-sm border border-border bg-card">
           <summary className={`cursor-pointer list-none hover:bg-secondary/50 ${editando ? "px-4 py-4" : "px-3 py-2"}`}>
