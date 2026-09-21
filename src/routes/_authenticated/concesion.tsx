@@ -329,9 +329,6 @@ function ConcesionPage() {
   const ultimaModificacion = historial.data?.[0];
   const cambiosCanon = construirHistorialCanon(historial.data ?? []);
   const actualizacionesCanon = construirActualizacionesCanon(historial.data ?? [], "contrato");
-  const actualizacionesCanonProrroga = datos.tieneProrroga
-    ? construirActualizacionesCanon(historial.data ?? [], "prorroga")
-    : [];
   const vencimientoContrato = calcularVencimientoConcesion(datos.fechaFirmaContrato, 2);
   const vencimientoProrroga = datos.tieneProrroga
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
@@ -760,14 +757,6 @@ function ConcesionPage() {
                   {datos.tieneProrroga ? (
                     <>
                       <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
-                      <DatoConcesion
-                        titulo="1.º canon actualizado de la prórroga"
-                        valor={actualizacionesCanonProrroga[0] ? money(actualizacionesCanonProrroga[0].valor) : "No actualizado todavía"}
-                      />
-                      <DatoConcesion
-                        titulo="2.º canon actualizado de la prórroga"
-                        valor={actualizacionesCanonProrroga[1] ? money(actualizacionesCanonProrroga[1].valor) : "No actualizado todavía"}
-                      />
                       <DatoConcesion
                         titulo="Canon vigente de la prórroga"
                         valor={money(num(datos.canonProrrogaVigente))}
