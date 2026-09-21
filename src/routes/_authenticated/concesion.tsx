@@ -108,7 +108,7 @@ function ConcesionPage() {
   useEffect(() => {
     if (!cooperadora || ctx?.esAuditor) return;
 
-    const claveReset = `demo-concesion-reset-20260921-${cooperadora.id}`;
+    const claveReset = `demo-concesion-reset-20260921-2-${cooperadora.id}`;
     if (localStorage.getItem(claveReset)) return;
 
     void limpiarDatosPruebaConcesion(cooperadora.id).then(() => {
