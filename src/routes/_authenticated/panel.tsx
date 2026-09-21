@@ -350,6 +350,7 @@ function PanelCooperadora() {
               <div className="space-y-2"><Label htmlFor="panel-localidad">Localidad *</Label><Input id="panel-localidad" value={datos.localidad} onChange={(e) => actualizarDato("localidad", e.target.value)} placeholder="Localidad" required /></div>
               <div className="space-y-2"><Label htmlFor="panel-director">Nombre y Apellido de Director/a *</Label><Input id="panel-director" value={datos.director_nombre} onChange={(e) => actualizarDato("director_nombre", e.target.value)} placeholder="Nombre y apellido" required /></div>
               <div className="space-y-2"><Label htmlFor="panel-director-dni">DNI de Director/a *</Label><Input id="panel-director-dni" inputMode="numeric" maxLength={8} value={datos.director_dni} onChange={(e) => actualizarDato("director_dni", e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="Número de DNI" required /></div>
+              <div className="space-y-2"><Label htmlFor="panel-director-celular">Celular de Director/a</Label><Input id="panel-director-celular" inputMode="tel" maxLength={15} value={datos.director_celular} onChange={(e) => actualizarDato("director_celular", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Número de celular" /></div>
               <div className="space-y-2 md:col-span-2"><Label htmlFor="panel-supervisor">Nombre y Apellido de Supervisor/a</Label><Input id="panel-supervisor" value={datos.supervisor_nombre} onChange={(e) => actualizarDato("supervisor_nombre", e.target.value)} placeholder="Nombre y apellido" /></div>
               <div className="space-y-2 md:col-span-2 lg:col-span-4">
                 <Label>¿La Cooperadora posee cuenta bancaria? *</Label>
@@ -381,6 +382,7 @@ function PanelCooperadora() {
                 <DatoInstitucional titulo="Localidad" valor={datos.localidad} />
                 <DatoInstitucional titulo="Nombre y Apellido de Director/a" valor={datos.director_nombre} />
                 <DatoInstitucional titulo="DNI de Director/a" valor={datos.director_dni} />
+                <DatoInstitucional titulo="Celular de Director/a" valor={datos.director_celular} />
                 <DatoInstitucional titulo="Nombre y Apellido de Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
                 <DatoInstitucional titulo="Cuenta bancaria" valor={datos.posee_cuenta_bancaria ? "Sí posee" : "No posee"} className="sm:col-span-2" />
                 <DatoInstitucional titulo="Email Oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-2" />
