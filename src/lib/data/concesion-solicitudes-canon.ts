@@ -165,6 +165,14 @@ export async function resolverSolicitudReconsideracionCanon(
     const actual = await cargarConcesionKiosco(solicitud.cooperadora_id);
     if (!actual) throw new Error("No hay datos de concesión registrados.");
 
+    const canonActual = solicitud.tipo_canon === "prorroga"
+      ? Number(actual.canonProrrogaVigente ?? actual.canonProrroga)
+      : Number(actual.canonVigente ?? actual.canon);
+
+    if (canonActual !== solicitud.canon_actual) {
+      throw new Error("El canon vigente cambió desde que se presentó el pedido. Debe realizarse una nueva solicitud de reconsideración.");
+    }
+
     const datosActualizados: ConcesionKiosco = {
       ...actual,
       ...(solicitud.tipo_canon === "prorroga"
