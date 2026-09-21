@@ -462,7 +462,7 @@ function ConcesionPage() {
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       {contratoPendienteIPC ? (
                         <div className="space-y-2">
-                          <Label htmlFor="concesion-porcentaje-ipc">Aumento IPC del contrato (%)</Label>
+                          <Label htmlFor="concesion-porcentaje-ipc">Aumento IPC ANUAL del contrato (%)</Label>
                           <div className="flex gap-2">
                             <Input
                               id="concesion-porcentaje-ipc"
