@@ -332,24 +332,32 @@ function ConcesionPage() {
   const vencimientoProrroga = datos.tieneProrroga
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
     : "";
-  const proximaActualizacionContrato = calcularProximaActualizacionCanonSimple(datos.fechaFirmaContrato);
-  const contratoAniversarioVencido = canonNecesitaActualizacionSimple(proximaActualizacionContrato);
+  const aniversarioContrato = calcularProximaActualizacionCanonSimple(datos.fechaFirmaContrato);
+  const contratoAniversarioVencido = canonNecesitaActualizacionSimple(aniversarioContrato);
   const contratoActualizado = canonVigenteFueActualizadoDesde(
     historial.data ?? [],
     "contrato",
-    proximaActualizacionContrato,
+    aniversarioContrato,
   );
   const contratoPendienteIPC = contratoAniversarioVencido && !contratoActualizado;
+  const proximaActualizacionContrato =
+    contratoAniversarioVencido && contratoActualizado
+      ? calcularSiguienteAniversarioCanon(datos.fechaFirmaContrato)
+      : aniversarioContrato;
 
-  const proximaActualizacionProrroga = datos.tieneProrroga
+  const aniversarioProrroga = datos.tieneProrroga
     ? calcularProximaActualizacionCanonSimple(datos.fechaInicioProrroga)
     : "";
   const prorrogaAniversarioVencido =
-    datos.tieneProrroga && canonNecesitaActualizacionSimple(proximaActualizacionProrroga);
+    datos.tieneProrroga && canonNecesitaActualizacionSimple(aniversarioProrroga);
   const prorrogaActualizada = datos.tieneProrroga
-    ? canonVigenteFueActualizadoDesde(historial.data ?? [], "prorroga", proximaActualizacionProrroga)
+    ? canonVigenteFueActualizadoDesde(historial.data ?? [], "prorroga", aniversarioProrroga)
     : false;
   const prorrogaPendienteIPC = prorrogaAniversarioVencido && !prorrogaActualizada;
+  const proximaActualizacionProrroga =
+    datos.tieneProrroga && prorrogaAniversarioVencido && prorrogaActualizada
+      ? calcularSiguienteAniversarioCanon(datos.fechaInicioProrroga)
+      : aniversarioProrroga;
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
   const contratoVencido = concesionKioscoEstaVencida(datos);
   const fechaVencimientoVigente = fechaVencimientoVigenteConcesion(datos);
@@ -1258,6 +1266,24 @@ function calcularProximaActualizacionCanonSimple(fechaInicio: string) {
   // la primera actualización será en el aniversario del año siguiente.
   const anioObjetivo = hoy.getFullYear() <= anio ? anio + 1 : hoy.getFullYear();
   const aniversario = new Date(anioObjetivo, mes - 1, dia);
+
+  return [
+    aniversario.getFullYear(),
+    String(aniversario.getMonth() + 1).padStart(2, "0"),
+    String(aniversario.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function calcularSiguienteAniversarioCanon(fechaInicio: string) {
+  if (!fechaInicio) return "";
+  const [anio, mes, dia] = fechaInicio.split("-").map(Number);
+  if (!anio || !mes || !dia) return "";
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const anioBase = hoy.getFullYear() <= anio ? anio + 1 : hoy.getFullYear() + 1;
+  const aniversario = new Date(anioBase, mes - 1, dia);
 
   return [
     aniversario.getFullYear(),
