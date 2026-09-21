@@ -444,6 +444,8 @@ function ConcesionPage() {
       ? calcularSiguienteAniversarioCanon(datos.fechaInicioProrroga)
       : aniversarioProrroga;
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
+  const segundaActualizacionContratoPendiente =
+    contratoPendienteIPC && actualizacionesCanon.length === 1;
   const contratoVencido = concesionKioscoEstaVencida(datos);
   const fechaVencimientoVigente = fechaVencimientoVigenteConcesion(datos);
   const solicitudModificacionPendiente = [...(solicitudesModificacion.data ?? [])]
@@ -954,10 +956,31 @@ function ConcesionPage() {
                     titulo="1.º canon actualizado"
                     valor={actualizacionesCanon[0] ? money(actualizacionesCanon[0].valor) : "No actualizado todavía"}
                   />
-                  <DatoConcesion
-                    titulo="2.º canon actualizado"
-                    valor={actualizacionesCanon[1] ? money(actualizacionesCanon[1].valor) : "No actualizado todavía"}
-                  />
+                  <div className="rounded-sm border border-border bg-card px-3 py-3">
+                    <p className="text-xs text-muted-foreground">2.º canon actualizado</p>
+                    <p className="mt-1 text-sm font-medium">
+                      {actualizacionesCanon[1] ? money(actualizacionesCanon[1].valor) : "No actualizado todavía"}
+                    </p>
+                    {segundaActualizacionContratoPendiente ? (
+                      <div className="mt-3">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setModoEdicion("ipc");
+                            setEditando(true);
+                          }}
+                          className="border-red-500/40 bg-red-50 text-red-700 hover:bg-red-100"
+                        >
+                          Realizar actualización de 2.º año
+                        </Button>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Ingresá el porcentaje de IPC correspondiente al segundo aniversario del contrato.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                   <DatoConcesion
                     titulo="Canon vigente"
                     valor={money(num(datos.canonVigente))}
