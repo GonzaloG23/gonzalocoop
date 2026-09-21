@@ -488,7 +488,8 @@ function ConcesionPage() {
                         setDatos((actual) => ({
                           ...actual,
                           tieneProrroga: e.target.checked,
-                          canonProrroga: e.target.checked ? actual.canonProrroga : "",
+                          canonProrroga: e.target.checked ? String(actual.canonVigente || actual.canon || "") : "",
+                          canonProrrogaVigente: e.target.checked ? String(actual.canonVigente || actual.canon || "") : "",
                           fechaInicioProrroga: e.target.checked ? actual.fechaInicioProrroga : "",
                           fechaVencimientoProrroga: e.target.checked ? actual.fechaVencimientoProrroga : "",
                         }))
@@ -530,18 +531,11 @@ function ConcesionPage() {
                           id="concesion-canon-prorroga"
                           inputMode="decimal"
                           value={datos.canonProrroga}
-                          onChange={(e) =>
-                            setDatos((actual) => ({
-                              ...actual,
-                              canonProrroga: e.target.value,
-                              canonProrrogaVigente: actual.canonProrrogaVigente || e.target.value,
-                            }))
-                          }
-                          placeholder="Importe inicial del canon de la prórroga"
-                          required
+                          disabled
+                          readOnly
                         />
                         <p className="text-xs text-muted-foreground">
-                          Este valor se conserva como antecedente de la prórroga.
+                          Se toma automáticamente del canon vigente del contrato al iniciar la prórroga y queda como antecedente.
                         </p>
                       </div>
                       <div className="space-y-2">
