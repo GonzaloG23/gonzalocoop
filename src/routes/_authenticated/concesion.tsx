@@ -385,28 +385,6 @@ function ConcesionPage() {
                         readOnly
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="concesion-canon-prorroga">Canon inicial de la prórroga *</Label>
-                      <Input
-                        id="concesion-canon-prorroga"
-                        inputMode="decimal"
-                        value={datos.canonProrroga}
-                        onChange={(e) => setDatos((actual) => ({ ...actual, canonProrroga: e.target.value, canonProrrogaVigente: actual.canonProrrogaVigente || e.target.value }))}
-                        placeholder="Importe inicial del canon de la prórroga"
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">Este valor se conserva como antecedente de la prórroga.</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="concesion-canon-prorroga-vigente">Canon vigente de la prórroga</Label>
-                      <Input
-                        id="concesion-canon-prorroga-vigente"
-                        inputMode="decimal"
-                        value={datos.canonProrrogaVigente}
-                        disabled
-                        readOnly
-                      />
-                    </div>
                   </>
                 )}
                 {(contratoPendienteIPC || prorrogaPendienteIPC) && (
@@ -526,7 +504,9 @@ function ConcesionPage() {
                 {datos.tieneProrroga && (
                   <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
                     <p className="text-sm font-medium">Prórroga</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Ingresá nuevamente la fecha de inicio. El vencimiento se calcula automáticamente por 1 año.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Ingresá los datos de la prórroga. El vencimiento se calcula automáticamente por 1 año desde la fecha de inicio.
+                    </p>
                     <div className="mt-3 grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="concesion-fecha-inicio-prorroga">Fecha de inicio de la prórroga *</Label>
@@ -544,6 +524,36 @@ function ConcesionPage() {
                         titulo="Vigente hasta"
                         valor={formatearFechaContrato(vencimientoProrroga)}
                       />
+                      <div className="space-y-2">
+                        <Label htmlFor="concesion-canon-prorroga">Canon inicial de la prórroga *</Label>
+                        <Input
+                          id="concesion-canon-prorroga"
+                          inputMode="decimal"
+                          value={datos.canonProrroga}
+                          onChange={(e) =>
+                            setDatos((actual) => ({
+                              ...actual,
+                              canonProrroga: e.target.value,
+                              canonProrrogaVigente: actual.canonProrrogaVigente || e.target.value,
+                            }))
+                          }
+                          placeholder="Importe inicial del canon de la prórroga"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Este valor se conserva como antecedente de la prórroga.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="concesion-canon-prorroga-vigente">Canon vigente de la prórroga</Label>
+                        <Input
+                          id="concesion-canon-prorroga-vigente"
+                          inputMode="decimal"
+                          value={datos.canonProrrogaVigente}
+                          disabled
+                          readOnly
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
