@@ -702,6 +702,33 @@ function ConcesionPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {(() => {
+              const rechazada = [...(solicitudesCanon.data ?? [])]
+                .filter((solicitud) => solicitud.estado === "rechazada")
+                .sort(
+                  (a, b) =>
+                    new Date(b.resuelta_en ?? b.solicitada_en).getTime() -
+                    new Date(a.resuelta_en ?? a.solicitada_en).getTime(),
+                )[0];
+
+              return rechazada ? (
+                <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-900 shadow-sm">
+                  <p className="font-semibold">Pedido de reconsideración rechazado</p>
+                  <p className="mt-1 text-sm">Auditoría rechazó el pedido de reconsideración del canon.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <DatoConcesion titulo="Canon solicitado" valor={money(rechazada.canon_solicitado)} />
+                    <DatoConcesion titulo="Canon vigente" valor={money(rechazada.canon_actual)} />
+                    <DatoConcesion titulo="Tipo" valor={rechazada.tipo_canon === "prorroga" ? "Prórroga" : "Contrato"} />
+                  </div>
+                  {rechazada.comentario_resolucion ? (
+                    <p className="mt-3 text-sm">
+                      <span className="font-medium">Observación de Auditoría:</span> {rechazada.comentario_resolucion}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null;
+            })()}
+
             {(solicitudesCanon.data ?? []).filter((solicitud) => solicitud.estado === "pendiente").map((solicitud) => (
               <div key={solicitud.id} className="rounded-md border border-slate-300 bg-slate-100 p-4 text-slate-700">
                 <p className="font-medium">Pedido de reconsideración pendiente de aprobación</p>
