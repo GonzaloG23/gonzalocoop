@@ -198,9 +198,16 @@ export function LibroMensual({
             variant="outline"
             size="sm"
             disabled={!mesActual}
-            onClick={() =>
-              mesActual && exportarMesPDF(cooperadora, mesActual, movimientos, rubros.data ?? [])
-            }
+            onClick={() => {
+              if (!mesActual) return;
+              try {
+                exportarMesPDF(cooperadora, mesActual, movimientos, rubros.data ?? []);
+                toast.success("PDF generado correctamente.");
+              } catch (error) {
+                console.error("Error al generar el PDF de movimientos:", error);
+                toast.error("No se pudo generar el PDF de movimientos.");
+              }
+            }}
           >
             <Download className="mr-1 h-4 w-4" /> PDF
           </Button>
