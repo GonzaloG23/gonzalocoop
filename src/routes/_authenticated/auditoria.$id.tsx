@@ -1024,16 +1024,32 @@ function AuditoriaLibroPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <DatoInstitucional titulo="Apellido actual" valor={solicitud.datos_actuales.apellido} />
+                <DatoInstitucional titulo="Apellido solicitado" valor={solicitud.datos_solicitados.apellido} />
+                <DatoInstitucional titulo="Nombre actual" valor={solicitud.datos_actuales.nombre} />
+                <DatoInstitucional titulo="Nombre solicitado" valor={solicitud.datos_solicitados.nombre} />
                 <DatoInstitucional titulo="Fecha de firma actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaFirmaContrato)} />
                 <DatoInstitucional titulo="Fecha de firma solicitada" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaFirmaContrato)} />
-                <DatoInstitucional titulo="Canon actual" valor={money(num(solicitud.datos_actuales.canonVigente))} />
-                <DatoInstitucional titulo="Canon solicitado" valor={money(num(solicitud.datos_solicitados.canonVigente))} />
+                <DatoInstitucional titulo="Canon inicial actual" valor={money(num(solicitud.datos_actuales.canon))} />
+                <DatoInstitucional titulo="Canon inicial solicitado" valor={money(num(solicitud.datos_solicitados.canon))} />
+                <DatoInstitucional titulo="Canon vigente actual" valor={money(num(solicitud.datos_actuales.canonVigente))} />
+                <DatoInstitucional titulo="Canon vigente solicitado" valor={money(num(solicitud.datos_solicitados.canonVigente))} />
                 <DatoInstitucional titulo="Vencimiento actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaVencimientoContrato)} />
                 <DatoInstitucional titulo="Vencimiento solicitado" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaVencimientoContrato)} />
                 {solicitud.datos_actuales.tieneProrroga || solicitud.datos_solicitados.tieneProrroga ? (
                   <>
+                    <DatoInstitucional
+                      titulo="Prórroga actual"
+                      valor={solicitud.datos_actuales.tieneProrroga ? "Sí" : "No"}
+                    />
+                    <DatoInstitucional
+                      titulo="Prórroga solicitada"
+                      valor={solicitud.datos_solicitados.tieneProrroga ? "Sí" : "No"}
+                    />
                     <DatoInstitucional titulo="Inicio de prórroga actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaInicioProrroga)} />
                     <DatoInstitucional titulo="Inicio de prórroga solicitado" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaInicioProrroga)} />
+                    <DatoInstitucional titulo="Canon inicial de prórroga actual" valor={money(num(solicitud.datos_actuales.canonProrroga))} />
+                    <DatoInstitucional titulo="Canon inicial de prórroga solicitado" valor={money(num(solicitud.datos_solicitados.canonProrroga))} />
                     <DatoInstitucional titulo="Canon vigente de prórroga actual" valor={money(num(solicitud.datos_actuales.canonProrrogaVigente))} />
                     <DatoInstitucional titulo="Canon vigente de prórroga solicitado" valor={money(num(solicitud.datos_solicitados.canonProrrogaVigente))} />
                     <DatoInstitucional titulo="Fin de prórroga actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaVencimientoProrroga)} />
