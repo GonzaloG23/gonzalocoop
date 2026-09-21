@@ -444,8 +444,7 @@ function ConcesionPage() {
       ? calcularSiguienteAniversarioCanon(datos.fechaInicioProrroga)
       : aniversarioProrroga;
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
-  const segundaActualizacionContratoPendiente =
-    contratoPendienteIPC && actualizacionesCanon.length === 1;
+  const segundaActualizacionContratoDisponible = actualizacionesCanon.length === 1;
   const contratoVencido = concesionKioscoEstaVencida(datos);
   const fechaVencimientoVigente = fechaVencimientoVigenteConcesion(datos);
   const solicitudModificacionPendiente = [...(solicitudesModificacion.data ?? [])]
@@ -575,17 +574,21 @@ function ConcesionPage() {
                       />
                       <p className="text-xs text-muted-foreground">Este es el importe que surge del contrato y se conserva como antecedente.</p>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="concesion-canon-vigente">Canon vigente</Label>
-                      <Input
-                        id="concesion-canon-vigente"
-                        inputMode="decimal"
-                        value={datos.canonVigente}
-                        disabled={modoEdicion !== "rectificacion"}
-                        readOnly={modoEdicion !== "rectificacion"}
-                      />
-                      <p className="text-xs text-muted-foreground">Cuando se cumple cada aniversario, ingresá el porcentaje de aumento informado por INDEC para calcular el nuevo canon vigente.</p>
-                    </div>
+                    {modoEdicion === "rectificacion" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="concesion-canon-vigente">Canon vigente</Label>
+                        <Input
+                          id="concesion-canon-vigente"
+                          inputMode="decimal"
+                          value={datos.canonVigente}
+                          readOnly
+                          onChange={(e) => setDatos((actual) => ({ ...actual, canonVigente: e.target.value }))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Este valor puede corregirse mediante una solicitud de rectificación que debe autorizar Auditoría.
+                        </p>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -601,28 +604,36 @@ function ConcesionPage() {
                       />
                       <p className="text-xs text-muted-foreground">Este valor queda asentado y no se reemplaza por las actualizaciones IPC.</p>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="concesion-canon-vigente-principal">Canon vigente del contrato</Label>
-                      <Input
-                        id="concesion-canon-vigente-principal"
-                        inputMode="decimal"
-                        value={datos.canonVigente}
-                        disabled={modoEdicion !== "rectificacion"}
-                        readOnly={modoEdicion !== "rectificacion"}
-                      />
-                    </div>
+                    {modoEdicion === "rectificacion" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="concesion-canon-vigente-principal">Canon vigente del contrato</Label>
+                        <Input
+                          id="concesion-canon-vigente-principal"
+                          inputMode="decimal"
+                          value={datos.canonVigente}
+                          onChange={(e) => setDatos((actual) => ({ ...actual, canonVigente: e.target.value }))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Este valor puede corregirse mediante una solicitud de rectificación que debe autorizar Auditoría.
+                        </p>
+                      </div>
+                    ) : null}
                   </>
                 )}
-                {modoEdicion === "ipc" && (contratoPendienteIPC || prorrogaPendienteIPC) && (
+                {modoEdicion === "ipc" && (contratoPendienteIPC || prorrogaPendienteIPC || segundaActualizacionContratoDisponible) && (
                   <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
                     <p className="text-sm font-medium">Actualización anual por IPC</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Ingresá el porcentaje de aumento informado por INDEC. El sistema calculará el nuevo canon vigente.
                     </p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      {contratoPendienteIPC ? (
+                      {(contratoPendienteIPC || segundaActualizacionContratoDisponible) ? (
                         <div className="space-y-2">
-                          <Label htmlFor="concesion-porcentaje-ipc">Aumento IPC ANUAL del contrato (%)</Label>
+                          <Label htmlFor="concesion-porcentaje-ipc">
+                            {segundaActualizacionContratoDisponible && !contratoPendienteIPC
+                              ? "Aumento IPC 2.º año del contrato (%)"
+                              : "Aumento IPC ANUAL del contrato (%)"}
+                          </Label>
                           <div className="flex gap-2">
                             <Input
                               id="concesion-porcentaje-ipc"
@@ -961,7 +972,7 @@ function ConcesionPage() {
                     <p className="mt-1 text-sm font-medium">
                       {actualizacionesCanon[1] ? money(actualizacionesCanon[1].valor) : "No actualizado todavía"}
                     </p>
-                    {segundaActualizacionContratoPendiente ? (
+                    {segundaActualizacionContratoDisponible ? (
                       <div className="mt-3">
                         <Button
                           type="button"
