@@ -108,14 +108,18 @@ export function Anual({ cooperadora }: { cooperadora: Cooperadora }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() =>
-            exportarAnualPDF(
-              cooperadora,
-              resumen,
-              ejercicio.data?.movimientos ?? [],
-              rubros.data ?? [],
-            )
-          }
+          onClick={() => {
+            try {
+              exportarAnualPDF(
+                cooperadora,
+                resumen,
+                ejercicio.data?.movimientos ?? [],
+                rubros.data ?? [],
+              );
+            } catch (error) {
+              console.error("Error al generar el PDF anual:", error);
+            }
+          }}
         >
           <Download className="mr-1 h-4 w-4" /> PDF
         </Button>
