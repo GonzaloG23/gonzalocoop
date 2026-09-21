@@ -203,6 +203,31 @@ export async function guardarConcesionKiosco(
   return normalizados;
 }
 
+
+export async function limpiarDatosPruebaConcesion(cooperadoraId: string) {
+  if (usingMinisterioApi()) return;
+
+  localStorage.removeItem(claveConcesion(cooperadoraId));
+  localStorage.removeItem(claveDocumento(cooperadoraId, "contrato"));
+  localStorage.removeItem(claveDocumento(cooperadoraId, "contrato_sellado"));
+  localStorage.removeItem(claveDocumento(cooperadoraId, "buena_conducta"));
+  localStorage.removeItem(`demo-historial-concesion-kiosco-${cooperadoraId}`);
+  localStorage.removeItem(`demo-historial-documentos-concesion-${cooperadoraId}`);
+  localStorage.removeItem(`demo-solicitudes-reconsideracion-canon-${cooperadoraId}`);
+
+  const db = await abrirDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction("documentos", "readwrite");
+    const store = tx.objectStore("documentos");
+    for (const tipo of ["contrato", "contrato_sellado", "buena_conducta"] as TipoDocumentoConcesion[]) {
+      store.delete(claveDocumento(cooperadoraId, tipo));
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error("No se pudieron limpiar los documentos de prueba."));
+  });
+  db.close();
+}
+
 export async function cargarDocumentoConcesion(
   cooperadoraId: string,
   tipo: TipoDocumentoConcesion,
