@@ -48,6 +48,10 @@ import {
   cargarSolicitudesReconsideracionCanon,
   resolverSolicitudReconsideracionCanon,
 } from "@/lib/data/concesion-solicitudes-canon";
+import {
+  cargarSolicitudesModificacionConcesion,
+  resolverSolicitudModificacionConcesion,
+} from "@/lib/data/concesion-solicitudes-modificacion";
 import { usingMinisterioApi } from "@/lib/data/index";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
@@ -209,6 +213,12 @@ function AuditoriaLibroPage() {
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
+  const solicitudesModificacionConcesion = useQuery({
+    queryKey: ["solicitudes-modificacion-concesion", id],
+    queryFn: () => cargarSolicitudesModificacionConcesion(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
   const resolverSolicitudMandato = useMutation({
     mutationFn: async (input: { decision: "aprobar" | "rechazar"; solicitudId: string }) => {
       if (!ctx) throw new Error("No se pudo identificar al auditor.");
@@ -279,6 +289,41 @@ function AuditoriaLibroPage() {
       qc.invalidateQueries({ queryKey: ["historial-comision-directiva", id] });
       qc.invalidateQueries({ queryKey: ["panel-auditor"] });
       toast.success("Mandato autorizado y actualizado por Auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const resolverSolicitudModificacionConcesion = useMutation({
+    mutationFn: async (input: { decision: "aprobar" | "rechazar"; solicitudId: string }) => {
+      if (!ctx) throw new Error("No se pudo identificar al auditor.");
+      const solicitud = (solicitudesModificacionConcesion.data ?? []).find(
+        (item) => item.id === input.solicitudId,
+      );
+      if (!solicitud) throw new Error("No se encontró la solicitud de modificación de concesión.");
+
+      return resolverSolicitudModificacionConcesion(
+        solicitud,
+        input.decision,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Auditor",
+          email: ctx.email,
+        },
+        input.decision === "rechazar"
+          ? "Corrección rechazada por Auditoría."
+          : "Corrección autorizada por Auditoría.",
+      );
+    },
+    onSuccess: (_resultado, input) => {
+      qc.invalidateQueries({ queryKey: ["solicitudes-modificacion-concesion", id] });
+      qc.invalidateQueries({ queryKey: ["concesion-kiosco", id] });
+      qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", id] });
+      qc.invalidateQueries({ queryKey: ["panel-auditor"] });
+      toast.success(
+        input.decision === "aprobar"
+          ? "Corrección de la concesión autorizada."
+          : "Corrección de la concesión rechazada.",
+      );
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -964,6 +1009,63 @@ function AuditoriaLibroPage() {
           </div>
         </CardContent>
       </Card>
+
+      {(solicitudesModificacionConcesion.data ?? [])
+        .filter((solicitud) => solicitud.estado === "pendiente")
+        .map((solicitud) => (
+          <Card key={solicitud.id} className="mb-6 border-2 border-red-500 bg-red-50 text-red-900 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 font-serif text-lg">
+                <span className="text-red-600">⚠</span> Pedido de modificación de concesión pendiente
+              </CardTitle>
+              <CardDescription className="text-red-800/80">
+                La Cooperadora informó que ingresó datos o fechas incorrectamente y solicita rectificarlos. Los datos vigentes no cambian hasta la resolución de Auditoría.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <DatoInstitucional titulo="Fecha de firma actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaFirmaContrato)} />
+                <DatoInstitucional titulo="Fecha de firma solicitada" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaFirmaContrato)} />
+                <DatoInstitucional titulo="Canon actual" valor={money(num(solicitud.datos_actuales.canonVigente))} />
+                <DatoInstitucional titulo="Canon solicitado" valor={money(num(solicitud.datos_solicitados.canonVigente))} />
+                <DatoInstitucional titulo="Vencimiento actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaVencimientoContrato)} />
+                <DatoInstitucional titulo="Vencimiento solicitado" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaVencimientoContrato)} />
+                {solicitud.datos_actuales.tieneProrroga || solicitud.datos_solicitados.tieneProrroga ? (
+                  <>
+                    <DatoInstitucional titulo="Inicio de prórroga actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaInicioProrroga)} />
+                    <DatoInstitucional titulo="Inicio de prórroga solicitado" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaInicioProrroga)} />
+                    <DatoInstitucional titulo="Canon vigente de prórroga actual" valor={money(num(solicitud.datos_actuales.canonProrrogaVigente))} />
+                    <DatoInstitucional titulo="Canon vigente de prórroga solicitado" valor={money(num(solicitud.datos_solicitados.canonProrrogaVigente))} />
+                    <DatoInstitucional titulo="Fin de prórroga actual" valor={formatearFechaAuditoria(solicitud.datos_actuales.fechaVencimientoProrroga)} />
+                    <DatoInstitucional titulo="Fin de prórroga solicitado" valor={formatearFechaAuditoria(solicitud.datos_solicitados.fechaVencimientoProrroga)} />
+                  </>
+                ) : null}
+              </div>
+              <div className="mt-4 rounded-sm border border-red-200 bg-white p-3">
+                <p className="text-xs font-medium text-red-800">Motivo</p>
+                <p className="mt-1 text-sm">{solicitud.motivo}</p>
+                <p className="mt-2 text-xs text-red-700">
+                  Solicitado por {solicitud.usuario_nombre} · {new Date(solicitud.solicitada_en).toLocaleString("es-AR")}
+                </p>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  onClick={() => resolverSolicitudModificacionConcesion.mutate({ decision: "aprobar", solicitudId: solicitud.id })}
+                  disabled={resolverSolicitudModificacionConcesion.isPending}
+                >
+                  Autorizar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => resolverSolicitudModificacionConcesion.mutate({ decision: "rechazar", solicitudId: solicitud.id })}
+                  disabled={resolverSolicitudModificacionConcesion.isPending}
+                >
+                  Rechazar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
 
       {hayReduccionCanon && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">
