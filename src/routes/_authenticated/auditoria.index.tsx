@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { cargarCooperadorasAuditoria, otorgarRolAuditor, reclamarRolAuditor } from "@/lib/data/auditoria";
 import { cargarConcesionKiosco, concesionKioscoEstaVencida, fechaVencimientoVigenteConcesion } from "@/lib/data/concesion";
 import { cargarSolicitudesReconsideracionCanon } from "@/lib/data/concesion-solicitudes-canon";
+import { cargarSolicitudesModificacionConcesion } from "@/lib/data/concesion-solicitudes-modificacion";
 import {
   asegurarPlazoAperturaCuenta,
   aperturaCuentaVencida,
@@ -81,12 +82,13 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
 
   return Promise.all(
     coops.map(async (coop) => {
-      const [{ periodos, movimientos }, datosInstitucionales, concesion, comision, solicitudesCanon] = await Promise.all([
+      const [{ periodos, movimientos }, datosInstitucionales, concesion, comision, solicitudesCanon, solicitudesModificacion] = await Promise.all([
         cargarEjercicio(coop.id, coop.ejercicio),
         cargarDatosInstitucionales(coop),
         cargarConcesionKiosco(coop.id),
         cargarComisionDirectiva(coop.id),
         cargarSolicitudesReconsideracionCanon(coop.id),
+        cargarSolicitudesModificacionConcesion(coop.id),
       ]);
       const resumen = calcularEjercicio(num(coop.saldo_inicial_ejercicio), periodos, movimientos, parametros);
       const totales = totalesAnuales(resumen);
@@ -97,6 +99,14 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
         alertasCanon.push({
           mes: mesTope,
           texto: "Existe un pedido de reconsideración del canon pendiente de autorización de Auditoría.",
+        });
+      }
+
+      const alertasModificacionConcesion: Alerta[] = [];
+      if (solicitudesModificacion.some((solicitud) => solicitud.estado === "pendiente")) {
+        alertasModificacionConcesion.push({
+          mes: mesTope,
+          texto: "Existe un pedido de modificación de datos de concesión pendiente de autorización de Auditoría.",
         });
       }
 
@@ -189,6 +199,7 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
             r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
           ),
           ...alertasCanon,
+          ...alertasModificacionConcesion,
           ...alertasConcesion,
           ...alertasCuenta,
           ...alertasMandato,
