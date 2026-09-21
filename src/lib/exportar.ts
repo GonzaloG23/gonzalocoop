@@ -234,7 +234,8 @@ export function exportarMesPDF(
   autoTable(doc, {
     startY: 42,
     head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Proveedor", "CUIT", "Factura", "Monto"]],
-    body: movimientos.map((m) => [
+    body: movimientos.length
+      ? movimientos.map((m) => [
       fechaCorta(m.fecha),
       m.tipo === "ingreso" ? "Ingreso" : "Egreso",
       rubros.find((r) => r.id === m.rubro_id)?.nombre ?? "-",
@@ -244,7 +245,8 @@ export function exportarMesPDF(
       m.proveedor_cuit ?? "-",
       etiquetaFactura(m.tipo_factura) || "-",
       money(m.monto),
-    ]),
+    ])
+      : [["", "", "", "No hay movimientos registrados para este mes.", "", "", "", "", money(0)]],
     styles: { fontSize: 8 },
     headStyles: { fillColor: [31, 74, 58] },
   });
