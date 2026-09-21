@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { AppShell, useContexto } from "@/components/AppShell";
-import { calcularEjercicio, cargarEjercicio, cargarParametros, totalesAnuales, type Cooperadora } from "@/lib/libro";
+import { calcularEjercicio, cargarEjercicio, cargarParametros, cargarRubros, totalesAnuales, type Cooperadora } from "@/lib/libro";
 import { exportarAnualExcel, exportarAnualPDF } from "@/lib/exportar";
 import { money, nombreMes, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,11 @@ export function Anual({ cooperadora }: { cooperadora: Cooperadora }) {
     staleTime: 30_000,
   });
 
+  const rubros = useQuery({
+    queryKey: ["rubros", cooperadora.id],
+    queryFn: () => cargarRubros(cooperadora.id),
+  });
+
   const resumen = useMemo(() => {
     if (!ejercicio.data) return null;
     return calcularEjercicio(
@@ -100,7 +105,18 @@ export function Anual({ cooperadora }: { cooperadora: Cooperadora }) {
         <Button variant="outline" size="sm" onClick={() => exportarAnualExcel(cooperadora, resumen)}>
           <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
         </Button>
-        <Button variant="outline" size="sm" onClick={() => exportarAnualPDF(cooperadora, resumen)}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            exportarAnualPDF(
+              cooperadora,
+              resumen,
+              ejercicio.data?.movimientos ?? [],
+              rubros.data ?? [],
+            )
+          }
+        >
           <Download className="mr-1 h-4 w-4" /> PDF
         </Button>
       </div>
