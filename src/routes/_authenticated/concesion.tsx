@@ -9,6 +9,7 @@ import {
   abrirDocumentoConcesion,
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
+  calcularVencimientoConcesion,
   guardarConcesionKiosco,
   guardarDocumentoConcesion,
   type ConcesionKiosco,
@@ -76,6 +77,10 @@ function ConcesionPage() {
     nombre: "",
     canon: "",
     fechaFirmaContrato: "",
+    fechaVencimientoContrato: "",
+    tieneProrroga: false,
+    fechaInicioProrroga: "",
+    fechaVencimientoProrroga: "",
   });
   const [archivos, setArchivos] = useState<Record<TipoDocumentoConcesion, File | null>>({
     contrato: null,
@@ -126,6 +131,16 @@ function ConcesionPage() {
         nombre: concesion.data.nombre ?? "",
         canon: String(concesion.data.canon ?? ""),
         fechaFirmaContrato: concesion.data.fechaFirmaContrato ?? "",
+        fechaVencimientoContrato:
+          concesion.data.fechaVencimientoContrato ||
+          calcularVencimientoConcesion(concesion.data.fechaFirmaContrato ?? "", 2),
+        tieneProrroga: Boolean(concesion.data.tieneProrroga),
+        fechaInicioProrroga: concesion.data.fechaInicioProrroga ?? "",
+        fechaVencimientoProrroga:
+          concesion.data.fechaVencimientoProrroga ||
+          (concesion.data.tieneProrroga
+            ? calcularVencimientoConcesion(concesion.data.fechaInicioProrroga ?? "", 1)
+            : ""),
       });
     }
     if (!historial.data?.length) setEditando(true);
@@ -224,6 +239,10 @@ function ConcesionPage() {
 
   const ultimaModificacion = historial.data?.[0];
   const cambiosCanon = construirHistorialCanon(historial.data ?? []);
+  const vencimientoContrato = calcularVencimientoConcesion(datos.fechaFirmaContrato, 2);
+  const vencimientoProrroga = datos.tieneProrroga
+    ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
+    : "";
 
   return (
     <AppShell
@@ -284,6 +303,60 @@ function ConcesionPage() {
                     required
                   />
                 </div>
+                <div className="rounded-sm border border-border bg-secondary/40 p-4 sm:col-span-2">
+                  <p className="text-sm font-medium">Vigencia del contrato inicial</p>
+                  <p className="mt-1 text-xs text-muted-foreground">La vigencia se calcula automáticamente por 2 años desde la fecha de firma.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <DatoConcesion titulo="Duración" valor="2 años" />
+                    <DatoConcesion
+                      titulo="Vigente hasta"
+                      valor={formatearFechaContrato(vencimientoContrato)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-sm border border-border bg-card px-4 py-3 sm:col-span-2">
+                  <input
+                    id="concesion-prorroga"
+                    type="checkbox"
+                    checked={datos.tieneProrroga}
+                    onChange={(e) =>
+                      setDatos((actual) => ({
+                        ...actual,
+                        tieneProrroga: e.target.checked,
+                        fechaInicioProrroga: e.target.checked ? actual.fechaInicioProrroga : "",
+                        fechaVencimientoProrroga: e.target.checked ? actual.fechaVencimientoProrroga : "",
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-border"
+                  />
+                  <Label htmlFor="concesion-prorroga" className="cursor-pointer">
+                    La concesión tiene una prórroga de 1 año
+                  </Label>
+                </div>
+                {datos.tieneProrroga && (
+                  <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
+                    <p className="text-sm font-medium">Prórroga</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Ingresá nuevamente la fecha de inicio. El vencimiento se calcula automáticamente por 1 año.</p>
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="concesion-fecha-inicio-prorroga">Fecha de inicio de la prórroga *</Label>
+                        <Input
+                          id="concesion-fecha-inicio-prorroga"
+                          type="date"
+                          value={datos.fechaInicioProrroga}
+                          onChange={(e) =>
+                            setDatos((actual) => ({ ...actual, fechaInicioProrroga: e.target.value }))
+                          }
+                          required
+                        />
+                      </div>
+                      <DatoConcesion
+                        titulo="Vigente hasta"
+                        valor={formatearFechaContrato(vencimientoProrroga)}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="concesion-canon">Canon *</Label>
                   <Input
@@ -315,8 +388,23 @@ function ConcesionPage() {
                   <DatoConcesion
                     titulo="Fecha de firma del contrato"
                     valor={formatearFechaContrato(datos.fechaFirmaContrato)}
-                    className="sm:col-span-2"
                   />
+                  <DatoConcesion
+                    titulo="Contrato vigente hasta"
+                    valor={formatearFechaContrato(datos.fechaVencimientoContrato || vencimientoContrato)}
+                  />
+                  {datos.tieneProrroga ? (
+                    <>
+                      <DatoConcesion
+                        titulo="Inicio de la prórroga"
+                        valor={formatearFechaContrato(datos.fechaInicioProrroga)}
+                      />
+                      <DatoConcesion
+                        titulo="Prórroga vigente hasta"
+                        valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
+                      />
+                    </>
+                  ) : null}
                   <DatoConcesion titulo="Canon" valor={money(num(datos.canon))} className="sm:col-span-2" />
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -519,13 +607,35 @@ function ConcesionPage() {
                       <span className="text-xs text-muted-foreground">{new Date(registro.modificado_en).toLocaleString("es-AR")}</span>
                     </span>
                   </summary>
-                  <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-4">
+                  <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-3">
                     <DatoConcesion titulo="Apellido" valor={registro.datos.apellido} />
                     <DatoConcesion titulo="Nombre" valor={registro.datos.nombre} />
                     <DatoConcesion
                       titulo="Fecha de firma del contrato"
                       valor={formatearFechaContrato(registro.datos.fechaFirmaContrato)}
                     />
+                    <DatoConcesion
+                      titulo="Contrato vigente hasta"
+                      valor={formatearFechaContrato(
+                        registro.datos.fechaVencimientoContrato ||
+                          calcularVencimientoConcesion(registro.datos.fechaFirmaContrato, 2),
+                      )}
+                    />
+                    {registro.datos.tieneProrroga ? (
+                      <>
+                        <DatoConcesion
+                          titulo="Inicio de la prórroga"
+                          valor={formatearFechaContrato(registro.datos.fechaInicioProrroga)}
+                        />
+                        <DatoConcesion
+                          titulo="Prórroga vigente hasta"
+                          valor={formatearFechaContrato(
+                            registro.datos.fechaVencimientoProrroga ||
+                              calcularVencimientoConcesion(registro.datos.fechaInicioProrroga, 1),
+                          )}
+                        />
+                      </>
+                    ) : null}
                     <DatoConcesion titulo="Canon" valor={money(num(registro.datos.canon))} />
                   </div>
                 </details>
