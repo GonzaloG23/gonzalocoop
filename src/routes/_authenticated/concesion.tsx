@@ -961,10 +961,6 @@ function ConcesionPage() {
                     titulo="Canon vigente"
                     valor={money(num(datos.canonVigente))}
                   />
-                  <DatoConcesion
-                    titulo="Próxima actualización por IPC"
-                    valor={formatearFechaContrato(proximaActualizacionContrato)}
-                  />
                   {!datos.tieneProrroga ? (
                     <div className="rounded-sm border-2 border-primary/30 bg-primary/5 p-4 sm:col-span-2">
                       <p className="text-sm font-semibold">Prórroga de la concesión</p>
