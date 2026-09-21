@@ -358,13 +358,15 @@ function ConcesionPage() {
                   </div>
                 )}
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="concesion-canon">Canon *</Label>
+                  <Label htmlFor="concesion-canon">
+                    {datos.tieneProrroga ? "Canon de la prórroga" : "Canon"} *
+                  </Label>
                   <Input
                     id="concesion-canon"
                     inputMode="decimal"
                     value={datos.canon}
                     onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value }))}
-                    placeholder="Importe del canon"
+                    placeholder={datos.tieneProrroga ? "Importe del canon de la prórroga" : "Importe del canon"}
                     required
                   />
                 </div>
