@@ -119,6 +119,52 @@ La aplicación no consulta ni importa automáticamente datos del INDEC. El usuar
 
 El canon inicial se conserva sin modificaciones y el resultado se guarda en `canonVigente` o `canonProrrogaVigente`, según corresponda.
 
+## Pedidos de reconsideración del canon
+
+### GET `/api/cooperadoras/:id/concesion-kiosco/solicitudes-canon`
+
+Devuelve los pedidos de reconsideración del canon de la Cooperadora, incluyendo los pendientes y los ya resueltos.
+
+### POST `/api/cooperadoras/:id/concesion-kiosco/solicitudes-canon`
+
+La Cooperadora crea un pedido con:
+
+- tipo de canon: `contrato` o `prorroga`;
+- canon actual;
+- canon solicitado;
+- motivo;
+- usuario y fecha de solicitud.
+
+El pedido queda en estado `pendiente`. Mientras permanezca pendiente, el canon vigente no se modifica.
+
+Debe existir como máximo un pedido pendiente por Cooperadora.
+
+### POST `/api/cooperadoras/:id/concesion-kiosco/solicitudes-canon/:solicitudId/resolver`
+
+Auditoría resuelve el pedido.
+
+Body:
+
+```json
+{
+  "decision": "aprobar",
+  "comentario": "Pedido autorizado por Auditoría.",
+  "auditor": {
+    "id": "uuid",
+    "nombre": "Auditor",
+    "email": "auditor@dominio.gob.ar"
+  }
+}
+```
+
+Valores permitidos para `decision`: `aprobar` o `rechazar`.
+
+Al aprobar, el backend debe actualizar `canon_vigente` o `canon_prorroga_vigente`, según el tipo de canon solicitado, y registrar la operación en el historial de la concesión.
+
+Al rechazar, el canon vigente permanece sin cambios y se registra la resolución y el comentario de Auditoría.
+
+El backend debe validar autenticación, autorización de Auditoría y que la solicitud se encuentre en estado `pendiente`.
+
 ## Historial
 
 ### GET `/api/cooperadoras/:id/concesion-kiosco/historial`
