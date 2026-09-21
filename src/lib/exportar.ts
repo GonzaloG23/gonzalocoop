@@ -130,7 +130,7 @@ function dibujarGraficoCircular(
   doc.setFontSize(7.5);
   doc.setTextColor(0, 0, 0);
 
-  let leyendaY = 56;
+  let leyendaY = centroY + radio + 10;
   segmentos.forEach((segmento, indice) => {
     const color = COLORES_GRAFICO[indice % COLORES_GRAFICO.length];
     const porcentaje = segmento.porcentaje.toFixed(1).replace(".", ",");
@@ -186,14 +186,14 @@ function agregarAnalisisRubros(
       ? `Mayor fuente de ingresos: ${mayorIngreso.nombre} · ${money(mayorIngreso.monto)} (${mayorIngreso.porcentaje.toFixed(1).replace(".", ",")}% del total)`
       : "Mayor fuente de ingresos: no hay ingresos registrados.",
     14,
-    170,
+    208,
   );
   doc.text(
     mayorEgreso
       ? `Mayor rubro de gastos: ${mayorEgreso.nombre} · ${money(mayorEgreso.monto)} (${mayorEgreso.porcentaje.toFixed(1).replace(".", ",")}% del total)`
       : "Mayor rubro de gastos: no hay egresos registrados.",
     14,
-    178,
+    216,
   );
 }
 
