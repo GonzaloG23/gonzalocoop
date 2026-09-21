@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { AppShell, useContexto } from "@/components/AppShell";
 import {
   abrirDocumentoConcesion,
+  limpiarDatosPruebaConcesion,
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
   calcularVencimientoConcesion,
@@ -96,6 +97,36 @@ function ConcesionPage() {
   const [tipoCanonReconsideracion, setTipoCanonReconsideracion] = useState<TipoCanonReconsideracion>("contrato");
   const [canonSolicitadoReconsideracion, setCanonSolicitadoReconsideracion] = useState("");
   const [motivoReconsideracion, setMotivoReconsideracion] = useState("");
+  useEffect(() => {
+    if (!cooperadora || ctx?.esAuditor) return;
+
+    const claveReset = `demo-concesion-reset-20260921-${cooperadora.id}`;
+    if (localStorage.getItem(claveReset)) return;
+
+    void limpiarDatosPruebaConcesion(cooperadora.id).then(() => {
+      localStorage.setItem(claveReset, "1");
+      setDatos({
+        apellido: "",
+        nombre: "",
+        canon: "",
+        canonVigente: "",
+        canonProrroga: "",
+        canonProrrogaVigente: "",
+        fechaFirmaContrato: "",
+        fechaVencimientoContrato: "",
+        tieneProrroga: false,
+        fechaInicioProrroga: "",
+        fechaVencimientoProrroga: "",
+      });
+      setEditando(true);
+      void qc.invalidateQueries({ queryKey: ["concesion-kiosco", cooperadora.id] });
+      void qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", cooperadora.id] });
+      void qc.invalidateQueries({ queryKey: ["historial-documentos-concesion", cooperadora.id] });
+      void qc.invalidateQueries({ queryKey: ["solicitudes-reconsideracion-canon", cooperadora.id] });
+      void qc.invalidateQueries({ queryKey: ["documento-concesion", cooperadora.id] });
+    });
+  }, [cooperadora, ctx?.esAuditor, qc]);
+
   const [archivos, setArchivos] = useState<Record<TipoDocumentoConcesion, File | null>>({
     contrato: null,
     contrato_sellado: null,
