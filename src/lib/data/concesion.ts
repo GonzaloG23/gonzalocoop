@@ -239,6 +239,7 @@ export async function limpiarDatosPruebaConcesion(cooperadoraId: string) {
   localStorage.removeItem(`demo-historial-concesion-kiosco-${cooperadoraId}`);
   localStorage.removeItem(`demo-historial-documentos-concesion-${cooperadoraId}`);
   localStorage.removeItem(`demo-solicitudes-reconsideracion-canon-${cooperadoraId}`);
+  localStorage.removeItem(`demo-solicitudes-modificacion-concesion-${cooperadoraId}`);
 
   const db = await abrirDb();
   await new Promise<void>((resolve, reject) => {
