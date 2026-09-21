@@ -407,9 +407,6 @@ function AuditoriaLibroPage() {
   const historialDocumentosConcesionData = historialDocumentosConcesion.data ?? [];
   const cambiosCanonAuditoria = construirHistorialCanonAuditoria(historialConcesionData);
   const actualizacionesCanonAuditoria = construirActualizacionesCanonAuditoria(historialConcesionData, "contrato");
-  const actualizacionesCanonProrrogaAuditoria = datosConcesion?.tieneProrroga
-    ? construirActualizacionesCanonAuditoria(historialConcesionData, "prorroga")
-    : [];
   const hayReduccionCanon = cambiosCanonAuditoria.some((cambio) => cambio.esBaja);
   const faltanDocumentosConcesion = [
     !buenaConducta.data ? "Certificado de buena conducta" : null,
@@ -938,14 +935,6 @@ function AuditoriaLibroPage() {
                   <DatoInstitucional
                     titulo="Canon inicial de la prórroga"
                     valor={money(num(datosConcesion.canonProrroga))}
-                  />
-                  <DatoInstitucional
-                    titulo="1.º canon actualizado de la prórroga"
-                    valor={actualizacionesCanonProrrogaAuditoria[0] ? money(actualizacionesCanonProrrogaAuditoria[0].valor) : "No actualizado todavía"}
-                  />
-                  <DatoInstitucional
-                    titulo="2.º canon actualizado de la prórroga"
-                    valor={actualizacionesCanonProrrogaAuditoria[1] ? money(actualizacionesCanonProrrogaAuditoria[1].valor) : "No actualizado todavía"}
                   />
                   <DatoInstitucional
                     titulo="Canon vigente de la prórroga"
