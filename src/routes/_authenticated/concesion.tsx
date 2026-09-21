@@ -607,10 +607,6 @@ function ConcesionPage() {
                     valor={money(num(datos.canonVigente))}
                   />
                   <DatoConcesion
-                    titulo="Última actualización por IPC"
-                    valor={formatearFechaContrato(estadoIPC?.contratoOriginal.ultimaActualizacion)}
-                  />
-                  <DatoConcesion
                     titulo="Próxima actualización por IPC"
                     valor={formatearFechaContrato(proximaActualizacionContrato)}
                   />
@@ -618,10 +614,6 @@ function ConcesionPage() {
                     <>
                       <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
                       <DatoConcesion titulo="Canon vigente de la prórroga" valor={money(num(datos.canonProrrogaVigente))} />
-                      <DatoConcesion
-                        titulo="Última actualización IPC de la prórroga"
-                        valor={formatearFechaContrato(estadoIPC?.prorroga?.ultimaActualizacion)}
-                      />
                       <DatoConcesion
                         titulo="Próxima actualización de la prórroga"
                         valor={formatearFechaContrato(proximaActualizacionProrroga)}
