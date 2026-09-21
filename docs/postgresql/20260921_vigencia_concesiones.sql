@@ -66,9 +66,8 @@ ALTER TABLE concesiones_kiosco_historial
   CHECK (canon_prorroga IS NULL OR canon_prorroga >= 0);
 
 
--- Actualización anual del canon según IPC.
--- El canon original se conserva. El canon vigente se actualiza cada aniversario
--- de la fecha de firma del contrato y, cuando corresponda, de la fecha de inicio de la prórroga.
+-- Canon vigente para actualizaciones manuales por porcentaje de IPC.
+-- El canon original se conserva y el canon vigente se modifica cuando corresponde.
 
 ALTER TABLE concesiones_kiosco
   ADD COLUMN IF NOT EXISTS canon_vigente numeric(14,2);
