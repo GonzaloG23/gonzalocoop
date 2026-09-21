@@ -17,6 +17,11 @@ import {
   type TipoDocumentoConcesion,
 } from "@/lib/data/concesion";
 import {
+  cargarSolicitudesReconsideracionCanon,
+  crearSolicitudReconsideracionCanon,
+  type TipoCanonReconsideracion,
+} from "@/lib/data/concesion-solicitudes-canon";
+import {
   cargarHistorialConcesionKiosco,
   cargarHistorialDocumentosConcesion,
   registrarModificacionConcesionKiosco,
@@ -88,6 +93,9 @@ function ConcesionPage() {
   });
   const [porcentajeIpcContrato, setPorcentajeIpcContrato] = useState("");
   const [porcentajeIpcProrroga, setPorcentajeIpcProrroga] = useState("");
+  const [tipoCanonReconsideracion, setTipoCanonReconsideracion] = useState<TipoCanonReconsideracion>("contrato");
+  const [canonSolicitadoReconsideracion, setCanonSolicitadoReconsideracion] = useState("");
+  const [motivoReconsideracion, setMotivoReconsideracion] = useState("");
   const [archivos, setArchivos] = useState<Record<TipoDocumentoConcesion, File | null>>({
     contrato: null,
     contrato_sellado: null,
@@ -109,6 +117,12 @@ function ConcesionPage() {
   const historialDocumentos = useQuery({
     queryKey: ["historial-documentos-concesion", cooperadora?.id],
     queryFn: () => cargarHistorialDocumentosConcesion(cooperadora!.id),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
+  const solicitudesCanon = useQuery({
+    queryKey: ["solicitudes-reconsideracion-canon", cooperadora?.id],
+    queryFn: () => cargarSolicitudesReconsideracionCanon(cooperadora!.id),
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
@@ -154,6 +168,33 @@ function ConcesionPage() {
     }
     if (!historial.data?.length) setEditando(true);
   }, [concesion.data, historial.data]);
+
+  const solicitarReconsideracion = useMutation({
+    mutationFn: async () => {
+      if (!cooperadora || !ctx) throw new Error("No se pudo identificar la cooperadora o el usuario.");
+      const canonSolicitado = Number(String(canonSolicitadoReconsideracion).replace(",", "."));
+      return crearSolicitudReconsideracionCanon(
+        cooperadora.id,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Usuario",
+          email: ctx.email,
+        },
+        {
+          tipoCanon: tipoCanonReconsideracion,
+          canonSolicitado,
+          motivo: motivoReconsideracion,
+        },
+      );
+    },
+    onSuccess: () => {
+      setCanonSolicitadoReconsideracion("");
+      setMotivoReconsideracion("");
+      qc.invalidateQueries({ queryKey: ["solicitudes-reconsideracion-canon", cooperadora?.id] });
+      toast.success("El pedido de reconsideración quedó pendiente de autorización de Auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const guardar = useMutation({
     mutationFn: async () => {
@@ -652,6 +693,74 @@ function ConcesionPage() {
             )}
           </div>
         </details>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Pedido de reconsideración del canon</CardTitle>
+            <CardDescription>
+              Podés solicitar a Auditoría que reconsidere el canon vigente. El canon actual no se modifica hasta que el pedido sea autorizado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(solicitudesCanon.data ?? []).filter((solicitud) => solicitud.estado === "pendiente").map((solicitud) => (
+              <div key={solicitud.id} className="rounded-md border border-slate-300 bg-slate-100 p-4 text-slate-700">
+                <p className="font-medium">Pedido de reconsideración pendiente de aprobación</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <DatoConcesion titulo="Canon actual" valor={money(solicitud.canon_actual)} />
+                  <DatoConcesion titulo="Canon solicitado" valor={money(solicitud.canon_solicitado)} />
+                  <DatoConcesion titulo="Tipo" valor={solicitud.tipo_canon === "prorroga" ? "Prórroga" : "Contrato"} />
+                </div>
+                <p className="mt-3 text-sm">Motivo: {solicitud.motivo}</p>
+                <p className="mt-2 text-xs">
+                  Pendiente de autorización de Auditoría · {new Date(solicitud.solicitada_en).toLocaleString("es-AR")}
+                </p>
+              </div>
+            ))}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="tipo-reconsideracion-canon">Canon a reconsiderar</Label>
+                <select
+                  id="tipo-reconsideracion-canon"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={tipoCanonReconsideracion}
+                  onChange={(e) => setTipoCanonReconsideracion(e.target.value as TipoCanonReconsideracion)}
+                  disabled={solicitudesCanon.data?.some((solicitud) => solicitud.estado === "pendiente")}
+                >
+                  <option value="contrato">Canon del contrato</option>
+                  {datos.tieneProrroga ? <option value="prorroga">Canon de la prórroga</option> : null}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="canon-solicitado-reconsideracion">Nuevo canon solicitado</Label>
+                <Input
+                  id="canon-solicitado-reconsideracion"
+                  inputMode="decimal"
+                  value={canonSolicitadoReconsideracion}
+                  onChange={(e) => setCanonSolicitadoReconsideracion(e.target.value)}
+                  placeholder="Importe que se solicita autorizar"
+                  disabled={solicitudesCanon.data?.some((solicitud) => solicitud.estado === "pendiente")}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="motivo-reconsideracion-canon">Motivo del pedido</Label>
+                <Input
+                  id="motivo-reconsideracion-canon"
+                  value={motivoReconsideracion}
+                  onChange={(e) => setMotivoReconsideracion(e.target.value)}
+                  placeholder="Explicá brevemente por qué se solicita la reconsideración."
+                  disabled={solicitudesCanon.data?.some((solicitud) => solicitud.estado === "pendiente")}
+                />
+              </div>
+            </div>
+            <Button
+              onClick={() => solicitarReconsideracion.mutate()}
+              disabled={solicitarReconsideracion.isPending || solicitudesCanon.data?.some((solicitud) => solicitud.estado === "pendiente")}
+            >
+              {solicitarReconsideracion.isPending ? "Enviando…" : "Enviar pedido a Auditoría"}
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
