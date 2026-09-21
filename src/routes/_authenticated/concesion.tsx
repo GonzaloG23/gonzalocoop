@@ -1064,7 +1064,96 @@ function ConcesionPage() {
           </div>
         </details>
 
-        <Card className="lg:col-span-2">
+        <Card className="order-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <FileText className="h-5 w-5 text-primary" /> Documentación de la concesión
+            </CardTitle>
+            <CardDescription>
+              Subí el contrato, el sellado del contrato y el certificado de buena conducta en formato PDF.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {DOCUMENTOS.map((documento) => {
+              const metadata =
+                documento.tipo === "contrato"
+                  ? contrato.data
+                  : documento.tipo === "contrato_sellado"
+                    ? contratoSellado.data
+                    : buenaConducta.data;
+              const archivo = archivos[documento.tipo];
+              const cargando = subirDocumento.isPending && subirDocumento.variables?.tipo === documento.tipo;
+              return (
+                <div
+                  key={documento.tipo}
+                  className="overflow-hidden rounded-md border-2 border-primary/20 bg-card shadow-sm ring-1 ring-border/50"
+                >
+                  <div className="flex items-center gap-3 border-b-2 border-primary/10 bg-secondary/70 px-4 py-4">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
+                      <FileText className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold leading-tight text-foreground">{documento.titulo}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{documento.descripcion}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 p-4">
+                  <Label htmlFor={`concesion-${documento.tipo}`} className="mt-3 block">Archivo PDF</Label>
+                  <Input
+                    id={`concesion-${documento.tipo}`}
+                    className="sr-only"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(e) =>
+                      setArchivos((actual) => ({ ...actual, [documento.tipo]: e.target.files?.[0] ?? null }))
+                    }
+                  />
+                  <Label
+                    htmlFor={`concesion-${documento.tipo}`}
+                    className="mt-2 inline-flex cursor-pointer items-center justify-center rounded-md border border-primary/20 bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-secondary/80"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {metadata ? "Modificar archivo" : "Seleccionar archivo"}
+                  </Label>
+                  <p className="mt-2 text-xs text-muted-foreground">Tamaño máximo: 3 MB.</p>
+
+                  {archivo && (
+                    <p className="mt-2 text-sm">
+                      Archivo seleccionado: <span className="font-medium">{archivo.name}</span>
+                    </p>
+                  )}
+
+                  {metadata && (
+                    <div className="mt-3 rounded-sm border border-border bg-secondary/40 p-3 text-sm">
+                      <p className="font-medium">Documento cargado</p>
+                      <p className="mt-1 break-all text-muted-foreground">{metadata.nombreArchivo}</p>
+                      <Button
+                        className="mt-3"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => abrirDocumentoConcesion(cooperadora.id, documento.tipo).catch((error: Error) => toast.error(error.message))}
+                      >
+                        <FileText className="mr-2 h-4 w-4" /> Ver PDF
+                      </Button>
+                    </div>
+                  )}
+
+                  <Button
+                    className="mt-4 w-full border border-primary/20 shadow-sm"
+                    onClick={() => subirDocumento.mutate({ tipo: documento.tipo })}
+                    disabled={!archivo || cargando}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {cargando ? "Subiendo…" : `Subir ${documento.titulo.toLowerCase()}`}
+                  </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2 order-3">
           <CardHeader>
             <CardTitle className="font-serif text-lg">Pedido de reconsideración del canon</CardTitle>
             <CardDescription>
@@ -1156,95 +1245,6 @@ function ConcesionPage() {
             >
               {solicitarReconsideracion.isPending ? "Enviando…" : "Enviar pedido a Auditoría"}
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-serif text-lg">
-              <FileText className="h-5 w-5 text-primary" /> Documentación de la concesión
-            </CardTitle>
-            <CardDescription>
-              Subí el contrato, el sellado del contrato y el certificado de buena conducta en formato PDF.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {DOCUMENTOS.map((documento) => {
-              const metadata =
-                documento.tipo === "contrato"
-                  ? contrato.data
-                  : documento.tipo === "contrato_sellado"
-                    ? contratoSellado.data
-                    : buenaConducta.data;
-              const archivo = archivos[documento.tipo];
-              const cargando = subirDocumento.isPending && subirDocumento.variables?.tipo === documento.tipo;
-              return (
-                <div
-                  key={documento.tipo}
-                  className="overflow-hidden rounded-md border-2 border-primary/20 bg-card shadow-sm ring-1 ring-border/50"
-                >
-                  <div className="flex items-center gap-3 border-b-2 border-primary/10 bg-secondary/70 px-4 py-4">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
-                      <FileText className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold leading-tight text-foreground">{documento.titulo}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{documento.descripcion}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3 p-4">
-                  <Label htmlFor={`concesion-${documento.tipo}`} className="mt-3 block">Archivo PDF</Label>
-                  <Input
-                    id={`concesion-${documento.tipo}`}
-                    className="sr-only"
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={(e) =>
-                      setArchivos((actual) => ({ ...actual, [documento.tipo]: e.target.files?.[0] ?? null }))
-                    }
-                  />
-                  <Label
-                    htmlFor={`concesion-${documento.tipo}`}
-                    className="mt-2 inline-flex cursor-pointer items-center justify-center rounded-md border border-primary/20 bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-secondary/80"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {metadata ? "Modificar archivo" : "Seleccionar archivo"}
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">Tamaño máximo: 3 MB.</p>
-
-                  {archivo && (
-                    <p className="mt-2 text-sm">
-                      Archivo seleccionado: <span className="font-medium">{archivo.name}</span>
-                    </p>
-                  )}
-
-                  {metadata && (
-                    <div className="mt-3 rounded-sm border border-border bg-secondary/40 p-3 text-sm">
-                      <p className="font-medium">Documento cargado</p>
-                      <p className="mt-1 break-all text-muted-foreground">{metadata.nombreArchivo}</p>
-                      <Button
-                        className="mt-3"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => abrirDocumentoConcesion(cooperadora.id, documento.tipo).catch((error: Error) => toast.error(error.message))}
-                      >
-                        <FileText className="mr-2 h-4 w-4" /> Ver PDF
-                      </Button>
-                    </div>
-                  )}
-
-                  <Button
-                    className="mt-4 w-full border border-primary/20 shadow-sm"
-                    onClick={() => subirDocumento.mutate({ tipo: documento.tipo })}
-                    disabled={!archivo || cargando}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {cargando ? "Subiendo…" : `Subir ${documento.titulo.toLowerCase()}`}
-                  </Button>
-                  </div>
-                </div>
-              );
-            })}
           </CardContent>
         </Card>
       </div>
