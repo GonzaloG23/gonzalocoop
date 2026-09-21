@@ -10,8 +10,7 @@ import {
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
   calcularVencimientoConcesion,
-  calcularProximaActualizacionCanon,
-  canonNecesitaActualizacion,
+  calcularCanonConPorcentaje,
   guardarConcesionKiosco,
   guardarDocumentoConcesion,
   type ConcesionKiosco,
@@ -23,7 +22,6 @@ import {
   registrarModificacionConcesionKiosco,
   registrarModificacionDocumentoConcesion,
 } from "@/lib/data/concesion-historial";
-import { cargarEstadoCanonIpc } from "@/lib/data/concesion-ipc";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,6 +86,8 @@ function ConcesionPage() {
     fechaInicioProrroga: "",
     fechaVencimientoProrroga: "",
   });
+  const [porcentajeIpcContrato, setPorcentajeIpcContrato] = useState("");
+  const [porcentajeIpcProrroga, setPorcentajeIpcProrroga] = useState("");
   const [archivos, setArchivos] = useState<Record<TipoDocumentoConcesion, File | null>>({
     contrato: null,
     contrato_sellado: null,
@@ -110,19 +110,6 @@ function ConcesionPage() {
     queryKey: ["historial-documentos-concesion", cooperadora?.id],
     queryFn: () => cargarHistorialDocumentosConcesion(cooperadora!.id),
     enabled: !!cooperadora && !ctx?.esAuditor,
-  });
-
-  const estadoCanonIpc = useQuery({
-    queryKey: [
-      "canon-ipc",
-      cooperadora?.id,
-      concesion.data?.canonVigente,
-      concesion.data?.canonProrrogaVigente,
-      concesion.data?.fechaFirmaContrato,
-      concesion.data?.fechaInicioProrroga,
-    ],
-    queryFn: () => cargarEstadoCanonIpc(cooperadora!.id, datos),
-    enabled: !!cooperadora && !!concesion.data && !ctx?.esAuditor,
   });
 
   const contrato = useQuery({
@@ -271,19 +258,12 @@ function ConcesionPage() {
   const vencimientoProrroga = datos.tieneProrroga
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
     : "";
-  const estadoIPC = estadoCanonIpc.data;
-  const proximaActualizacionContrato =
-    estadoIPC?.contratoOriginal.proximaActualizacion ||
-    calcularProximaActualizacionCanon(datos.fechaFirmaContrato);
-  const contratoPendienteIPC =
-    estadoIPC?.contratoOriginal.actualizacionPendiente ??
-    canonNecesitaActualizacion(proximaActualizacionContrato);
-  const proximaActualizacionProrroga =
-    estadoIPC?.prorroga?.proximaActualizacion ||
-    (datos.tieneProrroga ? calcularProximaActualizacionCanon(datos.fechaInicioProrroga) : "");
-  const prorrogaPendienteIPC =
-    estadoIPC?.prorroga?.actualizacionPendiente ??
-    (datos.tieneProrroga && canonNecesitaActualizacion(proximaActualizacionProrroga));
+  const proximaActualizacionContrato = calcularProximaActualizacionCanonSimple(datos.fechaFirmaContrato);
+  const contratoPendienteIPC = canonNecesitaActualizacionSimple(proximaActualizacionContrato);
+  const proximaActualizacionProrroga = datos.tieneProrroga
+    ? calcularProximaActualizacionCanonSimple(datos.fechaInicioProrroga)
+    : "";
+  const prorrogaPendienteIPC = datos.tieneProrroga && canonNecesitaActualizacionSimple(proximaActualizacionProrroga);
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
 
   return (
@@ -473,6 +453,97 @@ function ConcesionPage() {
                     </div>
                   </>
                 )}
+                {(contratoPendienteIPC || prorrogaPendienteIPC) && (
+                  <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
+                    <p className="text-sm font-medium">Actualización anual por IPC</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Ingresá el porcentaje de aumento informado por INDEC. El sistema calculará el nuevo canon vigente.
+                    </p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      {contratoPendienteIPC ? (
+                        <div className="space-y-2">
+                          <Label htmlFor="concesion-porcentaje-ipc">Aumento IPC del contrato (%)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="concesion-porcentaje-ipc"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              inputMode="decimal"
+                              value={porcentajeIpcContrato}
+                              onChange={(e) => setPorcentajeIpcContrato(e.target.value)}
+                              placeholder="Ej. 25,50"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const porcentaje = Number(String(porcentajeIpcContrato).replace(",", "."));
+                                if (!Number.isFinite(porcentaje) || porcentaje < 0) {
+                                  toast.error("Ingresá un porcentaje de aumento válido.");
+                                  return;
+                                }
+                                try {
+                                  const nuevoCanon = calcularCanonConPorcentaje(Number(datos.canonVigente || datos.canon), porcentaje);
+                                  setDatos((actual) => ({ ...actual, canonVigente: String(nuevoCanon) }));
+                                  toast.success("Canon vigente calculado.");
+                                } catch (error) {
+                                  toast.error((error as Error).message);
+                                }
+                              }}
+                            >
+                              Calcular
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Canon vigente actual: {money(num(datos.canonVigente || datos.canon))}
+                          </p>
+                        </div>
+                      ) : null}
+                      {prorrogaPendienteIPC ? (
+                        <div className="space-y-2">
+                          <Label htmlFor="concesion-porcentaje-ipc-prorroga">Aumento IPC de la prórroga (%)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="concesion-porcentaje-ipc-prorroga"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              inputMode="decimal"
+                              value={porcentajeIpcProrroga}
+                              onChange={(e) => setPorcentajeIpcProrroga(e.target.value)}
+                              placeholder="Ej. 25,50"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const porcentaje = Number(String(porcentajeIpcProrroga).replace(",", "."));
+                                if (!Number.isFinite(porcentaje) || porcentaje < 0) {
+                                  toast.error("Ingresá un porcentaje de aumento válido.");
+                                  return;
+                                }
+                                try {
+                                  const nuevoCanon = calcularCanonConPorcentaje(Number(datos.canonProrrogaVigente || datos.canonProrroga), porcentaje);
+                                  setDatos((actual) => ({ ...actual, canonProrrogaVigente: String(nuevoCanon) }));
+                                  toast.success("Canon vigente de la prórroga calculado.");
+                                } catch (error) {
+                                  toast.error((error as Error).message);
+                                }
+                              }}
+                            >
+                              Calcular
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Canon vigente actual: {money(num(datos.canonProrrogaVigente || datos.canonProrroga))}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2 pt-2 sm:col-span-2">
                   <Button onClick={() => guardar.mutate()} disabled={guardar.isPending}>
                     <Save className="mr-2 h-4 w-4" />
@@ -495,7 +566,7 @@ function ConcesionPage() {
                         <div>
                           <p className="text-sm font-semibold text-red-700">Actualización anual del canon por IPC pendiente</p>
                           <p className="mt-1 text-xs text-red-700/80">
-                            La actualización corresponde al cumplirse el aniversario indicado. El canon original permanece intacto y el canon vigente se actualiza con el IPC oficial.
+                            La actualización corresponde al cumplirse el aniversario indicado. El canon vigente se actualiza con el IPC oficial.
                           </p>
                           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-red-700/80">
                             {contratoPendienteIPC ? <span>Contrato: desde {formatearFechaContrato(proximaActualizacionContrato)}</span> : null}
@@ -725,29 +796,9 @@ function ConcesionPage() {
             </span>
           </summary>
           <div className="space-y-4 border-t border-border p-4">
-            {estadoIPC?.historial && estadoIPC.historial.length > 0 && (
-              <div className="rounded-sm border border-border">
-                <div className="border-b border-border bg-secondary/40 px-3 py-3">
-                  <p className="text-sm font-medium">Historial de actualizaciones por IPC</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Cada actualización conserva la fecha de aniversario, los índices oficiales utilizados y los importes anterior y nuevo.
-                  </p>
-                </div>
-                <div className="divide-y divide-border">
-                  {estadoIPC.historial.map((actualizacion) => (
-                    <div key={actualizacion.id} className="grid gap-2 px-3 py-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
-                      <DatoConcesion titulo="Tipo" valor={actualizacion.tipo === "prorroga" ? "Prórroga" : "Contrato original"} />
-                      <DatoConcesion titulo="Fecha de actualización" valor={formatearFechaContrato(actualizacion.fechaActualizacion)} />
-                      <DatoConcesion titulo="Canon anterior" valor={money(actualizacion.canonAnterior)} />
-                      <DatoConcesion titulo="Canon nuevo" valor={money(actualizacion.canonNuevo)} />
-                      <DatoConcesion titulo="Variación IPC" valor={actualizacion.variacionIpc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%"} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cambiosCanon.length > 0 && (
+            <div className="rounded-sm border border-border bg-secondary/20 px-3 py-3 text-xs text-muted-foreground">
+              Las actualizaciones manuales del canon por IPC quedan reflejadas en el historial de modificaciones de la concesión.
+            </div>            {cambiosCanon.length > 0 && (
               <div className="rounded-sm border border-border">
                 <div className="border-b border-border bg-secondary/40 px-3 py-3">
                   <p className="text-sm font-medium">Historial de cambios del canon</p>
@@ -979,6 +1030,31 @@ function construirHistorialCanon(
   });
 
   return cambios.reverse();
+}
+
+function calcularProximaActualizacionCanonSimple(fechaInicio: string) {
+  if (!fechaInicio) return "";
+  const [anio, mes, dia] = fechaInicio.split("-").map(Number);
+  if (!anio || !mes || !dia) return "";
+  const hoy = new Date();
+  const candidato = new Date(anio + 1, mes - 1, dia);
+  const aniosCumplidos = hoy >= candidato ? hoy.getFullYear() - anio + 1 : 1;
+  const proxima = new Date(anio + aniosCumplidos, mes - 1, dia);
+  return [
+    proxima.getFullYear(),
+    String(proxima.getMonth() + 1).padStart(2, "0"),
+    String(proxima.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function canonNecesitaActualizacionSimple(fechaObjetivo: string) {
+  if (!fechaObjetivo) return false;
+  const [anio, mes, dia] = fechaObjetivo.split("-").map(Number);
+  if (!anio || !mes || !dia) return false;
+  const objetivo = new Date(anio, mes - 1, dia);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return hoy >= objetivo;
 }
 
 function formatearFechaContrato(valor: string | undefined) {
