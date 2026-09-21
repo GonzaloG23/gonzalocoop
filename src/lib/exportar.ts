@@ -335,11 +335,29 @@ export function exportarMesExcel(
   writeFile(libro, `planilla-${coop.ejercicio}-${String(resumen.mes).padStart(2, "0")}.xlsx`);
 }
 
-export function exportarAnualPDF(coop: Cooperadora, resumen: ResumenMes[]) {
+export function exportarAnualPDF(
+  coop: Cooperadora,
+  resumen: ResumenMes[],
+  movimientos: Movimiento[],
+  rubros: Rubro[],
+) {
   const doc = new jsPDF();
-  encabezado(doc, "Resumen anual de saldos", coop, `Ejercicio ${coop.ejercicio}`);
+  const totalIngresos = resumen.reduce((s, r) => s + r.ingresos, 0);
+  const totalEgresos = resumen.reduce((s, r) => s + r.egresos, 0);
+  const estadoEjercicio = resumen.every((r) => r.periodo?.estado === "cerrado")
+    ? "Todos los meses cerrados"
+    : "Ejercicio con meses abiertos";
+
+  encabezado(
+    doc,
+    "Informe anual de movimientos",
+    coop,
+    `Ejercicio ${coop.ejercicio}`,
+    estadoEjercicio,
+  );
+
   autoTable(doc, {
-    startY: 42,
+    startY: 48,
     head: [["Mes", "Saldo inicial", "Ingresos", "Egresos", "Saldo final", "Estado"]],
     body: resumen.map((r) => [
       nombreMes(r.mes),
@@ -349,21 +367,76 @@ export function exportarAnualPDF(coop: Cooperadora, resumen: ResumenMes[]) {
       money(r.saldoFinal),
       r.periodo?.estado === "cerrado" ? "Cerrado" : "Abierto",
     ]),
-    foot: [
-      [
-        "Total del ejercicio",
-        money(resumen[0]?.saldoInicial ?? 0),
-        money(resumen.reduce((s, r) => s + r.ingresos, 0)),
-        money(resumen.reduce((s, r) => s + r.egresos, 0)),
-        money(resumen[11]?.saldoFinal ?? 0),
-        "",
-      ],
-    ],
+    foot: [[
+      "Total del ejercicio",
+      money(resumen[0]?.saldoInicial ?? 0),
+      money(totalIngresos),
+      money(totalEgresos),
+      money(resumen[11]?.saldoFinal ?? 0),
+      "",
+    ]],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [31, 74, 58] },
     footStyles: { fillColor: [237, 233, 222], textColor: 20, fontStyle: "bold" },
   });
-  doc.save(`resumen-anual-${coop.ejercicio}.pdf`);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Movimientos registrados en el ejercicio: ${movimientos.length}`, 14, 142);
+  doc.text(`Ingresos del ejercicio: ${money(totalIngresos)}`, 14, 149);
+  doc.text(`Egresos del ejercicio: ${money(totalEgresos)}`, 14, 156);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    "A continuación se detalla la totalidad de los movimientos registrados, mes por mes.",
+    14,
+    166,
+  );
+
+  for (const resumenMes of resumen) {
+    doc.addPage();
+    encabezado(
+      doc,
+      "Detalle mensual de movimientos",
+      coop,
+      `${nombreMes(resumenMes.mes)} de ${coop.ejercicio}`,
+      resumenMes.periodo?.estado === "cerrado" ? "Cerrada" : "Abierta",
+    );
+
+    const movimientosMes = movimientos
+      .filter((m) => Number(m.fecha.slice(0, 7).split("-")[1]) === resumenMes.mes)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`Saldo inicial: ${money(resumenMes.saldoInicial)}`, 14, 54);
+    doc.text(`Ingresos: ${money(resumenMes.ingresos)}`, 14, 61);
+    doc.text(`Egresos: ${money(resumenMes.egresos)}`, 14, 68);
+    doc.text(`Saldo final: ${money(resumenMes.saldoFinal)}`, 14, 75);
+
+    autoTable(doc, {
+      startY: 82,
+      head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Proveedor", "CUIT", "Factura", "Monto"]],
+      body: movimientosMes.length
+        ? movimientosMes.map((m) => [
+            fechaCorta(m.fecha),
+            m.tipo === "ingreso" ? "Ingreso" : "Egreso",
+            rubros.find((r) => r.id === m.rubro_id)?.nombre ?? "-",
+            m.ajusta_movimiento_id ? `AJUSTE · ${m.concepto}` : m.concepto,
+            m.comprobante ?? "-",
+            m.proveedor_razon_social ?? "-",
+            m.proveedor_cuit ?? "-",
+            etiquetaFactura(m.tipo_factura) || "-",
+            money(m.monto),
+          ])
+        : [["", "", "", "No hay movimientos registrados para este mes.", "", "", "", "", money(0)]],
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [31, 74, 58] },
+    });
+  }
+
+  const nombreEstablecimiento = sanitizarNombreArchivo(coop.nombre);
+  const identificador = coop.cue ? `_${sanitizarNombreArchivo(coop.cue, "")}` : "";
+  doc.save(`${nombreEstablecimiento}${identificador}_Movimientos_Anual_${coop.ejercicio}.pdf`);
 }
 
 export function exportarAnualExcel(coop: Cooperadora, resumen: ResumenMes[]) {
