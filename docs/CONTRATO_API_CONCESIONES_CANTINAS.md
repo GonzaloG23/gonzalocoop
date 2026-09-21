@@ -164,7 +164,7 @@ El proceso debe:
 6. conservar los índices utilizados, la variación, el canon anterior y el nuevo canon para auditoría;
 7. no volver a aplicar dos veces la misma actualización anual.
 
-INDEC publica las series históricas del IPC y las disponibiliza en formatos descargables, por lo que el servicio institucional puede importar esos datos en "ipc_indec" sin que cada cooperadora tenga que cargarlos manualmente. citeturn260828search21turn260828search2
+INDEC publica las series históricas del IPC y las disponibiliza en formatos descargables, por lo que el servicio institucional puede importar esos datos en "ipc_indec" sin que cada cooperadora tenga que cargarlos manualmente.
 
 ## Historial
 
