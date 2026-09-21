@@ -229,36 +229,15 @@ function mensajeComprobante(datos: DatosComprobanteIngreso) {
   ].join("\n");
 }
 
-export async function prepararComprobanteParaWhatsApp(
+export function prepararComprobanteParaWhatsApp(
   datos: DatosComprobanteIngreso,
   telefono: string,
 ) {
   const destino = validarWhatsApp(telefono);
-  const { blob, nombreArchivo } = generarComprobanteIngreso(datos);
-  const mensaje = mensajeComprobante(datos);
-
-  const archivo = new File([blob], nombreArchivo, {
-    type: "application/pdf",
-  });
-
-  if (
-    typeof navigator !== "undefined" &&
-    "share" in navigator &&
-    "canShare" in navigator &&
-    navigator.canShare({ files: [archivo] })
-  ) {
-    await navigator.share({
-      title: `Comprobante de ingreso N° ${datos.comprobante}`,
-      text: mensaje,
-      files: [archivo],
-    });
-    return;
-  }
-
   descargarComprobanteIngreso(datos);
 
   const ventana = window.open(
-    `https://web.whatsapp.com/send?phone=${destino}&text=${encodeURIComponent(mensaje)}`,
+    `https://web.whatsapp.com/send?phone=${destino}&text=${encodeURIComponent(mensajeComprobante(datos))}`,
     "_blank",
   );
 
