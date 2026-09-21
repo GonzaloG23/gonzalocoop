@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Save, Store, Upload } from "lucide-react";
+import { AlertTriangle, FileText, Save, Store, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, useContexto } from "@/components/AppShell";
@@ -10,6 +10,8 @@ import {
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
   calcularVencimientoConcesion,
+  calcularProximaActualizacionCanon,
+  canonNecesitaActualizacion,
   guardarConcesionKiosco,
   guardarDocumentoConcesion,
   type ConcesionKiosco,
@@ -76,7 +78,9 @@ function ConcesionPage() {
     apellido: "",
     nombre: "",
     canon: "",
+    canonVigente: "",
     canonProrroga: "",
+    canonProrrogaVigente: "",
     fechaFirmaContrato: "",
     fechaVencimientoContrato: "",
     tieneProrroga: false,
@@ -131,7 +135,9 @@ function ConcesionPage() {
         apellido: concesion.data.apellido ?? "",
         nombre: concesion.data.nombre ?? "",
         canon: String(concesion.data.canon ?? ""),
+        canonVigente: String(concesion.data.canonVigente ?? concesion.data.canon ?? ""),
         canonProrroga: String(concesion.data.canonProrroga ?? ""),
+        canonProrrogaVigente: String(concesion.data.canonProrrogaVigente ?? concesion.data.canonProrroga ?? ""),
         fechaFirmaContrato: concesion.data.fechaFirmaContrato ?? "",
         fechaVencimientoContrato:
           concesion.data.fechaVencimientoContrato ||
@@ -164,7 +170,9 @@ function ConcesionPage() {
       setDatos({
         ...guardados,
         canon: String(guardados.canon),
+        canonVigente: String(guardados.canonVigente ?? guardados.canon),
         canonProrroga: String(guardados.canonProrroga ?? ""),
+        canonProrrogaVigente: String(guardados.canonProrrogaVigente ?? guardados.canonProrroga ?? ""),
       });
       setEditando(false);
       qc.invalidateQueries({ queryKey: ["concesion-kiosco", cooperadora?.id] });
@@ -249,6 +257,13 @@ function ConcesionPage() {
   const vencimientoProrroga = datos.tieneProrroga
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
     : "";
+  const proximaActualizacionContrato = calcularProximaActualizacionCanon(datos.fechaFirmaContrato);
+  const contratoPendienteIPC = canonNecesitaActualizacion(proximaActualizacionContrato);
+  const proximaActualizacionProrroga = datos.tieneProrroga
+    ? calcularProximaActualizacionCanon(datos.fechaInicioProrroga)
+    : "";
+  const prorrogaPendienteIPC = datos.tieneProrroga && canonNecesitaActualizacion(proximaActualizacionProrroga);
+  const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
 
   return (
     <AppShell
@@ -365,21 +380,35 @@ function ConcesionPage() {
                   </div>
                 )}
                 {!datos.tieneProrroga ? (
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="concesion-canon">Canon *</Label>
-                    <Input
-                      id="concesion-canon"
-                      inputMode="decimal"
-                      value={datos.canon}
-                      onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value }))}
-                      placeholder="Importe del canon"
-                      required
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="concesion-canon">Canon inicial *</Label>
+                      <Input
+                        id="concesion-canon"
+                        inputMode="decimal"
+                        value={datos.canon}
+                        onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value, canonVigente: actual.canonVigente || e.target.value }))}
+                        placeholder="Importe inicial del canon"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">Este es el importe que surge del contrato y se conserva como antecedente.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="concesion-canon-vigente">Canon vigente</Label>
+                      <Input
+                        id="concesion-canon-vigente"
+                        inputMode="decimal"
+                        value={datos.canonVigente}
+                        disabled
+                        readOnly
+                      />
+                      <p className="text-xs text-muted-foreground">Se actualiza automáticamente por IPC cuando se cumple cada aniversario del contrato.</p>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="concesion-canon-original">Canon del contrato original *</Label>
+                      <Label htmlFor="concesion-canon-original">Canon inicial del contrato *</Label>
                       <Input
                         id="concesion-canon-original"
                         inputMode="decimal"
@@ -387,19 +416,38 @@ function ConcesionPage() {
                         disabled
                         readOnly
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Este valor queda asentado y no se reemplaza al registrar la prórroga.
-                      </p>
+                      <p className="text-xs text-muted-foreground">Este valor queda asentado y no se reemplaza por las actualizaciones IPC.</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="concesion-canon-prorroga">Canon de la prórroga *</Label>
+                      <Label htmlFor="concesion-canon-vigente-principal">Canon vigente del contrato</Label>
+                      <Input
+                        id="concesion-canon-vigente-principal"
+                        inputMode="decimal"
+                        value={datos.canonVigente}
+                        disabled
+                        readOnly
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="concesion-canon-prorroga">Canon inicial de la prórroga *</Label>
                       <Input
                         id="concesion-canon-prorroga"
                         inputMode="decimal"
                         value={datos.canonProrroga}
-                        onChange={(e) => setDatos((actual) => ({ ...actual, canonProrroga: e.target.value }))}
-                        placeholder="Importe del canon de la prórroga"
+                        onChange={(e) => setDatos((actual) => ({ ...actual, canonProrroga: e.target.value, canonProrrogaVigente: actual.canonProrrogaVigente || e.target.value }))}
+                        placeholder="Importe inicial del canon de la prórroga"
                         required
+                      />
+                      <p className="text-xs text-muted-foreground">Este valor se conserva como antecedente de la prórroga.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="concesion-canon-prorroga-vigente">Canon vigente de la prórroga</Label>
+                      <Input
+                        id="concesion-canon-prorroga-vigente"
+                        inputMode="decimal"
+                        value={datos.canonProrrogaVigente}
+                        disabled
+                        readOnly
                       />
                     </div>
                   </>
@@ -419,6 +467,23 @@ function ConcesionPage() {
             ) : (
               <div className="space-y-5">
                 <div className="grid gap-3 sm:grid-cols-2">
+                  {actualizacionIPCpendiente ? (
+                    <div className="rounded-sm border-2 border-red-500/40 bg-red-500/5 p-4 sm:col-span-2">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                        <div>
+                          <p className="text-sm font-semibold text-red-700">Actualización anual del canon por IPC pendiente</p>
+                          <p className="mt-1 text-xs text-red-700/80">
+                            La actualización corresponde al cumplirse el aniversario indicado. El canon original permanece intacto y el canon vigente se actualiza con el IPC oficial.
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-red-700/80">
+                            {contratoPendienteIPC ? <span>Contrato: desde {formatearFechaContrato(proximaActualizacionContrato)}</span> : null}
+                            {prorrogaPendienteIPC ? <span>Prórroga: desde {formatearFechaContrato(proximaActualizacionProrroga)}</span> : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   <DatoConcesion titulo="Apellido" valor={datos.apellido} />
                   <DatoConcesion titulo="Nombre" valor={datos.nombre} />
                   <DatoConcesion
@@ -442,14 +507,26 @@ function ConcesionPage() {
                     </>
                   ) : null}
                   <DatoConcesion
-                    titulo={datos.tieneProrroga ? "Canon del contrato original" : "Canon"}
+                    titulo={datos.tieneProrroga ? "Canon inicial del contrato" : "Canon inicial"}
                     valor={money(num(datos.canon))}
                   />
+                  <DatoConcesion
+                    titulo="Canon vigente"
+                    valor={money(num(datos.canonVigente))}
+                  />
+                  <DatoConcesion
+                    titulo="Próxima actualización por IPC"
+                    valor={formatearFechaContrato(proximaActualizacionContrato)}
+                  />
                   {datos.tieneProrroga ? (
-                    <DatoConcesion
-                      titulo="Canon de la prórroga"
-                      valor={money(num(datos.canonProrroga))}
-                    />
+                    <>
+                      <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
+                      <DatoConcesion titulo="Canon vigente de la prórroga" valor={money(num(datos.canonProrrogaVigente))} />
+                      <DatoConcesion
+                        titulo="Próxima actualización de la prórroga"
+                        valor={formatearFechaContrato(proximaActualizacionProrroga)}
+                      />
+                    </>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -734,9 +811,13 @@ function ConcesionPage() {
                         />
                       </>
                     ) : null}
-                    <DatoConcesion titulo="Canon del contrato original" valor={money(num(registro.datos.canon))} />
+                    <DatoConcesion titulo="Canon inicial del contrato" valor={money(num(registro.datos.canon))} />
+                    <DatoConcesion titulo="Canon vigente del contrato" valor={money(num(registro.datos.canonVigente ?? registro.datos.canon))} />
                     {registro.datos.tieneProrroga ? (
-                      <DatoConcesion titulo="Canon de la prórroga" valor={money(num(registro.datos.canonProrroga))} />
+                      <>
+                        <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(registro.datos.canonProrroga))} />
+                        <DatoConcesion titulo="Canon vigente de la prórroga" valor={money(num(registro.datos.canonProrrogaVigente ?? registro.datos.canonProrroga))} />
+                      </>
                     ) : null}
                   </div>
                 </details>
@@ -782,6 +863,8 @@ function construirHistorialConcesionarios(
       nombre: datos.nombre,
       canon: datos.canon,
       canonProrroga: datos.canonProrroga ?? "",
+      canonVigente: datos.canonVigente ?? datos.canon,
+      canonProrrogaVigente: datos.canonProrrogaVigente ?? datos.canonProrroga ?? "",
       fechaFirmaContrato: datos.fechaFirmaContrato,
       fechaVencimientoContrato:
         datos.fechaVencimientoContrato ||
