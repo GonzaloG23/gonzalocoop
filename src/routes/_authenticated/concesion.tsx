@@ -87,6 +87,7 @@ function ConcesionPage() {
   const [editando, setEditando] = useState(false);
   const [modoEdicion, setModoEdicion] = useState<"alta" | "rectificacion" | "ipc">("alta");
   const [motivoModificacion, setMotivoModificacion] = useState("");
+  const [fechaInicioProrrogaFicha, setFechaInicioProrrogaFicha] = useState("");
   const [datos, setDatos] = useState<ConcesionKiosco>({
     apellido: "",
     nombre: "",
@@ -211,6 +212,7 @@ function ConcesionPage() {
             ? calcularVencimientoConcesion(concesion.data.fechaInicioProrroga ?? "", 1)
             : ""),
       });
+      setFechaInicioProrrogaFicha(concesion.data.tieneProrroga ? concesion.data.fechaInicioProrroga ?? "" : "");
     }
     if (!historial.data?.length) {
       setEditando(true);
@@ -338,6 +340,47 @@ function ConcesionPage() {
       qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", cooperadora?.id] });
 
       toast.success("Datos de la concesión guardados.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const activarProrroga = useMutation({
+    mutationFn: async () => {
+      if (!cooperadora) throw new Error("No hay una cooperadora registrada.");
+      if (!ctx) throw new Error("No se pudo identificar al usuario que realiza la activación.");
+      if (!concesion.data) throw new Error("Primero debe estar registrada la concesión.");
+      if (concesion.data.tieneProrroga) throw new Error("La concesión ya tiene una prórroga activa.");
+      if (!fechaInicioProrrogaFicha) throw new Error("Debés completar la fecha de inicio de la prórroga.");
+
+      const prorroga = await guardarConcesionKiosco(cooperadora.id, {
+        ...concesion.data,
+        tieneProrroga: true,
+        fechaInicioProrroga: fechaInicioProrrogaFicha,
+        fechaVencimientoProrroga: calcularVencimientoConcesion(fechaInicioProrrogaFicha, 1),
+        canonProrroga: concesion.data.canonVigente || concesion.data.canon,
+        canonProrrogaVigente: concesion.data.canonVigente || concesion.data.canon,
+      });
+
+      await registrarModificacionConcesionKiosco(cooperadora.id, prorroga, {
+        id: ctx.userId,
+        nombre: ctx.nombre || "Usuario",
+        email: ctx.email,
+      });
+
+      return prorroga;
+    },
+    onSuccess: (prorroga) => {
+      setDatos({
+        ...prorroga,
+        canon: String(prorroga.canon),
+        canonVigente: String(prorroga.canonVigente ?? prorroga.canon),
+        canonProrroga: String(prorroga.canonProrroga ?? ""),
+        canonProrrogaVigente: String(prorroga.canonProrrogaVigente ?? prorroga.canonProrroga ?? ""),
+      });
+      setFechaInicioProrrogaFicha(prorroga.fechaInicioProrroga);
+      qc.invalidateQueries({ queryKey: ["concesion-kiosco", cooperadora?.id] });
+      qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", cooperadora?.id] });
+      toast.success("La prórroga fue activada y quedó registrada.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -715,84 +758,6 @@ function ConcesionPage() {
                   </div>
                 )}
 
-                <div className="mt-2 rounded-sm border-2 border-border bg-secondary/20 p-4 sm:col-span-2">
-                  <div className="flex items-center gap-3">
-                    <input
-                      id="concesion-prorroga"
-                      type="checkbox"
-                      checked={datos.tieneProrroga}
-                      disabled={modoEdicion === "ipc"}
-                      onChange={(e) =>
-                        setDatos((actual) => ({
-                          ...actual,
-                          tieneProrroga: e.target.checked,
-                          canonProrroga: e.target.checked ? String(actual.canonVigente || actual.canon || "") : "",
-                          canonProrrogaVigente: e.target.checked ? String(actual.canonVigente || actual.canon || "") : "",
-                          fechaInicioProrroga: e.target.checked ? actual.fechaInicioProrroga : "",
-                          fechaVencimientoProrroga: e.target.checked ? actual.fechaVencimientoProrroga : "",
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-border"
-                    />
-                    <Label htmlFor="concesion-prorroga" className="cursor-pointer font-medium">
-                      La concesión tiene una prórroga de 1 año
-                    </Label>
-                  </div>
-                </div>
-
-                {datos.tieneProrroga && (
-                  <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
-                    <p className="text-sm font-medium">Prórroga</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Ingresá los datos de la prórroga. El vencimiento se calcula automáticamente por 1 año desde la fecha de inicio.
-                    </p>
-                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="concesion-fecha-inicio-prorroga">Fecha de inicio de la prórroga *</Label>
-                        <Input
-                          id="concesion-fecha-inicio-prorroga"
-                          type="date"
-                          value={datos.fechaInicioProrroga}
-                          disabled={modoEdicion === "ipc"}
-                          onChange={(e) =>
-                            setDatos((actual) => ({ ...actual, fechaInicioProrroga: e.target.value }))
-                          }
-                          required
-                        />
-                      </div>
-                      <DatoConcesion
-                        titulo="Vigente hasta"
-                        valor={formatearFechaContrato(vencimientoProrroga)}
-                      />
-                      <div className="space-y-2">
-                        <Label htmlFor="concesion-canon-prorroga">Canon inicial de la prórroga *</Label>
-                        <Input
-                          id="concesion-canon-prorroga"
-                          inputMode="decimal"
-                          value={datos.canonProrroga}
-                          disabled={modoEdicion !== "rectificacion"}
-                          readOnly={modoEdicion !== "rectificacion"}
-                          onChange={(e) => setDatos((actual) => ({ ...actual, canonProrroga: e.target.value }))}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Se toma automáticamente del canon vigente del contrato al iniciar la prórroga y queda como antecedente.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="concesion-canon-prorroga-vigente">Canon vigente de la prórroga</Label>
-                        <Input
-                          id="concesion-canon-prorroga-vigente"
-                          inputMode="decimal"
-                          value={datos.canonProrrogaVigente}
-                          disabled={modoEdicion !== "rectificacion"}
-                          readOnly={modoEdicion !== "rectificacion"}
-                          onChange={(e) => setDatos((actual) => ({ ...actual, canonProrrogaVigente: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {modoEdicion === "rectificacion" ? (
                   <div className="space-y-3 sm:col-span-2">
                     <div className="space-y-2">
@@ -1000,6 +965,37 @@ function ConcesionPage() {
                     titulo="Próxima actualización por IPC"
                     valor={formatearFechaContrato(proximaActualizacionContrato)}
                   />
+                  {!datos.tieneProrroga ? (
+                    <div className="rounded-sm border-2 border-primary/30 bg-primary/5 p-4 sm:col-span-2">
+                      <p className="text-sm font-semibold">Prórroga de la concesión</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        La prórroga no forma parte de la carga inicial. Podés activarla directamente desde esta ficha cuando corresponda.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div className="space-y-2">
+                          <Label htmlFor="concesion-fecha-inicio-prorroga-ficha">
+                            Fecha de inicio de la prórroga *
+                          </Label>
+                          <Input
+                            id="concesion-fecha-inicio-prorroga-ficha"
+                            type="date"
+                            value={fechaInicioProrrogaFicha}
+                            onChange={(e) => setFechaInicioProrrogaFicha(e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => activarProrroga.mutate()}
+                          disabled={activarProrroga.isPending}
+                        >
+                          {activarProrroga.isPending ? "Activando…" : "Activar prórroga"}
+                        </Button>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        El canon inicial de la prórroga se toma automáticamente del canon vigente del contrato.
+                      </p>
+                    </div>
+                  ) : null}
                   {datos.tieneProrroga ? (
                     <>
                       <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
