@@ -14,6 +14,8 @@ import {
   abrirDocumentoConcesion,
   cargarConcesionKiosco,
   cargarDocumentoConcesion,
+  concesionKioscoEstaVencida,
+  fechaVencimientoVigenteConcesion,
 } from "@/lib/data/concesion";
 import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
 import { cargarAperturaCuentaBancaria, aperturaCuentaVencida } from "@/lib/data/apertura-cuenta-bancaria";
@@ -398,6 +400,10 @@ function AuditoriaLibroPage() {
     : null;
   const datosConcesion = concesion.data;
   const historialConcesionData = historialConcesion.data ?? [];
+  const contratoConcesionVencido = Boolean(datosConcesion && concesionKioscoEstaVencida(datosConcesion));
+  const fechaVencimientoConcesion = datosConcesion
+    ? fechaVencimientoVigenteConcesion(datosConcesion)
+    : "";
   const historialDocumentosConcesionData = historialDocumentosConcesion.data ?? [];
   const cambiosCanonAuditoria = construirHistorialCanonAuditoria(historialConcesionData);
   const hayReduccionCanon = cambiosCanonAuditoria.some((cambio) => cambio.esBaja);
@@ -873,6 +879,25 @@ function AuditoriaLibroPage() {
           </CardContent>
         </Card>
       ))}
+
+      {contratoConcesionVencido && (
+        <Card className="mb-6 border-2 border-red-500 bg-red-50 text-red-900 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <span className="text-red-600">⚠</span> Contrato de concesión vencido
+            </CardTitle>
+            <CardDescription className="text-red-800/80">
+              La concesión ya no tiene un contrato o prórroga vigente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">
+              La vigencia finalizó el{" "}
+              <span className="font-semibold">{formatearFechaContratoAuditoria(fechaVencimientoConcesion)}</span>.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
