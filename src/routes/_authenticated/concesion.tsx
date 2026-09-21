@@ -510,6 +510,59 @@ function ConcesionPage() {
         </Card>
       </div>
 
+      {historial.data?.length ? (
+        <details className="mt-6 rounded-sm border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
+            <span className="flex items-center justify-between gap-3">
+              <span>Historial de concesionarios</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {construirHistorialConcesionarios(historial.data).length} registro{construirHistorialConcesionarios(historial.data).length === 1 ? "" : "s"}
+              </span>
+            </span>
+          </summary>
+          <div className="divide-y divide-border border-t border-border">
+            {construirHistorialConcesionarios(historial.data).map((registro) => (
+              <details key={registro.id} className="group">
+                <summary className="cursor-pointer list-none px-4 py-3 hover:bg-secondary/40">
+                  <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-medium">
+                      {registro.apellido}, {registro.nombre}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Contrato firmado: {formatearFechaContrato(registro.fechaFirmaContrato)}
+                    </span>
+                  </span>
+                </summary>
+                <div className="grid gap-2 border-t border-border bg-secondary/20 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <DatoConcesion titulo="Concesionario" valor={registro.apellido + ", " + registro.nombre} />
+                  <DatoConcesion
+                    titulo="Contrato vigente hasta"
+                    valor={formatearFechaContrato(registro.fechaVencimientoContrato)}
+                  />
+                  <DatoConcesion titulo="Canon registrado" valor={money(num(registro.canon))} />
+                  <DatoConcesion
+                    titulo="Estado del registro"
+                    valor={registro.esActual ? "Concesionario actual" : "Antecedente"}
+                  />
+                  {registro.tieneProrroga ? (
+                    <>
+                      <DatoConcesion
+                        titulo="Inicio de la prórroga"
+                        valor={formatearFechaContrato(registro.fechaInicioProrroga)}
+                      />
+                      <DatoConcesion
+                        titulo="Prórroga vigente hasta"
+                        valor={formatearFechaContrato(registro.fechaVencimientoProrroga)}
+                      />
+                    </>
+                  ) : null}
+                </div>
+              </details>
+            ))}
+          </div>
+        </details>
+      ) : null}
+
       {(historial.data?.length || historialDocumentos.data?.length) ? (
         <details className="mt-6 rounded-sm border border-border bg-card">
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium hover:bg-secondary/50">
@@ -646,6 +699,56 @@ function ConcesionPage() {
       ) : null}
     </AppShell>
   );
+}
+
+function construirHistorialConcesionarios(
+  historial: Array<{
+    id: string;
+    datos: ConcesionKiosco;
+    usuario_nombre: string;
+    usuario_email: string | null;
+    modificado_en: string;
+  }>,
+) {
+  const vistos = new Set<string>();
+  const registros = [];
+
+  for (const registro of historial) {
+    const datos = registro.datos;
+    const clave = [
+      datos.apellido.trim().toLocaleLowerCase(),
+      datos.nombre.trim().toLocaleLowerCase(),
+      datos.fechaFirmaContrato,
+      datos.fechaVencimientoContrato ||
+        calcularVencimientoConcesion(datos.fechaFirmaContrato, 2),
+      datos.fechaInicioProrroga || "",
+      datos.fechaVencimientoProrroga || "",
+    ].join("|");
+
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+
+    registros.push({
+      id: registro.id,
+      apellido: datos.apellido,
+      nombre: datos.nombre,
+      canon: datos.canon,
+      fechaFirmaContrato: datos.fechaFirmaContrato,
+      fechaVencimientoContrato:
+        datos.fechaVencimientoContrato ||
+        calcularVencimientoConcesion(datos.fechaFirmaContrato, 2),
+      tieneProrroga: Boolean(datos.tieneProrroga),
+      fechaInicioProrroga: datos.fechaInicioProrroga || "",
+      fechaVencimientoProrroga:
+        datos.fechaVencimientoProrroga ||
+        (datos.tieneProrroga
+          ? calcularVencimientoConcesion(datos.fechaInicioProrroga || "", 1)
+          : ""),
+      esActual: registro === historial[0],
+    });
+  }
+
+  return registros;
 }
 
 function tituloTipoDocumentoConcesion(tipo: TipoDocumentoConcesion) {
