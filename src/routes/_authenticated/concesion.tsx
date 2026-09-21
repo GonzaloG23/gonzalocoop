@@ -762,8 +762,8 @@ function ConcesionPage() {
                         valor={money(num(datos.canonProrrogaVigente))}
                       />
                       <DatoConcesion
-                        titulo="Próxima actualización de la prórroga"
-                        valor={formatearFechaContrato(proximaActualizacionProrroga)}
+                        titulo="Fecha de finalización de la prórroga"
+                        valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
                       />
                     </>
                   ) : null}
