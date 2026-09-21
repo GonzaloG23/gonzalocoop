@@ -110,6 +110,9 @@ Devuelve las últimas modificaciones de la concesión, incluyendo:
 - nombre;
 - canon;
 - fecha de firma del contrato;
+- fecha de vencimiento del contrato;
+- fecha de inicio de la prórroga, si corresponde;
+- fecha de vencimiento de la prórroga, si corresponde;
 - usuario que realizó el cambio;
 - fecha y hora del cambio.
 
@@ -125,7 +128,11 @@ Body:
     "apellido": "Pérez",
     "nombre": "Juan",
     "canon": 125000,
-    "fechaFirmaContrato": "2026-09-15"
+    "fechaFirmaContrato": "2026-09-15",
+    "fechaVencimientoContrato": "2028-09-15",
+    "tieneProrroga": true,
+    "fechaInicioProrroga": "2028-09-15",
+    "fechaVencimientoProrroga": "2029-09-15"
   },
   "modificado_por": {
     "id": "uuid",
