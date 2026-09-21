@@ -23,6 +23,7 @@ import {
   registrarModificacionConcesionKiosco,
   registrarModificacionDocumentoConcesion,
 } from "@/lib/data/concesion-historial";
+import { cargarEstadoCanonIpc } from "@/lib/data/concesion-ipc";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,19 @@ function ConcesionPage() {
     queryKey: ["historial-documentos-concesion", cooperadora?.id],
     queryFn: () => cargarHistorialDocumentosConcesion(cooperadora!.id),
     enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
+  const estadoCanonIpc = useQuery({
+    queryKey: [
+      "canon-ipc",
+      cooperadora?.id,
+      concesion.data?.canonVigente,
+      concesion.data?.canonProrrogaVigente,
+      concesion.data?.fechaFirmaContrato,
+      concesion.data?.fechaInicioProrroga,
+    ],
+    queryFn: () => cargarEstadoCanonIpc(cooperadora!.id, datos),
+    enabled: !!cooperadora && !!concesion.data && !ctx?.esAuditor,
   });
 
   const contrato = useQuery({
@@ -257,12 +271,19 @@ function ConcesionPage() {
   const vencimientoProrroga = datos.tieneProrroga
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
     : "";
-  const proximaActualizacionContrato = calcularProximaActualizacionCanon(datos.fechaFirmaContrato);
-  const contratoPendienteIPC = canonNecesitaActualizacion(proximaActualizacionContrato);
-  const proximaActualizacionProrroga = datos.tieneProrroga
-    ? calcularProximaActualizacionCanon(datos.fechaInicioProrroga)
-    : "";
-  const prorrogaPendienteIPC = datos.tieneProrroga && canonNecesitaActualizacion(proximaActualizacionProrroga);
+  const estadoIPC = estadoCanonIpc.data;
+  const proximaActualizacionContrato =
+    estadoIPC?.contratoOriginal.proximaActualizacion ||
+    calcularProximaActualizacionCanon(datos.fechaFirmaContrato);
+  const contratoPendienteIPC =
+    estadoIPC?.contratoOriginal.actualizacionPendiente ??
+    canonNecesitaActualizacion(proximaActualizacionContrato);
+  const proximaActualizacionProrroga =
+    estadoIPC?.prorroga?.proximaActualizacion ||
+    (datos.tieneProrroga ? calcularProximaActualizacionCanon(datos.fechaInicioProrroga) : "");
+  const prorrogaPendienteIPC =
+    estadoIPC?.prorroga?.actualizacionPendiente ??
+    (datos.tieneProrroga && canonNecesitaActualizacion(proximaActualizacionProrroga));
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
 
   return (
@@ -515,6 +536,10 @@ function ConcesionPage() {
                     valor={money(num(datos.canonVigente))}
                   />
                   <DatoConcesion
+                    titulo="Última actualización por IPC"
+                    valor={formatearFechaContrato(estadoIPC?.contratoOriginal.ultimaActualizacion)}
+                  />
+                  <DatoConcesion
                     titulo="Próxima actualización por IPC"
                     valor={formatearFechaContrato(proximaActualizacionContrato)}
                   />
@@ -522,6 +547,10 @@ function ConcesionPage() {
                     <>
                       <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
                       <DatoConcesion titulo="Canon vigente de la prórroga" valor={money(num(datos.canonProrrogaVigente))} />
+                      <DatoConcesion
+                        titulo="Última actualización IPC de la prórroga"
+                        valor={formatearFechaContrato(estadoIPC?.prorroga?.ultimaActualizacion)}
+                      />
                       <DatoConcesion
                         titulo="Próxima actualización de la prórroga"
                         valor={formatearFechaContrato(proximaActualizacionProrroga)}
@@ -696,6 +725,28 @@ function ConcesionPage() {
             </span>
           </summary>
           <div className="space-y-4 border-t border-border p-4">
+            {estadoIPC?.historial && estadoIPC.historial.length > 0 && (
+              <div className="rounded-sm border border-border">
+                <div className="border-b border-border bg-secondary/40 px-3 py-3">
+                  <p className="text-sm font-medium">Historial de actualizaciones por IPC</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Cada actualización conserva la fecha de aniversario, los índices oficiales utilizados y los importes anterior y nuevo.
+                  </p>
+                </div>
+                <div className="divide-y divide-border">
+                  {estadoIPC.historial.map((actualizacion) => (
+                    <div key={actualizacion.id} className="grid gap-2 px-3 py-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+                      <DatoConcesion titulo="Tipo" valor={actualizacion.tipo === "prorroga" ? "Prórroga" : "Contrato original"} />
+                      <DatoConcesion titulo="Fecha de actualización" valor={formatearFechaContrato(actualizacion.fechaActualizacion)} />
+                      <DatoConcesion titulo="Canon anterior" valor={money(actualizacion.canonAnterior)} />
+                      <DatoConcesion titulo="Canon nuevo" valor={money(actualizacion.canonNuevo)} />
+                      <DatoConcesion titulo="Variación IPC" valor={actualizacion.variacionIpc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%"} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {cambiosCanon.length > 0 && (
               <div className="rounded-sm border border-border">
                 <div className="border-b border-border bg-secondary/40 px-3 py-3">
