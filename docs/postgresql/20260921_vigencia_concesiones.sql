@@ -1,0 +1,51 @@
+-- Vigencia de contratos de concesión.
+-- Contrato inicial: 2 años.
+-- Prórroga: 1 año adicional, con su propia fecha de inicio y vencimiento.
+
+ALTER TABLE concesiones_kiosco
+  ADD COLUMN IF NOT EXISTS fecha_vencimiento_contrato date;
+
+UPDATE concesiones_kiosco
+SET fecha_vencimiento_contrato = (fecha_firma_contrato + INTERVAL '2 years')::date
+WHERE fecha_vencimiento_contrato IS NULL;
+
+ALTER TABLE concesiones_kiosco
+  ALTER COLUMN fecha_vencimiento_contrato SET NOT NULL;
+
+ALTER TABLE concesiones_kiosco
+  ADD COLUMN IF NOT EXISTS fecha_inicio_prorroga date,
+  ADD COLUMN IF NOT EXISTS fecha_vencimiento_prorroga date;
+
+ALTER TABLE concesiones_kiosco
+  DROP CONSTRAINT IF EXISTS ck_concesiones_kiosco_prorroga;
+
+ALTER TABLE concesiones_kiosco
+  ADD CONSTRAINT ck_concesiones_kiosco_prorroga CHECK (
+    (fecha_inicio_prorroga IS NULL AND fecha_vencimiento_prorroga IS NULL)
+    OR
+    (fecha_inicio_prorroga IS NOT NULL AND fecha_vencimiento_prorroga IS NOT NULL)
+  );
+
+ALTER TABLE concesiones_kiosco_historial
+  ADD COLUMN IF NOT EXISTS fecha_vencimiento_contrato date;
+
+UPDATE concesiones_kiosco_historial
+SET fecha_vencimiento_contrato = (fecha_firma_contrato + INTERVAL '2 years')::date
+WHERE fecha_vencimiento_contrato IS NULL;
+
+ALTER TABLE concesiones_kiosco_historial
+  ALTER COLUMN fecha_vencimiento_contrato SET NOT NULL;
+
+ALTER TABLE concesiones_kiosco_historial
+  ADD COLUMN IF NOT EXISTS fecha_inicio_prorroga date,
+  ADD COLUMN IF NOT EXISTS fecha_vencimiento_prorroga date;
+
+ALTER TABLE concesiones_kiosco_historial
+  DROP CONSTRAINT IF EXISTS ck_concesiones_kiosco_historial_prorroga;
+
+ALTER TABLE concesiones_kiosco_historial
+  ADD CONSTRAINT ck_concesiones_kiosco_historial_prorroga CHECK (
+    (fecha_inicio_prorroga IS NULL AND fecha_vencimiento_prorroga IS NULL)
+    OR
+    (fecha_inicio_prorroga IS NOT NULL AND fecha_vencimiento_prorroga IS NOT NULL)
+  );
