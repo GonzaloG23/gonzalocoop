@@ -916,15 +916,31 @@ function ConcesionPage() {
                     titulo={datos.tieneProrroga ? "Canon inicial del contrato" : "Canon inicial"}
                     valor={money(num(datos.canon))}
                   />
-                  <DatoConcesion
-                    titulo="1.º canon actualizado"
-                    valor={actualizacionesCanon[0] ? money(actualizacionesCanon[0].valor) : "No actualizado todavía"}
-                  />
+                  <div className="rounded-sm border border-border bg-card px-3 py-3">
+                    <p className="text-xs text-muted-foreground">1.º canon actualizado</p>
+                    {actualizacionesCanon[0] ? (
+                      <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <span className="text-sm font-medium">{money(actualizacionesCanon[0].valor)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Fecha: {formatearFechaActualizacionCanon(actualizacionesCanon[0].fecha)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-sm font-medium">No actualizado todavía</p>
+                    )}
+                  </div>
                   <div className="rounded-sm border border-border bg-card px-3 py-3">
                     <p className="text-xs text-muted-foreground">2.º canon actualizado</p>
-                    <p className="mt-1 text-sm font-medium">
-                      {actualizacionesCanon[1] ? money(actualizacionesCanon[1].valor) : "No actualizado todavía"}
-                    </p>
+                    {actualizacionesCanon[1] ? (
+                      <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <span className="text-sm font-medium">{money(actualizacionesCanon[1].valor)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Fecha: {formatearFechaActualizacionCanon(actualizacionesCanon[1].fecha)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-sm font-medium">No actualizado todavía</p>
+                    )}
                     {segundaActualizacionContratoDisponible ? (
                       <div className="mt-3">
                         <Button
@@ -1642,6 +1658,13 @@ function canonVigenteFueActualizadoDesde(
   }
 
   return false;
+}
+
+function formatearFechaActualizacionCanon(valor: string | undefined) {
+  if (!valor) return "No informada";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return formatearFechaContrato(valor.slice(0, 10));
+  return fecha.toLocaleDateString("es-AR");
 }
 
 function formatearFechaContrato(valor: string | undefined) {
