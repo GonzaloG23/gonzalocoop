@@ -4,7 +4,9 @@ export type ConcesionKiosco = {
   apellido: string;
   nombre: string;
   canon: number | string;
+  canonVigente: number | string;
   canonProrroga: number | string;
+  canonProrrogaVigente: number | string;
   fechaFirmaContrato: string;
   fechaVencimientoContrato: string;
   tieneProrroga: boolean;
@@ -41,6 +43,58 @@ export function calcularVencimientoConcesion(fechaInicio: string, duracionAnios:
   ].join("-");
 }
 
+
+export function calcularFechaActualizacionAnual(fechaInicio: string, aniosCumplidos = 1) {
+  return calcularVencimientoConcesion(fechaInicio, aniosCumplidos);
+}
+
+export function calcularProximaActualizacionCanon(
+  fechaInicio: string,
+  fechaUltimaActualizacion = "",
+  hoy = new Date(),
+) {
+  if (!fechaValida(fechaInicio)) return "";
+
+  const base = fechaUltimaActualizacion && fechaValida(fechaUltimaActualizacion)
+    ? fechaUltimaActualizacion
+    : fechaInicio;
+  const fechaBase = fechaUltimaActualizacion && fechaValida(fechaUltimaActualizacion)
+    ? fechaUltimaActualizacion
+    : calcularFechaActualizacionAnual(fechaInicio, 0);
+  if (!fechaValida(fechaBase)) return "";
+
+  const hoyUtc = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+  const [anioBase, mesBase, diaBase] = fechaBase.split("-").map(Number);
+  let anios = 1;
+  if (fechaUltimaActualizacion) {
+    const candidato = new Date(Date.UTC(anioBase + anios, mesBase - 1, diaBase));
+    if (candidato.getTime() > hoyUtc.getTime()) return fechaBase;
+    anios = 1;
+  } else {
+    const [anioInicio] = fechaInicio.split("-").map(Number);
+    anios = Math.max(1, hoyUtc.getUTCFullYear() - anioInicio + 1);
+    const candidato = new Date(Date.UTC(anioInicio + anios, mesBase - 1, diaBase));
+    if (candidato.getTime() <= hoyUtc.getTime()) anios += 1;
+  }
+
+  return calcularFechaActualizacionAnual(fechaBase, anios);
+}
+
+export function calcularCanonActualizadoPorIPC(
+  canonAnterior: number,
+  indiceDesde: number,
+  indiceHasta: number,
+) {
+  if (!Number.isFinite(canonAnterior) || canonAnterior < 0) {
+    throw new Error("El canon anterior no es válido.");
+  }
+  if (!Number.isFinite(indiceDesde) || indiceDesde <= 0 || !Number.isFinite(indiceHasta) || indiceHasta <= 0) {
+    throw new Error("Los índices IPC deben ser mayores que cero.");
+  }
+
+  return Math.round(canonAnterior * (indiceHasta / indiceDesde) * 100) / 100;
+}
+
 export function normalizarConcesion(datos: Partial<ConcesionKiosco>): ConcesionKiosco {
   const fechaFirmaContrato = String(datos.fechaFirmaContrato ?? "").trim();
   const tieneProrroga = Boolean(datos.tieneProrroga);
@@ -50,7 +104,9 @@ export function normalizarConcesion(datos: Partial<ConcesionKiosco>): ConcesionK
     apellido: String(datos.apellido ?? "").trim(),
     nombre: String(datos.nombre ?? "").trim(),
     canon: datos.canon ?? "",
+    canonVigente: datos.canonVigente ?? datos.canon ?? "",
     canonProrroga: datos.canonProrroga ?? "",
+    canonProrrogaVigente: datos.canonProrrogaVigente ?? datos.canonProrroga ?? "",
     fechaFirmaContrato,
     fechaVencimientoContrato:
       String(datos.fechaVencimientoContrato ?? "").trim() ||
@@ -116,6 +172,8 @@ export async function guardarConcesionKiosco(
 ): Promise<ConcesionKiosco> {
   const canonTexto = String(datos.canon).trim().replace(",", ".");
   const canonProrrogaTexto = String(datos.canonProrroga ?? "").trim().replace(",", ".");
+  const canonVigenteTexto = String(datos.canonVigente ?? datos.canon ?? "").trim().replace(",", ".");
+  const canonProrrogaVigenteTexto = String(datos.canonProrrogaVigente ?? datos.canonProrroga ?? "").trim().replace(",", ".");
   const fechaFirmaContrato = String(datos.fechaFirmaContrato ?? "").trim();
 
   if (!canonTexto) throw new Error("Debés completar el canon del contrato original.");
@@ -143,7 +201,9 @@ export async function guardarConcesionKiosco(
     apellido: datos.apellido.trim(),
     nombre: datos.nombre.trim(),
     canon: Number(canonTexto),
+    canonVigente: Number(canonVigenteTexto || canonTexto),
     canonProrroga: tieneProrroga ? Number(canonProrrogaTexto) : "",
+    canonProrrogaVigente: tieneProrroga ? Number(canonProrrogaVigenteTexto || canonProrrogaTexto) : "",
     fechaFirmaContrato,
     fechaVencimientoContrato: calcularVencimientoConcesion(fechaFirmaContrato, 2),
     tieneProrroga,
@@ -156,10 +216,16 @@ export async function guardarConcesionKiosco(
   if (!normalizados.apellido) throw new Error("Debés completar el apellido del concesionario.");
   if (!normalizados.nombre) throw new Error("Debés completar el nombre del concesionario.");
   if (!Number.isFinite(normalizados.canon) || normalizados.canon < 0) {
-    throw new Error("El canon del contrato original debe ser un importe válido mayor o igual a cero.");
+    throw new Error("El canon inicial del contrato original debe ser un importe válido mayor o igual a cero.");
+  }
+  if (!Number.isFinite(Number(normalizados.canonVigente)) || Number(normalizados.canonVigente) < 0) {
+    throw new Error("El canon vigente del contrato original debe ser un importe válido mayor o igual a cero.");
   }
   if (tieneProrroga && (!Number.isFinite(Number(normalizados.canonProrroga)) || Number(normalizados.canonProrroga) < 0)) {
-    throw new Error("El canon de la prórroga debe ser un importe válido mayor o igual a cero.");
+    throw new Error("El canon inicial de la prórroga debe ser un importe válido mayor o igual a cero.");
+  }
+  if (tieneProrroga && (!Number.isFinite(Number(normalizados.canonProrrogaVigente)) || Number(normalizados.canonProrrogaVigente) < 0)) {
+    throw new Error("El canon vigente de la prórroga debe ser un importe válido mayor o igual a cero.");
   }
 
   if (usingMinisterioApi()) {
