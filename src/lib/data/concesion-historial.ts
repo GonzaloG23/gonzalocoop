@@ -44,9 +44,10 @@ export async function cargarHistorialConcesionKiosco(
   cooperadoraId: string,
 ): Promise<ModificacionConcesionKiosco[]> {
   if (usingMinisterioApi()) {
-    return ministerioRequest<ModificacionConcesionKiosco[]>(
+    const respuesta = await ministerioRequest<ModificacionConcesionKiosco[] | null>(
       `/api/cooperadoras/${cooperadoraId}/concesion-kiosco/historial`,
     );
+    return Array.isArray(respuesta) ? respuesta : [];
   }
 
   try {
@@ -63,9 +64,10 @@ export async function cargarHistorialDocumentosConcesion(
   cooperadoraId: string,
 ): Promise<HistorialDocumentoConcesion[]> {
   if (usingMinisterioApi()) {
-    return ministerioRequest<HistorialDocumentoConcesion[]>(
+    const respuesta = await ministerioRequest<HistorialDocumentoConcesion[] | null>(
       "/api/cooperadoras/" + cooperadoraId + "/concesion-kiosco/historial-documentos",
     );
+    return Array.isArray(respuesta) ? respuesta : [];
   }
 
   try {
