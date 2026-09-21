@@ -481,6 +481,14 @@ function ConcesionPage() {
           <div className="border-t border-border p-6">
             {editando ? (
               <div className="grid gap-4 sm:grid-cols-2">
+                {modoEdicion === "rectificacion" ? (
+                  <div className="rounded-md border-2 border-amber-400 bg-amber-50 p-4 text-amber-900 sm:col-span-2">
+                    <p className="font-semibold">Rectificación de datos de concesión</p>
+                    <p className="mt-1 text-sm">
+                      Esta corrección no se aplicará directamente. Se enviará a Auditoría para su autorización porque los datos de la concesión ya fueron registrados.
+                    </p>
+                  </div>
+                ) : null}
                 <div className="space-y-2">
                   <Label htmlFor="concesion-apellido">Apellido *</Label>
                   <Input
@@ -488,6 +496,7 @@ function ConcesionPage() {
                     value={datos.apellido}
                     onChange={(e) => setDatos((actual) => ({ ...actual, apellido: e.target.value }))}
                     placeholder="Apellido"
+                    disabled={modoEdicion === "ipc"}
                     required
                   />
                 </div>
@@ -498,6 +507,7 @@ function ConcesionPage() {
                     value={datos.nombre}
                     onChange={(e) => setDatos((actual) => ({ ...actual, nombre: e.target.value }))}
                     placeholder="Nombre"
+                    disabled={modoEdicion === "ipc"}
                     required
                   />
                 </div>
@@ -507,6 +517,7 @@ function ConcesionPage() {
                     id="concesion-fecha-firma"
                     type="date"
                     value={datos.fechaFirmaContrato}
+                    disabled={modoEdicion === "ipc"}
                     onChange={(e) =>
                       setDatos((actual) => ({ ...actual, fechaFirmaContrato: e.target.value }))
                     }
@@ -532,6 +543,7 @@ function ConcesionPage() {
                         id="concesion-canon"
                         inputMode="decimal"
                         value={datos.canon}
+                        disabled={modoEdicion === "ipc"}
                         onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value, canonVigente: actual.canonVigente || e.target.value }))}
                         placeholder="Importe inicial del canon"
                         required
@@ -544,8 +556,8 @@ function ConcesionPage() {
                         id="concesion-canon-vigente"
                         inputMode="decimal"
                         value={datos.canonVigente}
-                        disabled
-                        readOnly
+                        disabled={modoEdicion !== "rectificacion"}
+                        readOnly={modoEdicion !== "rectificacion"}
                       />
                       <p className="text-xs text-muted-foreground">Cuando se cumple cada aniversario, ingresá el porcentaje de aumento informado por INDEC para calcular el nuevo canon vigente.</p>
                     </div>
@@ -558,8 +570,9 @@ function ConcesionPage() {
                         id="concesion-canon-original"
                         inputMode="decimal"
                         value={datos.canon}
-                        disabled
-                        readOnly
+                        disabled={modoEdicion === "ipc"}
+                        readOnly={modoEdicion === "ipc"}
+                        onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value }))}
                       />
                       <p className="text-xs text-muted-foreground">Este valor queda asentado y no se reemplaza por las actualizaciones IPC.</p>
                     </div>
@@ -569,13 +582,13 @@ function ConcesionPage() {
                         id="concesion-canon-vigente-principal"
                         inputMode="decimal"
                         value={datos.canonVigente}
-                        disabled
-                        readOnly
+                        disabled={modoEdicion !== "rectificacion"}
+                        readOnly={modoEdicion !== "rectificacion"}
                       />
                     </div>
                   </>
                 )}
-                {(contratoPendienteIPC || prorrogaPendienteIPC) && (
+                {modoEdicion === "ipc" && (contratoPendienteIPC || prorrogaPendienteIPC) && (
                   <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
                     <p className="text-sm font-medium">Actualización anual por IPC</p>
                     <p className="mt-1 text-xs text-muted-foreground">
@@ -672,6 +685,7 @@ function ConcesionPage() {
                       id="concesion-prorroga"
                       type="checkbox"
                       checked={datos.tieneProrroga}
+                      disabled={modoEdicion === "ipc"}
                       onChange={(e) =>
                         setDatos((actual) => ({
                           ...actual,
@@ -703,6 +717,7 @@ function ConcesionPage() {
                           id="concesion-fecha-inicio-prorroga"
                           type="date"
                           value={datos.fechaInicioProrroga}
+                          disabled={modoEdicion === "ipc"}
                           onChange={(e) =>
                             setDatos((actual) => ({ ...actual, fechaInicioProrroga: e.target.value }))
                           }
@@ -719,8 +734,9 @@ function ConcesionPage() {
                           id="concesion-canon-prorroga"
                           inputMode="decimal"
                           value={datos.canonProrroga}
-                          disabled
-                          readOnly
+                          disabled={modoEdicion !== "rectificacion"}
+                          readOnly={modoEdicion !== "rectificacion"}
+                          onChange={(e) => setDatos((actual) => ({ ...actual, canonProrroga: e.target.value }))}
                         />
                         <p className="text-xs text-muted-foreground">
                           Se toma automáticamente del canon vigente del contrato al iniciar la prórroga y queda como antecedente.
@@ -732,24 +748,55 @@ function ConcesionPage() {
                           id="concesion-canon-prorroga-vigente"
                           inputMode="decimal"
                           value={datos.canonProrrogaVigente}
-                          disabled
-                          readOnly
+                          disabled={modoEdicion !== "rectificacion"}
+                          readOnly={modoEdicion !== "rectificacion"}
+                          onChange={(e) => setDatos((actual) => ({ ...actual, canonProrrogaVigente: e.target.value }))}
                         />
                       </div>
                     </div>
                   </div>
                 )}
 
+                {modoEdicion === "rectificacion" ? (
+                  <div className="space-y-3 sm:col-span-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="motivo-modificacion-concesion">Motivo de la corrección *</Label>
+                      <Input
+                        id="motivo-modificacion-concesion"
+                        value={motivoModificacion}
+                        onChange={(e) => setMotivoModificacion(e.target.value)}
+                        placeholder="Ej.: se ingresó incorrectamente la fecha de firma y el canon inicial."
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Auditoría deberá autorizar la corrección antes de que los datos vigentes sean reemplazados.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="flex flex-wrap gap-2 pt-2 sm:col-span-2">
-                  <Button onClick={() => guardar.mutate()} disabled={guardar.isPending}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {guardar.isPending ? "Guardando…" : "Guardar concesión"}
+                  <Button
+                    onClick={() => modoEdicion === "rectificacion" ? solicitarModificacion.mutate() : guardar.mutate()}
+                    disabled={guardar.isPending || solicitarModificacion.isPending}
+                  >
+                    {modoEdicion === "rectificacion" ? (
+                      solicitarModificacion.isPending ? "Enviando…" : "Enviar modificación a Auditoría"
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {guardar.isPending ? "Guardando…" : "Guardar concesión"}
+                      </>
+                    )}
                   </Button>
-                  {historial.data?.length ? (
-                    <Button type="button" variant="outline" onClick={() => setEditando(false)} disabled={guardar.isPending}>
-                      Cancelar
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditando(false)}
+                    disabled={guardar.isPending || solicitarModificacion.isPending}
+                  >
+                    Cancelar
+                  </Button>
                 </div>
               </div>
             ) : (
