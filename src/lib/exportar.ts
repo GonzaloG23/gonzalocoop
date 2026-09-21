@@ -207,6 +207,7 @@ function agregarAnalisisRubros(
   doc: jsPDF,
   movimientos: Movimiento[],
   rubros: Rubro[],
+  periodoLabel = "del mes",
 ) {
   const ingresos = agruparMovimientosPorRubro(movimientos, rubros, "ingreso");
   const egresos = agruparMovimientosPorRubro(movimientos, rubros, "egreso");
@@ -221,7 +222,7 @@ function agregarAnalisisRubros(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(90, 90, 90);
-  doc.text("Los porcentajes se calculan sobre el total de ingresos y egresos del mes.", 14, 25);
+  doc.text(`Los porcentajes se calculan sobre el total de ingresos y egresos ${periodoLabel}.`, 14, 25);
 
   dibujarGraficoCircular(doc, "Ingresos por rubro", ingresos, 63, 92);
   dibujarGraficoCircular(doc, "Egresos por rubro", egresos, 147, 92);
@@ -380,17 +381,27 @@ export function exportarAnualPDF(
     footStyles: { fillColor: [237, 233, 222], textColor: 20, fontStyle: "bold" },
   });
 
+  const tablaAnualY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 120;
+  let resumenY = tablaAnualY + 10;
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text(`Movimientos registrados en el ejercicio: ${movimientos.length}`, 14, 142);
-  doc.text(`Ingresos del ejercicio: ${money(totalIngresos)}`, 14, 149);
-  doc.text(`Egresos del ejercicio: ${money(totalEgresos)}`, 14, 156);
+  doc.text(`Movimientos registrados en el ejercicio: ${movimientos.length}`, 14, resumenY);
+  resumenY += 7;
+  doc.text(`Ingresos del ejercicio: ${money(totalIngresos)}`, 14, resumenY);
+  resumenY += 7;
+  doc.text(`Egresos del ejercicio: ${money(totalEgresos)}`, 14, resumenY);
+  resumenY += 10;
+
   doc.setFont("helvetica", "normal");
   doc.text(
-    "A continuación se detalla la totalidad de los movimientos registrados, mes por mes.",
+    "El detalle completo de los movimientos se presenta en las páginas siguientes, organizado por mes.",
     14,
-    166,
+    resumenY,
   );
+
+  // Página independiente para el análisis gráfico anual.
+  agregarAnalisisRubros(doc, movimientos, rubros, "del ejercicio completo");
 
   for (const resumenMes of resumen) {
     doc.addPage();
