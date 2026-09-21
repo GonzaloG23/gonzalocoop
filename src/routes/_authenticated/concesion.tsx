@@ -281,6 +281,29 @@ function ConcesionPage() {
     },
     onSuccess: () => {
       setMotivoModificacion("");
+      if (concesion.data) {
+        setDatos({
+          apellido: concesion.data.apellido ?? "",
+          nombre: concesion.data.nombre ?? "",
+          canon: String(concesion.data.canon ?? ""),
+          canonVigente: String(concesion.data.canonVigente ?? concesion.data.canon ?? ""),
+          canonProrroga: String(concesion.data.canonProrroga ?? ""),
+          canonProrrogaVigente: String(
+            concesion.data.canonProrrogaVigente ?? concesion.data.canonProrroga ?? "",
+          ),
+          fechaFirmaContrato: concesion.data.fechaFirmaContrato ?? "",
+          fechaVencimientoContrato:
+            concesion.data.fechaVencimientoContrato ||
+            calcularVencimientoConcesion(concesion.data.fechaFirmaContrato ?? "", 2),
+          tieneProrroga: Boolean(concesion.data.tieneProrroga),
+          fechaInicioProrroga: concesion.data.fechaInicioProrroga ?? "",
+          fechaVencimientoProrroga:
+            concesion.data.fechaVencimientoProrroga ||
+            (concesion.data.tieneProrroga
+              ? calcularVencimientoConcesion(concesion.data.fechaInicioProrroga ?? "", 1)
+              : ""),
+        });
+      }
       setEditando(false);
       setModoEdicion("rectificacion");
       qc.invalidateQueries({ queryKey: ["solicitudes-modificacion-concesion", cooperadora?.id] });
@@ -792,7 +815,32 @@ function ConcesionPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setEditando(false)}
+                    onClick={() => {
+                      if (concesion.data) {
+                        setDatos({
+                          apellido: concesion.data.apellido ?? "",
+                          nombre: concesion.data.nombre ?? "",
+                          canon: String(concesion.data.canon ?? ""),
+                          canonVigente: String(concesion.data.canonVigente ?? concesion.data.canon ?? ""),
+                          canonProrroga: String(concesion.data.canonProrroga ?? ""),
+                          canonProrrogaVigente: String(
+                            concesion.data.canonProrrogaVigente ?? concesion.data.canonProrroga ?? "",
+                          ),
+                          fechaFirmaContrato: concesion.data.fechaFirmaContrato ?? "",
+                          fechaVencimientoContrato:
+                            concesion.data.fechaVencimientoContrato ||
+                            calcularVencimientoConcesion(concesion.data.fechaFirmaContrato ?? "", 2),
+                          tieneProrroga: Boolean(concesion.data.tieneProrroga),
+                          fechaInicioProrroga: concesion.data.fechaInicioProrroga ?? "",
+                          fechaVencimientoProrroga:
+                            concesion.data.fechaVencimientoProrroga ||
+                            (concesion.data.tieneProrroga
+                              ? calcularVencimientoConcesion(concesion.data.fechaInicioProrroga ?? "", 1)
+                              : ""),
+                        });
+                      }
+                      setEditando(false);
+                    }}
                     disabled={guardar.isPending || solicitarModificacion.isPending}
                   >
                     Cancelar
