@@ -406,6 +406,10 @@ function AuditoriaLibroPage() {
     : "";
   const historialDocumentosConcesionData = historialDocumentosConcesion.data ?? [];
   const cambiosCanonAuditoria = construirHistorialCanonAuditoria(historialConcesionData);
+  const actualizacionesCanonAuditoria = construirActualizacionesCanonAuditoria(historialConcesionData, "contrato");
+  const actualizacionesCanonProrrogaAuditoria = datosConcesion?.tieneProrroga
+    ? construirActualizacionesCanonAuditoria(historialConcesionData, "prorroga")
+    : [];
   const hayReduccionCanon = cambiosCanonAuditoria.some((cambio) => cambio.esBaja);
   const faltanDocumentosConcesion = [
     !buenaConducta.data ? "Certificado de buena conducta" : null,
@@ -919,7 +923,36 @@ function AuditoriaLibroPage() {
                 titulo="Fecha de firma del contrato"
                 valor={formatearFechaContratoAuditoria(datosConcesion.fechaFirmaContrato)}
               />
-              <DatoInstitucional titulo="Canon" valor={money(num(datosConcesion.canon))} />
+              <DatoInstitucional titulo="Canon inicial" valor={money(num(datosConcesion.canon))} />
+              <DatoInstitucional
+                titulo="1.º canon actualizado"
+                valor={actualizacionesCanonAuditoria[0] ? money(actualizacionesCanonAuditoria[0].valor) : "No actualizado todavía"}
+              />
+              <DatoInstitucional
+                titulo="2.º canon actualizado"
+                valor={actualizacionesCanonAuditoria[1] ? money(actualizacionesCanonAuditoria[1].valor) : "No actualizado todavía"}
+              />
+              <DatoInstitucional titulo="Canon vigente" valor={money(num(datosConcesion.canonVigente))} />
+              {datosConcesion.tieneProrroga ? (
+                <>
+                  <DatoInstitucional
+                    titulo="Canon inicial de la prórroga"
+                    valor={money(num(datosConcesion.canonProrroga))}
+                  />
+                  <DatoInstitucional
+                    titulo="1.º canon actualizado de la prórroga"
+                    valor={actualizacionesCanonProrrogaAuditoria[0] ? money(actualizacionesCanonProrrogaAuditoria[0].valor) : "No actualizado todavía"}
+                  />
+                  <DatoInstitucional
+                    titulo="2.º canon actualizado de la prórroga"
+                    valor={actualizacionesCanonProrrogaAuditoria[1] ? money(actualizacionesCanonProrrogaAuditoria[1].valor) : "No actualizado todavía"}
+                  />
+                  <DatoInstitucional
+                    titulo="Canon vigente de la prórroga"
+                    valor={money(num(datosConcesion.canonProrrogaVigente))}
+                  />
+                </>
+              ) : null}
             </div>
           )}
 
@@ -1071,6 +1104,47 @@ function tituloTipoDocumentoAuditoria(
   if (tipo === "contrato") return "Contrato de concesión";
   if (tipo === "contrato_sellado") return "Sellado de contrato";
   return "Certificado de buena conducta";
+}
+
+function construirActualizacionesCanonAuditoria(
+  historial: Array<{
+    datos: {
+      canon: number | string;
+      canonVigente: number | string;
+      canonProrroga: number | string;
+      canonProrrogaVigente: number | string;
+    };
+    modificado_en: string;
+  }>,
+  tipo: "contrato" | "prorroga",
+) {
+  const cronologico = [...historial].reverse();
+  const actualizaciones: Array<{ valor: number; fecha: string }> = [];
+
+  for (let i = 1; i < cronologico.length; i += 1) {
+    const anterior = cronologico[i - 1]?.datos;
+    const actual = cronologico[i]?.datos;
+    if (!anterior || !actual) continue;
+
+    const valorAnterior =
+      tipo === "prorroga"
+        ? Number(anterior.canonProrrogaVigente ?? anterior.canonProrroga)
+        : Number(anterior.canonVigente ?? anterior.canon);
+    const valorActual =
+      tipo === "prorroga"
+        ? Number(actual.canonProrrogaVigente ?? actual.canonProrroga)
+        : Number(actual.canonVigente ?? actual.canon);
+
+    if (!Number.isFinite(valorAnterior) || !Number.isFinite(valorActual)) continue;
+    if (valorAnterior === valorActual) continue;
+
+    actualizaciones.push({
+      valor: valorActual,
+      fecha: cronologico[i]?.modificado_en ?? "",
+    });
+  }
+
+  return actualizaciones.slice(0, 2);
 }
 
 function construirHistorialCanonAuditoria(
