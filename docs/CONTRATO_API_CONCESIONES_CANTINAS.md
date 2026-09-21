@@ -14,6 +14,7 @@ Respuesta:
   "apellido": "Pérez",
   "nombre": "Juan",
   "canon": 125000,
+  "canonProrroga": null,
   "fechaFirmaContrato": "2026-09-15",
   "fechaVencimientoContrato": "2028-09-15",
   "tieneProrroga": false,
@@ -36,6 +37,7 @@ Body:
     "apellido": "Pérez",
     "nombre": "Juan",
     "canon": 125000,
+    "canonProrroga": 140000,
     "fechaFirmaContrato": "2026-09-15",
     "fechaVencimientoContrato": "2028-09-15",
     "tieneProrroga": true,
@@ -49,7 +51,8 @@ Validaciones obligatorias:
 
 - apellido no vacío;
 - nombre no vacío;
-- canon mayor o igual a cero;
+- canon del contrato original mayor o igual a cero;
+- cuando exista prórroga, canon de la prórroga obligatorio y mayor o igual a cero;
 - `fechaFirmaContrato` obligatoria;
 - `fechaFirmaContrato` válida;
 - `fechaVencimientoContrato` calculada automáticamente como 2 años desde `fechaFirmaContrato`;
@@ -108,7 +111,8 @@ Devuelve las últimas modificaciones de la concesión, incluyendo:
 
 - apellido;
 - nombre;
-- canon;
+- canon del contrato original;
+- canon de la prórroga, si corresponde;
 - fecha de firma del contrato;
 - fecha de vencimiento del contrato;
 - fecha de inicio de la prórroga, si corresponde;
