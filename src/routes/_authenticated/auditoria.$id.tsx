@@ -293,7 +293,7 @@ function AuditoriaLibroPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const resolverSolicitudModificacionConcesion = useMutation({
+  const resolverSolicitudModificacionConcesionMutation = useMutation({
     mutationFn: async (input: { decision: "aprobar" | "rechazar"; solicitudId: string }) => {
       if (!ctx) throw new Error("No se pudo identificar al auditor.");
       const solicitud = (solicitudesModificacionConcesion.data ?? []).find(
@@ -1066,14 +1066,14 @@ function AuditoriaLibroPage() {
               </div>
               <div className="mt-4 flex gap-2">
                 <Button
-                  onClick={() => resolverSolicitudModificacionConcesion.mutate({ decision: "aprobar", solicitudId: solicitud.id })}
-                  disabled={resolverSolicitudModificacionConcesion.isPending}
+                  onClick={() => resolverSolicitudModificacionConcesionMutation.mutate({ decision: "aprobar", solicitudId: solicitud.id })}
+                  disabled={resolverSolicitudModificacionConcesionMutation.isPending}
                 >
                   Autorizar
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => resolverSolicitudModificacionConcesion.mutate({ decision: "rechazar", solicitudId: solicitud.id })}
+                  onClick={() => resolverSolicitudModificacionConcesionMutation.mutate({ decision: "rechazar", solicitudId: solicitud.id })}
                   disabled={resolverSolicitudModificacionConcesion.isPending}
                 >
                   Rechazar
