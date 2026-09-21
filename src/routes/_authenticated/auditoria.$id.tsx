@@ -46,6 +46,7 @@ import {
   cargarSolicitudesReconsideracionCanon,
   resolverSolicitudReconsideracionCanon,
 } from "@/lib/data/concesion-solicitudes-canon";
+import { usingMinisterioApi } from "@/lib/data/index";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -301,7 +302,7 @@ function AuditoriaLibroPage() {
           : "Pedido autorizado por Auditoría.",
       );
 
-      if (input.decision === "aprobar") {
+      if (input.decision === "aprobar" && !usingMinisterioApi()) {
         const concesionActual = await cargarConcesionKiosco(id);
         if (concesionActual) {
           await registrarModificacionConcesionKiosco(id, concesionActual, auditor);
