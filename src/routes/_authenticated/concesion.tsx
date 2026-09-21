@@ -76,6 +76,7 @@ function ConcesionPage() {
     apellido: "",
     nombre: "",
     canon: "",
+    canonProrroga: "",
     fechaFirmaContrato: "",
     fechaVencimientoContrato: "",
     tieneProrroga: false,
@@ -130,6 +131,7 @@ function ConcesionPage() {
         apellido: concesion.data.apellido ?? "",
         nombre: concesion.data.nombre ?? "",
         canon: String(concesion.data.canon ?? ""),
+        canonProrroga: String(concesion.data.canonProrroga ?? ""),
         fechaFirmaContrato: concesion.data.fechaFirmaContrato ?? "",
         fechaVencimientoContrato:
           concesion.data.fechaVencimientoContrato ||
@@ -159,7 +161,11 @@ function ConcesionPage() {
       return guardados;
     },
     onSuccess: (guardados) => {
-      setDatos({ ...guardados, canon: String(guardados.canon) });
+      setDatos({
+        ...guardados,
+        canon: String(guardados.canon),
+        canonProrroga: String(guardados.canonProrroga ?? ""),
+      });
       setEditando(false);
       qc.invalidateQueries({ queryKey: ["concesion-kiosco", cooperadora?.id] });
       qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", cooperadora?.id] });
@@ -323,6 +329,7 @@ function ConcesionPage() {
                       setDatos((actual) => ({
                         ...actual,
                         tieneProrroga: e.target.checked,
+                        canonProrroga: e.target.checked ? actual.canonProrroga : "",
                         fechaInicioProrroga: e.target.checked ? actual.fechaInicioProrroga : "",
                         fechaVencimientoProrroga: e.target.checked ? actual.fechaVencimientoProrroga : "",
                       }))
@@ -357,19 +364,46 @@ function ConcesionPage() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="concesion-canon">
-                    {datos.tieneProrroga ? "Canon de la prórroga" : "Canon"} *
-                  </Label>
-                  <Input
-                    id="concesion-canon"
-                    inputMode="decimal"
-                    value={datos.canon}
-                    onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value }))}
-                    placeholder={datos.tieneProrroga ? "Importe del canon de la prórroga" : "Importe del canon"}
-                    required
-                  />
-                </div>
+                {!datos.tieneProrroga ? (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="concesion-canon">Canon *</Label>
+                    <Input
+                      id="concesion-canon"
+                      inputMode="decimal"
+                      value={datos.canon}
+                      onChange={(e) => setDatos((actual) => ({ ...actual, canon: e.target.value }))}
+                      placeholder="Importe del canon"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="concesion-canon-original">Canon del contrato original *</Label>
+                      <Input
+                        id="concesion-canon-original"
+                        inputMode="decimal"
+                        value={datos.canon}
+                        disabled
+                        readOnly
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Este valor queda asentado y no se reemplaza al registrar la prórroga.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="concesion-canon-prorroga">Canon de la prórroga *</Label>
+                      <Input
+                        id="concesion-canon-prorroga"
+                        inputMode="decimal"
+                        value={datos.canonProrroga}
+                        onChange={(e) => setDatos((actual) => ({ ...actual, canonProrroga: e.target.value }))}
+                        placeholder="Importe del canon de la prórroga"
+                        required
+                      />
+                    </div>
+                  </>
+                )
                 <div className="flex flex-wrap gap-2 pt-2 sm:col-span-2">
                   <Button onClick={() => guardar.mutate()} disabled={guardar.isPending}>
                     <Save className="mr-2 h-4 w-4" />
@@ -407,7 +441,16 @@ function ConcesionPage() {
                       />
                     </>
                   ) : null}
-                  <DatoConcesion titulo="Canon" valor={money(num(datos.canon))} className="sm:col-span-2" />
+                  <DatoConcesion
+                    titulo={datos.tieneProrroga ? "Canon del contrato original" : "Canon"}
+                    valor={money(num(datos.canon))}
+                  />
+                  {datos.tieneProrroga ? (
+                    <DatoConcesion
+                      titulo="Canon de la prórroga"
+                      valor={money(num(datos.canonProrroga))}
+                    />
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                   <p className="text-xs text-muted-foreground">
@@ -691,7 +734,10 @@ function ConcesionPage() {
                         />
                       </>
                     ) : null}
-                    <DatoConcesion titulo="Canon" valor={money(num(registro.datos.canon))} />
+                    <DatoConcesion titulo="Canon del contrato original" valor={money(num(registro.datos.canon))} />
+                    {registro.datos.tieneProrroga ? (
+                      <DatoConcesion titulo="Canon de la prórroga" valor={money(num(registro.datos.canonProrroga))} />
+                    ) : null}
                   </div>
                 </details>
               ))}
@@ -735,6 +781,7 @@ function construirHistorialConcesionarios(
       apellido: datos.apellido,
       nombre: datos.nombre,
       canon: datos.canon,
+      canonProrroga: datos.canonProrroga ?? "",
       fechaFirmaContrato: datos.fechaFirmaContrato,
       fechaVencimientoContrato:
         datos.fechaVencimientoContrato ||
