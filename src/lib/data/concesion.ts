@@ -44,29 +44,6 @@ export function calcularVencimientoConcesion(fechaInicio: string, duracionAnios:
 }
 
 
-export function calcularFechaActualizacionAnual(fechaInicio: string, aniosCumplidos = 1) {
-  return calcularVencimientoConcesion(fechaInicio, aniosCumplidos);
-}
-
-export function calcularProximaActualizacionCanon(
-  fechaInicio: string,
-  fechaUltimaActualizacion = "",
-) {
-  if (!fechaValida(fechaInicio)) return "";
-  const base = fechaUltimaActualizacion && fechaValida(fechaUltimaActualizacion)
-    ? fechaUltimaActualizacion
-    : fechaInicio;
-  return calcularFechaActualizacionAnual(base, 1);
-}
-
-export function canonNecesitaActualizacion(fechaObjetivo: string, hoy = new Date()) {
-  if (!fechaValida(fechaObjetivo)) return false;
-  const [anio, mes, dia] = fechaObjetivo.split("-").map(Number);
-  const objetivo = new Date(Date.UTC(anio, mes - 1, dia));
-  const hoyUtc = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
-  return hoyUtc.getTime() >= objetivo.getTime();
-}
-
 export function calcularCanonConPorcentaje(canonAnterior: number, porcentajeAumento: number) {
   if (!Number.isFinite(canonAnterior) || canonAnterior < 0) {
     throw new Error("El canon anterior no es válido.");
@@ -76,21 +53,6 @@ export function calcularCanonConPorcentaje(canonAnterior: number, porcentajeAume
   }
 
   return Math.round(canonAnterior * (1 + porcentajeAumento / 100) * 100) / 100;
-}
-
-export function calcularCanonActualizadoPorIPC(
-  canonAnterior: number,
-  indiceDesde: number,
-  indiceHasta: number,
-) {
-  if (!Number.isFinite(canonAnterior) || canonAnterior < 0) {
-    throw new Error("El canon anterior no es válido.");
-  }
-  if (!Number.isFinite(indiceDesde) || indiceDesde <= 0 || !Number.isFinite(indiceHasta) || indiceHasta <= 0) {
-    throw new Error("Los índices IPC deben ser mayores que cero.");
-  }
-
-  return Math.round(canonAnterior * (indiceHasta / indiceDesde) * 100) / 100;
 }
 
 export function normalizarConcesion(datos: Partial<ConcesionKiosco>): ConcesionKiosco {
