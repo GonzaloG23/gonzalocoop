@@ -167,6 +167,59 @@ El backend debe validar autenticación, autorización de Auditoría y que la sol
 
 Antes de aprobar, el backend debe volver a comprobar que el canon vigente actual coincida con `canon_actual` de la solicitud. Si cambió, no debe aplicar el pedido y debe requerir una nueva solicitud.
 
+## Pedidos de rectificación de datos de la concesión
+
+La Cooperadora puede solicitar la corrección de datos o fechas ingresados incorrectamente después de que la concesión ya fue registrada. Mientras el pedido permanezca pendiente, los datos vigentes no se modifican.
+
+### GET `/api/cooperadoras/:id/concesion-kiosco/solicitudes-modificacion`
+
+Devuelve los pedidos de rectificación de la concesión, incluyendo los pendientes y los ya resueltos.
+
+### POST `/api/cooperadoras/:id/concesion-kiosco/solicitudes-modificacion`
+
+La Cooperadora crea un pedido con:
+
+- datos actuales de la concesión;
+- datos solicitados como corrección;
+- motivo;
+- usuario y fecha de solicitud.
+
+El pedido queda en estado `pendiente`. Debe existir como máximo un pedido pendiente por Cooperadora.
+
+### POST `/api/cooperadoras/:id/concesion-kiosco/solicitudes-modificacion/:solicitudId/resolver`
+
+Auditoría resuelve el pedido.
+
+Body:
+
+```json
+{
+  "decision": "aprobar",
+  "comentario": "Corrección autorizada por Auditoría.",
+  "auditor": {
+    "id": "uuid",
+    "nombre": "Auditor",
+    "email": "auditor@dominio.gob.ar"
+  }
+}
+```
+
+Valores permitidos para `decision`: `aprobar` o `rechazar`.
+
+Al aprobar:
+
+- el backend debe volver a comprobar que los datos vigentes actuales coincidan con `datos_actuales` de la solicitud;
+- debe reemplazar los datos de concesión por `datos_solicitados`;
+- debe recalcular `fechaVencimientoContrato` como 2 años desde `fechaFirmaContrato`;
+- si existe prórroga, debe recalcular `fechaVencimientoProrroga` como 1 año desde `fechaInicioProrroga`;
+- debe registrar la operación en el historial de la concesión.
+
+Si los datos actuales cambiaron desde que se presentó el pedido, no debe aplicarse la corrección y debe requerirse una nueva solicitud.
+
+Al rechazar, los datos vigentes permanecen sin cambios y se registra la resolución y el comentario de Auditoría.
+
+El backend debe validar autenticación, autorización de Auditoría y que la solicitud se encuentre en estado `pendiente`.
+
 ## Historial
 
 ### GET `/api/cooperadoras/:id/concesion-kiosco/historial`
