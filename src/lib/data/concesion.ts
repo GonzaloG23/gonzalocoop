@@ -51,33 +51,20 @@ export function calcularFechaActualizacionAnual(fechaInicio: string, aniosCumpli
 export function calcularProximaActualizacionCanon(
   fechaInicio: string,
   fechaUltimaActualizacion = "",
-  hoy = new Date(),
 ) {
   if (!fechaValida(fechaInicio)) return "";
-
   const base = fechaUltimaActualizacion && fechaValida(fechaUltimaActualizacion)
     ? fechaUltimaActualizacion
     : fechaInicio;
-  const fechaBase = fechaUltimaActualizacion && fechaValida(fechaUltimaActualizacion)
-    ? fechaUltimaActualizacion
-    : calcularFechaActualizacionAnual(fechaInicio, 0);
-  if (!fechaValida(fechaBase)) return "";
+  return calcularFechaActualizacionAnual(base, 1);
+}
 
+export function canonNecesitaActualizacion(fechaObjetivo: string, hoy = new Date()) {
+  if (!fechaValida(fechaObjetivo)) return false;
+  const [anio, mes, dia] = fechaObjetivo.split("-").map(Number);
+  const objetivo = new Date(Date.UTC(anio, mes - 1, dia));
   const hoyUtc = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
-  const [anioBase, mesBase, diaBase] = fechaBase.split("-").map(Number);
-  let anios = 1;
-  if (fechaUltimaActualizacion) {
-    const candidato = new Date(Date.UTC(anioBase + anios, mesBase - 1, diaBase));
-    if (candidato.getTime() > hoyUtc.getTime()) return fechaBase;
-    anios = 1;
-  } else {
-    const [anioInicio] = fechaInicio.split("-").map(Number);
-    anios = Math.max(1, hoyUtc.getUTCFullYear() - anioInicio + 1);
-    const candidato = new Date(Date.UTC(anioInicio + anios, mesBase - 1, diaBase));
-    if (candidato.getTime() <= hoyUtc.getTime()) anios += 1;
-  }
-
-  return calcularFechaActualizacionAnual(fechaBase, anios);
+  return hoyUtc.getTime() >= objetivo.getTime();
 }
 
 export function calcularCanonActualizadoPorIPC(
