@@ -49,3 +49,18 @@ ALTER TABLE concesiones_kiosco_historial
     OR
     (fecha_inicio_prorroga IS NOT NULL AND fecha_vencimiento_prorroga IS NOT NULL)
   );
+
+
+ALTER TABLE concesiones_kiosco
+  ADD COLUMN IF NOT EXISTS canon_prorroga numeric(14,2);
+
+ALTER TABLE concesiones_kiosco
+  ADD CONSTRAINT ck_concesiones_kiosco_canon_prorroga
+  CHECK (canon_prorroga IS NULL OR canon_prorroga >= 0);
+
+ALTER TABLE concesiones_kiosco_historial
+  ADD COLUMN IF NOT EXISTS canon_prorroga numeric(14,2);
+
+ALTER TABLE concesiones_kiosco_historial
+  ADD CONSTRAINT ck_concesiones_kiosco_historial_canon_prorroga
+  CHECK (canon_prorroga IS NULL OR canon_prorroga >= 0);
