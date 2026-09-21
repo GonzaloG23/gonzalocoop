@@ -663,6 +663,26 @@ function ConcesionPage() {
                     ) : null}
                   </>
                 )}
+                {modoEdicion === "rectificacion" && datos.tieneProrroga ? (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="concesion-canon-prorroga-rectificacion">Canon de la prórroga</Label>
+                    <Input
+                      id="concesion-canon-prorroga-rectificacion"
+                      inputMode="decimal"
+                      value={datos.canonProrrogaVigente}
+                      onChange={(e) =>
+                        setDatos((actual) => ({
+                          ...actual,
+                          canonProrrogaVigente: e.target.value,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      El cambio quedará pendiente de autorización de Auditoría. El canon vigente de la prórroga no se modifica hasta su resolución.
+                    </p>
+                  </div>
+                ) : null}
+
                 {modoEdicion === "ipc" && (contratoPendienteIPC || prorrogaPendienteIPC || segundaActualizacionContratoDisponible) && (
                   <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 sm:col-span-2">
                     <p className="text-sm font-medium">Actualización anual por IPC</p>
@@ -1000,22 +1020,15 @@ function ConcesionPage() {
                         </Button>
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">
-                        El canon inicial de la prórroga se toma automáticamente del canon vigente del contrato.
+                        El canon de la prórroga se toma automáticamente del canon vigente del contrato al activarla.
                       </p>
                     </div>
                   ) : null}
                   {datos.tieneProrroga ? (
-                    <>
-                      <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(datos.canonProrroga))} />
-                      <DatoConcesion
-                        titulo="Canon vigente de la prórroga"
-                        valor={money(num(datos.canonProrrogaVigente))}
-                      />
-                      <DatoConcesion
-                        titulo="Fecha de finalización de la prórroga"
-                        valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
-                      />
-                    </>
+                    <DatoConcesion
+                      titulo="Canon de la prórroga"
+                      valor={money(num(datos.canonProrrogaVigente || datos.canonProrroga))}
+                    />
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
