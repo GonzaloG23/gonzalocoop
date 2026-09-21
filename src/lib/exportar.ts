@@ -361,7 +361,7 @@ export function exportarAnualPDF(
     startY: 48,
     head: [["Mes", "Saldo inicial", "Ingresos", "Egresos", "Saldo final", "Estado"]],
     body: resumen.map((r) => [
-      { content: nombreMes(r.mes), styles: { fontStyle: "bold" as const } },
+      { content: `${nombreMes(r.mes)} de ${coop.ejercicio}`, styles: { fontStyle: "bold" as const } },
       money(r.saldoInicial),
       money(r.ingresos),
       money(r.egresos),
@@ -421,7 +421,7 @@ export function exportarAnualPDF(
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text(nombreMes(resumenMes.mes), 14, 51);
+    doc.text(`${nombreMes(resumenMes.mes)} de ${coop.ejercicio}`, 14, 51);
     doc.setFontSize(10);
     doc.text(`Saldo inicial: ${money(resumenMes.saldoInicial)}`, 14, 59);
     doc.text(`Ingresos: ${money(resumenMes.ingresos)}`, 14, 66);
