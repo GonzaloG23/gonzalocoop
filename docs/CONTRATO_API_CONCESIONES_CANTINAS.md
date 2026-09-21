@@ -14,7 +14,9 @@ Respuesta:
   "apellido": "Pérez",
   "nombre": "Juan",
   "canon": 125000,
+  "canonVigente": 125000,
   "canonProrroga": null,
+  "canonProrrogaVigente": null,
   "fechaFirmaContrato": "2026-09-15",
   "fechaVencimientoContrato": "2028-09-15",
   "tieneProrroga": false,
@@ -37,7 +39,9 @@ Body:
     "apellido": "Pérez",
     "nombre": "Juan",
     "canon": 125000,
+    "canonVigente": 125000,
     "canonProrroga": 140000,
+    "canonProrrogaVigente": 140000,
     "fechaFirmaContrato": "2026-09-15",
     "fechaVencimientoContrato": "2028-09-15",
     "tieneProrroga": true,
@@ -51,8 +55,10 @@ Validaciones obligatorias:
 
 - apellido no vacío;
 - nombre no vacío;
-- canon del contrato original mayor o igual a cero;
-- cuando exista prórroga, canon de la prórroga obligatorio y mayor o igual a cero;
+- canon inicial del contrato original mayor o igual a cero;
+- canon vigente del contrato original mayor o igual a cero;
+- cuando exista prórroga, canon inicial de la prórroga obligatorio y mayor o igual a cero;
+- cuando exista prórroga, canon vigente de la prórroga mayor o igual a cero;
 - `fechaFirmaContrato` obligatoria;
 - `fechaFirmaContrato` válida;
 - `fechaVencimientoContrato` calculada automáticamente como 2 años desde `fechaFirmaContrato`;
@@ -102,6 +108,63 @@ El backend debe almacenar el archivo en el almacenamiento institucional del Mini
 ### GET `/api/cooperadoras/:id/concesion-kiosco/:tipo/archivo`
 
 Devuelve una URL temporal o un mecanismo equivalente para abrir/descargar el PDF almacenado institucionalmente.
+
+## Actualización anual del canon por IPC
+
+La fecha que determina la actualización es la fecha de firma del contrato. Cada concesión debe actualizar su canon cuando se cumple cada aniversario anual de esa fecha.
+
+Para una prórroga, el aniversario anual comienza a contarse desde "fechaInicioProrroga" y se administra en forma independiente del contrato original.
+
+La aplicación conserva separados:
+
+- "canon": canon inicial del contrato original;
+- "canonVigente": canon actualmente aplicable al contrato original;
+- "canonProrroga": canon inicial de la prórroga;
+- "canonProrrogaVigente": canon actualmente aplicable durante la prórroga.
+
+El canon inicial nunca se sobrescribe con las actualizaciones IPC.
+
+El backend institucional debe aplicar la actualización automáticamente cuando llegue la fecha de aniversario y exista información oficial de IPC disponible. El cálculo se realiza mediante la relación entre el índice IPC del período inicial y el índice IPC del período final:
+
+"canonNuevo = canonAnterior × (indiceIPCFinal / indiceIPCInicial)"
+
+El resultado se redondea a dos decimales.
+
+### GET `/api/cooperadoras/:id/concesion-kiosco/canon-ipc`
+
+Devuelve el estado de las actualizaciones de canon y su historial.
+
+Respuesta:
+
+```json
+{
+  "contratoOriginal": {
+    "canonInicial": 100000,
+    "canonVigente": 125000,
+    "ultimaActualizacion": "2027-10-15",
+    "proximaActualizacion": "2028-10-15",
+    "actualizacionPendiente": false
+  },
+  "prorroga": null,
+  "historial": []
+}
+```
+
+### Proceso automático en backend
+
+El backend del Ministerio debe ejecutar periódicamente un proceso que busque concesiones cuyo aniversario ya se haya cumplido y todavía no tengan registrada la actualización correspondiente.
+
+El proceso debe:
+
+1. determinar la fecha de aniversario a partir de "fecha_firma_contrato" o "fecha_inicio_prorroga";
+2. buscar en "ipc_indec" los índices oficiales necesarios;
+3. calcular el nuevo canon;
+4. actualizar "canon_vigente" o "canon_prorroga_vigente";
+5. insertar un registro en "actualizaciones_canon_ipc";
+6. conservar los índices utilizados, la variación, el canon anterior y el nuevo canon para auditoría;
+7. no volver a aplicar dos veces la misma actualización anual.
+
+INDEC publica las series históricas del IPC y las disponibiliza en formatos descargables, por lo que el servicio institucional puede importar esos datos en "ipc_indec" sin que cada cooperadora tenga que cargarlos manualmente. citeturn260828search21turn260828search2
 
 ## Historial
 
