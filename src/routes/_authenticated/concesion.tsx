@@ -956,7 +956,7 @@ function ConcesionPage() {
                         valor={formatearFechaContrato(datos.fechaInicioProrroga)}
                       />
                       <DatoConcesion
-                        titulo="Prórroga vigente hasta"
+                        titulo="Fecha de finalización de la prórroga"
                         valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
                       />
                     </>
@@ -1256,7 +1256,7 @@ function ConcesionPage() {
                         valor={formatearFechaContrato(registro.fechaInicioProrroga)}
                       />
                       <DatoConcesion
-                        titulo="Prórroga vigente hasta"
+                        titulo="Fecha de finalización de la prórroga"
                         valor={formatearFechaContrato(registro.fechaVencimientoProrroga)}
                       />
                     </>
@@ -1388,7 +1388,7 @@ function ConcesionPage() {
                           valor={formatearFechaContrato(registro.datos.fechaInicioProrroga)}
                         />
                         <DatoConcesion
-                          titulo="Prórroga vigente hasta"
+                          titulo="Fecha de finalización de la prórroga"
                           valor={formatearFechaContrato(
                             registro.datos.fechaVencimientoProrroga ||
                               calcularVencimientoConcesion(registro.datos.fechaInicioProrroga, 1),
