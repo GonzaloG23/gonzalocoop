@@ -67,6 +67,17 @@ export function canonNecesitaActualizacion(fechaObjetivo: string, hoy = new Date
   return hoyUtc.getTime() >= objetivo.getTime();
 }
 
+export function calcularCanonConPorcentaje(canonAnterior: number, porcentajeAumento: number) {
+  if (!Number.isFinite(canonAnterior) || canonAnterior < 0) {
+    throw new Error("El canon anterior no es válido.");
+  }
+  if (!Number.isFinite(porcentajeAumento) || porcentajeAumento < 0) {
+    throw new Error("El porcentaje de aumento debe ser mayor o igual a cero.");
+  }
+
+  return Math.round(canonAnterior * (1 + porcentajeAumento / 100) * 100) / 100;
+}
+
 export function calcularCanonActualizadoPorIPC(
   canonAnterior: number,
   indiceDesde: number,
