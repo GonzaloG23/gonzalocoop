@@ -912,18 +912,6 @@ function ConcesionPage() {
                     titulo="Contrato vigente hasta"
                     valor={formatearFechaContrato(datos.fechaVencimientoContrato || vencimientoContrato)}
                   />
-                  {datos.tieneProrroga ? (
-                    <>
-                      <DatoConcesion
-                        titulo="Inicio de la prórroga"
-                        valor={formatearFechaContrato(datos.fechaInicioProrroga)}
-                      />
-                      <DatoConcesion
-                        titulo="Prórroga vigente hasta"
-                        valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
-                      />
-                    </>
-                  ) : null}
                   <DatoConcesion
                     titulo={datos.tieneProrroga ? "Canon inicial del contrato" : "Canon inicial"}
                     valor={money(num(datos.canon))}
@@ -961,6 +949,18 @@ function ConcesionPage() {
                     titulo="Canon vigente"
                     valor={money(num(datos.canonVigente))}
                   />
+                  {datos.tieneProrroga ? (
+                    <>
+                      <DatoConcesion
+                        titulo="Inicio de la prórroga"
+                        valor={formatearFechaContrato(datos.fechaInicioProrroga)}
+                      />
+                      <DatoConcesion
+                        titulo="Prórroga vigente hasta"
+                        valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
+                      />
+                    </>
+                  ) : null}
                   {!datos.tieneProrroga ? (
                     <div className="rounded-sm border-2 border-primary/30 bg-primary/5 p-4 sm:col-span-2">
                       <p className="text-sm font-semibold">Prórroga de la concesión</p>
