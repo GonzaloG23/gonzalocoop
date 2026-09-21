@@ -165,6 +165,8 @@ Al rechazar, el canon vigente permanece sin cambios y se registra la resolución
 
 El backend debe validar autenticación, autorización de Auditoría y que la solicitud se encuentre en estado `pendiente`.
 
+Antes de aprobar, el backend debe volver a comprobar que el canon vigente actual coincida con `canon_actual` de la solicitud. Si cambió, no debe aplicar el pedido y debe requerir una nueva solicitud.
+
 ## Historial
 
 ### GET `/api/cooperadoras/:id/concesion-kiosco/historial`
