@@ -109,13 +109,16 @@ function dibujarGraficoCircular(
 
     const puntos: Array<[number, number]> = [[0, 0]];
     const pasos = Math.max(4, Math.ceil(amplitud * 24));
+    let anteriorX = 0;
+    let anteriorY = 0;
 
     for (let paso = 0; paso <= pasos; paso += 1) {
       const angulo = anguloActual + (amplitud * paso) / pasos;
-      puntos.push([
-        radio * Math.cos(angulo),
-        radio * Math.sin(angulo),
-      ]);
+      const x = radio * Math.cos(angulo);
+      const y = radio * Math.sin(angulo);
+      puntos.push([x - anteriorX, y - anteriorY]);
+      anteriorX = x;
+      anteriorY = y;
     }
 
     doc.setFillColor(...color);
