@@ -536,6 +536,7 @@ function AuditoriaLibroPage() {
               <DatoInstitucional titulo="Turno" valor={datos.turno} />
               <DatoInstitucional titulo="Localidad" valor={datos.localidad} />
               <DatoInstitucional titulo="Director/a" valor={datos.director_nombre} className="sm:col-span-2" />
+              <DatoInstitucional titulo="Celular de Director/a" valor={datos.director_celular} className="sm:col-span-2" />
               <DatoInstitucional titulo="Supervisor/a" valor={datos.supervisor_nombre} className="sm:col-span-2" />
               <DatoInstitucional titulo="Email oficial de Cooperadora" valor={datos.email_oficial} className="sm:col-span-2 lg:col-span-4" />
               {!editandoIdentificacion && (
