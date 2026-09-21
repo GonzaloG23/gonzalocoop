@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { cargarCooperadorasAuditoria, otorgarRolAuditor, reclamarRolAuditor } from "@/lib/data/auditoria";
 import { cargarConcesionKiosco } from "@/lib/data/concesion";
+import { cargarSolicitudesReconsideracionCanon } from "@/lib/data/concesion-solicitudes-canon";
 import {
   asegurarPlazoAperturaCuenta,
   aperturaCuentaVencida,
@@ -80,16 +81,25 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
 
   return Promise.all(
     coops.map(async (coop) => {
-      const [{ periodos, movimientos }, datosInstitucionales, concesion, comision] = await Promise.all([
+      const [{ periodos, movimientos }, datosInstitucionales, concesion, comision, solicitudesCanon] = await Promise.all([
         cargarEjercicio(coop.id, coop.ejercicio),
         cargarDatosInstitucionales(coop),
         cargarConcesionKiosco(coop.id),
         cargarComisionDirectiva(coop.id),
+        cargarSolicitudesReconsideracionCanon(coop.id),
       ]);
       const resumen = calcularEjercicio(num(coop.saldo_inicial_ejercicio), periodos, movimientos, parametros);
       const totales = totalesAnuales(resumen);
       const mesTope = coop.ejercicio === hoy.getFullYear() ? hoy.getMonth() + 1 : 12;
       const saldoActual = resumen.find((r) => r.mes === mesTope)?.saldoFinal ?? totales.saldoFinal;
+      const alertasCanon: Alerta[] = [];
+      if (solicitudesCanon.some((solicitud) => solicitud.estado === "pendiente")) {
+        alertasCanon.push({
+          mes: mesTope,
+          texto: "Existe un pedido de reconsideración del canon pendiente de autorización de Auditoría.",
+        });
+      }
+
       const alertasCuenta: Alerta[] = [];
       const diasMandato = diasParaVencimientoMandato(comision?.fechaFinMandato ?? null);
       const alertasMandato: Alerta[] = [];
@@ -169,6 +179,7 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
           ...resumen.flatMap((r) =>
             r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
           ),
+          ...alertasCanon,
           ...alertasCuenta,
           ...alertasMandato,
           ...alertasRecibos.map((a) => ({
