@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 
 import { cargarCooperadorasAuditoria, otorgarRolAuditor, reclamarRolAuditor } from "@/lib/data/auditoria";
-import { cargarConcesionKiosco } from "@/lib/data/concesion";
+import { cargarConcesionKiosco, concesionKioscoEstaVencida, fechaVencimientoVigenteConcesion } from "@/lib/data/concesion";
 import { cargarSolicitudesReconsideracionCanon } from "@/lib/data/concesion-solicitudes-canon";
 import {
   asegurarPlazoAperturaCuenta,
@@ -100,6 +100,15 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
         });
       }
 
+      const alertasConcesion: Alerta[] = [];
+      if (concesion && concesionKioscoEstaVencida(concesion)) {
+        const fechaVencimiento = fechaVencimientoVigenteConcesion(concesion);
+        alertasConcesion.push({
+          mes: Number(fechaVencimiento.slice(5, 7)) || mesTope,
+          texto: `El contrato de concesión se encuentra vencido desde el ${new Date(fechaVencimiento + "T00:00:00").toLocaleDateString("es-AR")}.`,
+        });
+      }
+
       const alertasCuenta: Alerta[] = [];
       const diasMandato = diasParaVencimientoMandato(comision?.fechaFinMandato ?? null);
       const alertasMandato: Alerta[] = [];
@@ -180,6 +189,7 @@ async function cargarPanelAuditor(): Promise<Fila[]> {
             r.alertas.map((a) => ({ mes: r.mes, texto: `${nombreMes(r.mes)}: ${a}` })),
           ),
           ...alertasCanon,
+          ...alertasConcesion,
           ...alertasCuenta,
           ...alertasMandato,
           ...alertasRecibos.map((a) => ({
