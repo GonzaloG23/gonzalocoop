@@ -972,7 +972,7 @@ function AuditoriaLibroPage() {
                   datosConcesion.fechaVencimientoContrato ||
                     calcularVencimientoConcesion(datosConcesion.fechaFirmaContrato, 2),
                 )}
-                className="border-2 border-amber-500 bg-amber-50"
+                className="border-2 border-red-500 bg-red-50 text-red-900"
               />
               <DatoInstitucional titulo="Canon inicial" valor={money(num(datosConcesion.canon))} />
               <DatoInstitucional
@@ -996,7 +996,7 @@ function AuditoriaLibroPage() {
                       datosConcesion.fechaVencimientoProrroga ||
                         calcularVencimientoConcesion(datosConcesion.fechaInicioProrroga, 1),
                     )}
-                    className="border-2 border-amber-500 bg-amber-50"
+                    className="border-2 border-red-500 bg-red-50 text-red-900"
                   />
                 </>
               ) : null}
