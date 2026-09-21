@@ -931,6 +931,7 @@ function ConcesionPage() {
                   <DatoConcesion
                     titulo="Contrato vigente hasta"
                     valor={formatearFechaContrato(datos.fechaVencimientoContrato || vencimientoContrato)}
+                    className="border-2 border-amber-500 bg-amber-50"
                   />
                   <DatoConcesion
                     titulo={datos.tieneProrroga ? "Canon inicial del contrato" : "Canon inicial"}
@@ -990,6 +991,14 @@ function ConcesionPage() {
                       <DatoConcesion
                         titulo="Inicio de la prórroga"
                         valor={formatearFechaContrato(datos.fechaInicioProrroga)}
+                      />
+                      <DatoConcesion
+                        titulo="Fecha de finalización de la prórroga"
+                        valor={formatearFechaContrato(
+                          datos.fechaVencimientoProrroga ||
+                            calcularVencimientoConcesion(datos.fechaInicioProrroga, 1),
+                        )}
+                        className="border-2 border-amber-500 bg-amber-50"
                       />
                     </>
                   ) : null}
