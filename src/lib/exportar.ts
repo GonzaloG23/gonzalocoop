@@ -9,7 +9,7 @@ import type { Cooperadora, Movimiento, ResumenMes, Rubro } from "./libro";
 function sanitizarNombreArchivo(valor: string, fallback = "Establecimiento") {
   const limpio = valor
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 80);
