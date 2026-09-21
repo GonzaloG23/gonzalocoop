@@ -25,6 +25,10 @@ import {
   type TipoCanonReconsideracion,
 } from "@/lib/data/concesion-solicitudes-canon";
 import {
+  cargarSolicitudesModificacionConcesion,
+  crearSolicitudModificacionConcesion,
+} from "@/lib/data/concesion-solicitudes-modificacion";
+import {
   cargarHistorialConcesionKiosco,
   cargarHistorialDocumentosConcesion,
   registrarModificacionConcesionKiosco,
@@ -81,6 +85,8 @@ function ConcesionPage() {
   const qc = useQueryClient();
   const cooperadora = ctx?.cooperadora;
   const [editando, setEditando] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState<"alta" | "rectificacion" | "ipc">("alta");
+  const [motivoModificacion, setMotivoModificacion] = useState("");
   const [datos, setDatos] = useState<ConcesionKiosco>({
     apellido: "",
     nombre: "",
@@ -125,6 +131,7 @@ function ConcesionPage() {
       void qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", cooperadora.id] });
       void qc.invalidateQueries({ queryKey: ["historial-documentos-concesion", cooperadora.id] });
       void qc.invalidateQueries({ queryKey: ["solicitudes-reconsideracion-canon", cooperadora.id] });
+      void qc.invalidateQueries({ queryKey: ["solicitudes-modificacion-concesion", cooperadora.id] });
       void qc.invalidateQueries({ queryKey: ["documento-concesion", cooperadora.id] });
     });
   }, [cooperadora, ctx?.esAuditor, qc]);
@@ -156,6 +163,12 @@ function ConcesionPage() {
   const solicitudesCanon = useQuery({
     queryKey: ["solicitudes-reconsideracion-canon", cooperadora?.id],
     queryFn: () => cargarSolicitudesReconsideracionCanon(cooperadora!.id),
+    enabled: !!cooperadora && !ctx?.esAuditor,
+  });
+
+  const solicitudesModificacion = useQuery({
+    queryKey: ["solicitudes-modificacion-concesion", cooperadora?.id],
+    queryFn: () => cargarSolicitudesModificacionConcesion(cooperadora!.id),
     enabled: !!cooperadora && !ctx?.esAuditor,
   });
 
@@ -199,7 +212,10 @@ function ConcesionPage() {
             : ""),
       });
     }
-    if (!historial.data?.length) setEditando(true);
+    if (!historial.data?.length) {
+      setEditando(true);
+      setModoEdicion("alta");
+    }
   }, [concesion.data, historial.data]);
 
   const solicitarReconsideracion = useMutation({
@@ -225,6 +241,51 @@ function ConcesionPage() {
       setMotivoReconsideracion("");
       qc.invalidateQueries({ queryKey: ["solicitudes-reconsideracion-canon", cooperadora?.id] });
       toast.success("El pedido de reconsideración quedó pendiente de autorización de Auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const solicitarModificacion = useMutation({
+    mutationFn: async () => {
+      if (!cooperadora || !ctx) throw new Error("No se pudo identificar la cooperadora o el usuario.");
+
+      const fechaVencimientoContrato = calcularVencimientoConcesion(datos.fechaFirmaContrato, 2);
+      const fechaVencimientoProrroga = datos.tieneProrroga
+        ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
+        : "";
+
+      const datosSolicitados: ConcesionKiosco = {
+        ...datos,
+        canon: Number(String(datos.canon).replace(",", ".")),
+        canonVigente: Number(String(datos.canonVigente).replace(",", ".")),
+        canonProrroga: datos.tieneProrroga
+          ? Number(String(datos.canonProrroga).replace(",", "."))
+          : "",
+        canonProrrogaVigente: datos.tieneProrroga
+          ? Number(String(datos.canonProrrogaVigente).replace(",", "."))
+          : "",
+        fechaVencimientoContrato,
+        fechaVencimientoProrroga,
+      };
+
+      return crearSolicitudModificacionConcesion(
+        cooperadora.id,
+        {
+          id: ctx.userId,
+          nombre: ctx.nombre || "Usuario",
+          email: ctx.email,
+        },
+        datosSolicitados,
+        motivoModificacion,
+      );
+    },
+    onSuccess: () => {
+      setMotivoModificacion("");
+      setEditando(false);
+      setModoEdicion("rectificacion");
+      qc.invalidateQueries({ queryKey: ["solicitudes-modificacion-concesion", cooperadora?.id] });
+      qc.invalidateQueries({ queryKey: ["panel-auditor"] });
+      toast.success("La modificación quedó pendiente de autorización de Auditoría.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
