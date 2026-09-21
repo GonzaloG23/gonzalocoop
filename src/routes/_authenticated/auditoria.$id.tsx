@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Building2, FileText, Store, Users } from "lucide-react";
+import { ArrowLeft, Building2, Download, FileText, Store, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,7 +20,7 @@ import {
 } from "@/lib/data/concesion";
 import { cargarCuentaBancaria } from "@/lib/data/cuenta-bancaria";
 import { cargarAperturaCuentaBancaria, aperturaCuentaVencida } from "@/lib/data/apertura-cuenta-bancaria";
-import { calcularEjercicio, cargarEjercicio, cargarParametros } from "@/lib/libro";
+import { calcularEjercicio, cargarEjercicio, cargarParametros, cargarRubros } from "@/lib/libro";
 import {
   abrirResumenBancario,
   calcularProximaActualizacionResumenBancario,
@@ -54,6 +54,7 @@ import {
   resolverSolicitudModificacionConcesion,
 } from "@/lib/data/concesion-solicitudes-modificacion";
 import { usingMinisterioApi } from "@/lib/data/index";
+import { exportarAnualPDF } from "@/lib/exportar";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,6 +164,12 @@ function AuditoriaLibroPage() {
   const ejercicio = useQuery({
     queryKey: ["ejercicio-auditoria", id, coop.data?.ejercicio],
     queryFn: () => cargarEjercicio(id, coop.data!.ejercicio),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
+  const rubrosAuditoria = useQuery({
+    queryKey: ["rubros", id],
+    queryFn: () => cargarRubros(id),
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
@@ -1207,6 +1214,45 @@ function AuditoriaLibroPage() {
           </div>
         </details>
       )}
+
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-serif text-lg">Informe anual de movimientos</CardTitle>
+          <CardDescription>
+            Descargá el ejercicio completo con el resumen anual y el detalle de todos los movimientos de cada mes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!ejercicio.data) {
+                toast.error("Todavía no están disponibles los movimientos del ejercicio.");
+                return;
+              }
+
+              try {
+                exportarAnualPDF(
+                  c,
+                  resumenAuditoria,
+                  ejercicio.data.movimientos,
+                  rubrosAuditoria.data ?? [],
+                );
+                toast.success("Informe anual generado correctamente.");
+              } catch (error) {
+                console.error("Error al generar el informe anual:", error);
+                toast.error("No se pudo generar el informe anual.");
+              }
+            }}
+            disabled={ejercicio.isLoading}
+          >
+            <Download className="mr-2 h-4 w-4" /> Descargar PDF anual detallado
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Disponible para control de Auditoría, aunque haya meses abiertos o sin movimientos.
+          </p>
+        </CardContent>
+      </Card>
 
       <LibroMensual cooperadora={c} soloLectura mesInicial={mes} />
     </AppShell>
