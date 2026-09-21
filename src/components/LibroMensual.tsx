@@ -197,11 +197,15 @@ export function LibroMensual({
           <Button
             variant="outline"
             size="sm"
-            disabled={!mesActual}
+            disabled={!ejercicio.data}
             onClick={() => {
-              if (!mesActual) return;
+              const resumenPDF = resumen?.find((r) => r.mes === mes);
+              if (!resumenPDF) {
+                toast.error("Todavía no están disponibles los datos del mes seleccionado.");
+                return;
+              }
               try {
-                exportarMesPDF(cooperadora, mesActual, movimientos, rubros.data ?? []);
+                exportarMesPDF(cooperadora, resumenPDF, movimientos, rubros.data ?? []);
                 toast.success("PDF generado correctamente.");
               } catch (error) {
                 console.error("Error al generar el PDF de movimientos:", error);
