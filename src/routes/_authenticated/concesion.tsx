@@ -1424,10 +1424,10 @@ function ConcesionPage() {
                     <DatoConcesion titulo="Canon inicial del contrato" valor={money(num(registro.datos.canon))} />
                     <DatoConcesion titulo="Canon vigente del contrato" valor={money(num(registro.datos.canonVigente ?? registro.datos.canon))} />
                     {registro.datos.tieneProrroga ? (
-                      <>
-                        <DatoConcesion titulo="Canon inicial de la prórroga" valor={money(num(registro.datos.canonProrroga))} />
-                        <DatoConcesion titulo="Canon vigente de la prórroga" valor={money(num(registro.datos.canonProrrogaVigente ?? registro.datos.canonProrroga))} />
-                      </>
+                      <DatoConcesion
+                        titulo="Canon de la prórroga"
+                        valor={money(num(registro.datos.canonProrrogaVigente ?? registro.datos.canonProrroga))}
+                      />
                     ) : null}
                   </div>
                 </details>
