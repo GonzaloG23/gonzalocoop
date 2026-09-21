@@ -300,11 +300,23 @@ function ConcesionPage() {
     ? calcularVencimientoConcesion(datos.fechaInicioProrroga, 1)
     : "";
   const proximaActualizacionContrato = calcularProximaActualizacionCanonSimple(datos.fechaFirmaContrato);
-  const contratoPendienteIPC = canonNecesitaActualizacionSimple(proximaActualizacionContrato);
+  const contratoAniversarioVencido = canonNecesitaActualizacionSimple(proximaActualizacionContrato);
+  const contratoActualizado = canonVigenteFueActualizadoDesde(
+    historial.data ?? [],
+    "contrato",
+    proximaActualizacionContrato,
+  );
+  const contratoPendienteIPC = contratoAniversarioVencido && !contratoActualizado;
+
   const proximaActualizacionProrroga = datos.tieneProrroga
     ? calcularProximaActualizacionCanonSimple(datos.fechaInicioProrroga)
     : "";
-  const prorrogaPendienteIPC = datos.tieneProrroga && canonNecesitaActualizacionSimple(proximaActualizacionProrroga);
+  const prorrogaAniversarioVencido =
+    datos.tieneProrroga && canonNecesitaActualizacionSimple(proximaActualizacionProrroga);
+  const prorrogaActualizada = datos.tieneProrroga
+    ? canonVigenteFueActualizadoDesde(historial.data ?? [], "prorroga", proximaActualizacionProrroga)
+    : false;
+  const prorrogaPendienteIPC = prorrogaAniversarioVencido && !prorrogaActualizada;
   const actualizacionIPCpendiente = contratoPendienteIPC || prorrogaPendienteIPC;
 
   return (
@@ -1210,6 +1222,48 @@ function canonNecesitaActualizacionSimple(fechaObjetivo: string) {
   hoy.setHours(0, 0, 0, 0);
 
   return hoy >= objetivo;
+}
+
+function canonVigenteFueActualizadoDesde(
+  historial: Array<{
+    datos: ConcesionKiosco;
+    modificado_en: string;
+  }>,
+  tipo: "contrato" | "prorroga",
+  fechaObjetivo: string,
+) {
+  if (!fechaObjetivo || historial.length < 2) return false;
+
+  const objetivo = new Date(fechaObjetivo + "T00:00:00");
+  objetivo.setHours(0, 0, 0, 0);
+
+  const cronologico = [...historial].reverse();
+
+  for (let i = 1; i < cronologico.length; i += 1) {
+    const anterior = cronologico[i - 1]?.datos;
+    const actual = cronologico[i]?.datos;
+    const fechaModificacion = new Date(cronologico[i]?.modificado_en ?? "");
+
+    if (!anterior || !actual || Number.isNaN(fechaModificacion.getTime())) continue;
+
+    const valorAnterior =
+      tipo === "prorroga"
+        ? Number(anterior.canonProrrogaVigente ?? anterior.canonProrroga)
+        : Number(anterior.canonVigente ?? anterior.canon);
+    const valorActual =
+      tipo === "prorroga"
+        ? Number(actual.canonProrrogaVigente ?? actual.canonProrroga)
+        : Number(actual.canonVigente ?? actual.canon);
+
+    if (!Number.isFinite(valorAnterior) || !Number.isFinite(valorActual)) continue;
+
+    fechaModificacion.setHours(0, 0, 0, 0);
+    if (fechaModificacion >= objetivo && valorAnterior !== valorActual) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function formatearFechaContrato(valor: string | undefined) {
