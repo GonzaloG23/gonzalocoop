@@ -971,10 +971,6 @@ function ConcesionPage() {
                         titulo="Inicio de la prórroga"
                         valor={formatearFechaContrato(datos.fechaInicioProrroga)}
                       />
-                      <DatoConcesion
-                        titulo="Fecha de finalización de la prórroga"
-                        valor={formatearFechaContrato(datos.fechaVencimientoProrroga || vencimientoProrroga)}
-                      />
                     </>
                   ) : null}
                   {!datos.tieneProrroga ? (
