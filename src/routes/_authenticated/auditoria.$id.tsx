@@ -1074,7 +1074,7 @@ function AuditoriaLibroPage() {
                 <Button
                   variant="outline"
                   onClick={() => resolverSolicitudModificacionConcesionMutation.mutate({ decision: "rechazar", solicitudId: solicitud.id })}
-                  disabled={resolverSolicitudModificacionConcesion.isPending}
+                  disabled={resolverSolicitudModificacionConcesionMutation.isPending}
                 >
                   Rechazar
                 </Button>
