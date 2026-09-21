@@ -6,13 +6,31 @@ import { fechaCorta, money, nombreMes } from "./formato";
 import { etiquetaFactura } from "./libro";
 import type { Cooperadora, Movimiento, ResumenMes, Rubro } from "./libro";
 
-function encabezado(doc: jsPDF, titulo: string, coop: Cooperadora, subtitulo: string) {
+function sanitizarNombreArchivo(valor: string, fallback = "Establecimiento") {
+  const limpio = valor
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 80);
+
+  return limpio || fallback;
+}
+
+function encabezado(
+  doc: jsPDF,
+  titulo: string,
+  coop: Cooperadora,
+  subtitulo: string,
+  estadoRendicion?: string,
+) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.text(titulo, 14, 16);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(coop.nombre, 14, 23);
+
   const datos = [
     coop.cue ? `CUE ${coop.cue}` : null,
     coop.cuit ? `CUIT ${coop.cuit}` : null,
@@ -21,8 +39,20 @@ function encabezado(doc: jsPDF, titulo: string, coop: Cooperadora, subtitulo: st
   ]
     .filter(Boolean)
     .join("  ·  ");
+
   doc.text(datos, 14, 29);
   doc.text(subtitulo, 14, 35);
+
+  if (estadoRendicion) {
+    doc.setFontSize(9);
+    doc.text(`Estado de la rendición: ${estadoRendicion}`, 14, 41);
+    doc.text(
+      `Generado el ${new Date().toLocaleDateString("es-AR")}`,
+      196,
+      41,
+      { align: "right" },
+    );
+  }
 }
 
 type SegmentoCircular = {
@@ -230,9 +260,10 @@ export function exportarMesPDF(
     "Planilla mensual de movimientos",
     coop,
     `${nombreMes(resumen.mes)} de ${coop.ejercicio}`,
+    resumen.periodo?.estado === "cerrado" ? "Cerrada" : "Abierta",
   );
   autoTable(doc, {
-    startY: 42,
+    startY: 48,
     head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Proveedor", "CUIT", "Factura", "Monto"]],
     body: movimientos.length
       ? movimientos.map((m) => [
@@ -260,7 +291,11 @@ export function exportarMesPDF(
 
   agregarAnalisisRubros(doc, movimientos, rubros);
 
-  doc.save(`planilla-${coop.ejercicio}-${String(resumen.mes).padStart(2, "0")}.pdf`);
+  const nombreEstablecimiento = sanitizarNombreArchivo(coop.nombre);
+  const identificador = coop.cue ? `_${sanitizarNombreArchivo(coop.cue, "")}` : "";
+  const periodo = `${coop.ejercicio}-${String(resumen.mes).padStart(2, "0")}`;
+
+  doc.save(`${nombreEstablecimiento}${identificador}_Movimientos_${periodo}.pdf`);
 }
 
 export function exportarMesExcel(
