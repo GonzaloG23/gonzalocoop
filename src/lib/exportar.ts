@@ -361,7 +361,7 @@ export function exportarAnualPDF(
     startY: 48,
     head: [["Mes", "Saldo inicial", "Ingresos", "Egresos", "Saldo final", "Estado"]],
     body: resumen.map((r) => [
-      nombreMes(r.mes),
+      { content: nombreMes(r.mes), styles: { fontStyle: "bold" as const } },
       money(r.saldoInicial),
       money(r.ingresos),
       money(r.egresos),
@@ -419,13 +419,17 @@ export function exportarAnualPDF(
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text(`Saldo inicial: ${money(resumenMes.saldoInicial)}`, 14, 54);
-    doc.text(`Ingresos: ${money(resumenMes.ingresos)}`, 14, 61);
-    doc.text(`Egresos: ${money(resumenMes.egresos)}`, 14, 68);
-    doc.text(`Saldo final: ${money(resumenMes.saldoFinal)}`, 14, 75);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(nombreMes(resumenMes.mes), 14, 51);
+    doc.setFontSize(10);
+    doc.text(`Saldo inicial: ${money(resumenMes.saldoInicial)}`, 14, 59);
+    doc.text(`Ingresos: ${money(resumenMes.ingresos)}`, 14, 66);
+    doc.text(`Egresos: ${money(resumenMes.egresos)}`, 14, 73);
+    doc.text(`Saldo final: ${money(resumenMes.saldoFinal)}`, 14, 80);
 
     autoTable(doc, {
-      startY: 82,
+      startY: 87,
       head: [["Fecha", "Tipo", "Rubro", "Concepto", "Comprobante", "Proveedor", "CUIT", "Factura", "Monto"]],
       body: movimientosMes.length
         ? movimientosMes.map((m) => [
