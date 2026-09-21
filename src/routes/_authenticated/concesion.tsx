@@ -403,7 +403,7 @@ function ConcesionPage() {
                         disabled
                         readOnly
                       />
-                      <p className="text-xs text-muted-foreground">Se actualiza automáticamente por IPC cuando se cumple cada aniversario del contrato.</p>
+                      <p className="text-xs text-muted-foreground">Cuando se cumple cada aniversario, ingresá el porcentaje de aumento informado por INDEC para calcular el nuevo canon vigente.</p>
                     </div>
                   </>
                 ) : (
@@ -797,7 +797,7 @@ function ConcesionPage() {
           </summary>
           <div className="space-y-4 border-t border-border p-4">
             <div className="rounded-sm border border-border bg-secondary/20 px-3 py-3 text-xs text-muted-foreground">
-              Las actualizaciones manuales del canon por IPC quedan reflejadas en el historial de modificaciones de la concesión.
+              Las actualizaciones manuales del canon quedan reflejadas en el historial de modificaciones de la concesión.
             </div>            {cambiosCanon.length > 0 && (
               <div className="rounded-sm border border-border">
                 <div className="border-b border-border bg-secondary/40 px-3 py-3">
