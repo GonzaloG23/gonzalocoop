@@ -40,7 +40,12 @@ import { cargarSolicitudesCambioMandato, resolverSolicitudCambioMandato } from "
 import {
   cargarHistorialConcesionKiosco,
   cargarHistorialDocumentosConcesion,
+  registrarModificacionConcesionKiosco,
 } from "@/lib/data/concesion-historial";
+import {
+  cargarSolicitudesReconsideracionCanon,
+  resolverSolicitudReconsideracionCanon,
+} from "@/lib/data/concesion-solicitudes-canon";
 import { money, num } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -195,6 +200,12 @@ function AuditoriaLibroPage() {
     enabled: !!ctx?.esAuditor && !!coop.data,
   });
 
+  const solicitudesCanon = useQuery({
+    queryKey: ["solicitudes-reconsideracion-canon", id],
+    queryFn: () => cargarSolicitudesReconsideracionCanon(id),
+    enabled: !!ctx?.esAuditor && !!coop.data,
+  });
+
   const resolverSolicitudMandato = useMutation({
     mutationFn: async (input: { decision: "aprobar" | "rechazar"; solicitudId: string }) => {
       if (!ctx) throw new Error("No se pudo identificar al auditor.");
@@ -265,6 +276,46 @@ function AuditoriaLibroPage() {
       qc.invalidateQueries({ queryKey: ["historial-comision-directiva", id] });
       qc.invalidateQueries({ queryKey: ["panel-auditor"] });
       toast.success("Mandato autorizado y actualizado por Auditoría.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const resolverSolicitudCanon = useMutation({
+    mutationFn: async (input: { decision: "aprobar" | "rechazar"; solicitudId: string }) => {
+      if (!ctx) throw new Error("No se pudo identificar al auditor.");
+      const solicitud = (solicitudesCanon.data ?? []).find((item) => item.id === input.solicitudId);
+      if (!solicitud) throw new Error("No se encontró el pedido de reconsideración.");
+
+      const auditor = {
+        id: ctx.userId,
+        nombre: ctx.nombre || "Auditor",
+        email: ctx.email,
+      };
+
+      const resultado = await resolverSolicitudReconsideracionCanon(
+        solicitud,
+        input.decision,
+        auditor,
+        input.decision === "rechazar"
+          ? "Pedido rechazado por Auditoría."
+          : "Pedido autorizado por Auditoría.",
+      );
+
+      if (input.decision === "aprobar") {
+        const concesionActual = await cargarConcesionKiosco(id);
+        if (concesionActual) {
+          await registrarModificacionConcesionKiosco(id, concesionActual, auditor);
+        }
+      }
+
+      return resultado;
+    },
+    onSuccess: (_resultado, input) => {
+      qc.invalidateQueries({ queryKey: ["solicitudes-reconsideracion-canon", id] });
+      qc.invalidateQueries({ queryKey: ["concesion-kiosco", id] });
+      qc.invalidateQueries({ queryKey: ["historial-concesion-kiosco", id] });
+      qc.invalidateQueries({ queryKey: ["panel-auditor"] });
+      toast.success(input.decision === "aprobar" ? "Pedido de reconsideración autorizado." : "Pedido de reconsideración rechazado.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -780,6 +831,47 @@ function AuditoriaLibroPage() {
           </CardContent>
         </Card>
       )}
+
+      {(solicitudesCanon.data ?? []).filter((solicitud) => solicitud.estado === "pendiente").map((solicitud) => (
+        <Card key={solicitud.id} className="mb-6 border-2 border-red-500 bg-red-50 text-red-900 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <span className="text-red-600">⚠</span> Pedido de reconsideración del canon pendiente
+            </CardTitle>
+            <CardDescription className="text-red-800/80">
+              La Cooperadora solicitó modificar el canon vigente. El cambio no se aplica hasta la resolución de Auditoría.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <DatoInstitucional titulo="Tipo de canon" valor={solicitud.tipo_canon === "prorroga" ? "Prórroga" : "Contrato"} />
+              <DatoInstitucional titulo="Canon actual" valor={money(solicitud.canon_actual)} />
+              <DatoInstitucional titulo="Canon solicitado" valor={money(solicitud.canon_solicitado)} />
+              <DatoInstitucional titulo="Solicitado por" valor={solicitud.usuario_nombre} />
+              <DatoInstitucional titulo="Fecha de solicitud" valor={new Date(solicitud.solicitada_en).toLocaleString("es-AR")} />
+            </div>
+            <div className="mt-4 rounded-sm border border-red-200 bg-white p-3">
+              <p className="text-xs font-medium text-red-800">Motivo</p>
+              <p className="mt-1 text-sm">{solicitud.motivo}</p>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button
+                onClick={() => resolverSolicitudCanon.mutate({ decision: "aprobar", solicitudId: solicitud.id })}
+                disabled={resolverSolicitudCanon.isPending}
+              >
+                Autorizar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => resolverSolicitudCanon.mutate({ decision: "rechazar", solicitudId: solicitud.id })}
+                disabled={resolverSolicitudCanon.isPending}
+              >
+                Rechazar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
 
       <Card className="mb-6">
         <CardHeader>
