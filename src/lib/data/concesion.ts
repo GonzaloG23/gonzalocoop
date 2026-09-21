@@ -44,6 +44,31 @@ export function calcularVencimientoConcesion(fechaInicio: string, duracionAnios:
 }
 
 
+export function fechaVencimientoVigenteConcesion(datos: Partial<ConcesionKiosco>) {
+  const contrato = String(datos.fechaVencimientoContrato ?? "").trim();
+  const prorroga =
+    datos.tieneProrroga && String(datos.fechaVencimientoProrroga ?? "").trim()
+      ? String(datos.fechaVencimientoProrroga).trim()
+      : "";
+
+  return prorroga || contrato;
+}
+
+export function concesionKioscoEstaVencida(datos: Partial<ConcesionKiosco>, hoy = new Date()) {
+  const fechaVencimiento = fechaVencimientoVigenteConcesion(datos);
+  if (!fechaVencimiento) return false;
+
+  const [anio, mes, dia] = fechaVencimiento.split("-").map(Number);
+  if (!anio || !mes || !dia) return false;
+
+  const vencimiento = new Date(anio, mes - 1, dia);
+  vencimiento.setHours(0, 0, 0, 0);
+  const fechaHoy = new Date(hoy);
+  fechaHoy.setHours(0, 0, 0, 0);
+
+  return fechaHoy > vencimiento;
+}
+
 export function calcularCanonConPorcentaje(canonAnterior: number, porcentajeAumento: number) {
   if (!Number.isFinite(canonAnterior) || canonAnterior < 0) {
     throw new Error("El canon anterior no es válido.");
