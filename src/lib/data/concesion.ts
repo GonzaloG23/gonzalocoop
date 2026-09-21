@@ -4,6 +4,7 @@ export type ConcesionKiosco = {
   apellido: string;
   nombre: string;
   canon: number | string;
+  canonProrroga: number | string;
   fechaFirmaContrato: string;
   fechaVencimientoContrato: string;
   tieneProrroga: boolean;
@@ -49,6 +50,7 @@ export function normalizarConcesion(datos: Partial<ConcesionKiosco>): ConcesionK
     apellido: String(datos.apellido ?? "").trim(),
     nombre: String(datos.nombre ?? "").trim(),
     canon: datos.canon ?? "",
+    canonProrroga: datos.canonProrroga ?? "",
     fechaFirmaContrato,
     fechaVencimientoContrato:
       String(datos.fechaVencimientoContrato ?? "").trim() ||
@@ -113,9 +115,10 @@ export async function guardarConcesionKiosco(
   datos: ConcesionKiosco,
 ): Promise<ConcesionKiosco> {
   const canonTexto = String(datos.canon).trim().replace(",", ".");
+  const canonProrrogaTexto = String(datos.canonProrroga ?? "").trim().replace(",", ".");
   const fechaFirmaContrato = String(datos.fechaFirmaContrato ?? "").trim();
 
-  if (!canonTexto) throw new Error("Debés completar el canon.");
+  if (!canonTexto) throw new Error("Debés completar el canon del contrato original.");
   if (!fechaFirmaContrato) throw new Error("Debés completar la fecha de firma del contrato.");
 
   if (!fechaValida(fechaFirmaContrato)) {
@@ -132,10 +135,15 @@ export async function guardarConcesionKiosco(
     throw new Error("La fecha de inicio de la prórroga no es válida.");
   }
 
+  if (tieneProrroga && !canonProrrogaTexto) {
+    throw new Error("Debés completar el canon de la prórroga.");
+  }
+
   const normalizados: ConcesionKiosco = {
     apellido: datos.apellido.trim(),
     nombre: datos.nombre.trim(),
     canon: Number(canonTexto),
+    canonProrroga: tieneProrroga ? Number(canonProrrogaTexto) : "",
     fechaFirmaContrato,
     fechaVencimientoContrato: calcularVencimientoConcesion(fechaFirmaContrato, 2),
     tieneProrroga,
@@ -148,7 +156,10 @@ export async function guardarConcesionKiosco(
   if (!normalizados.apellido) throw new Error("Debés completar el apellido del concesionario.");
   if (!normalizados.nombre) throw new Error("Debés completar el nombre del concesionario.");
   if (!Number.isFinite(normalizados.canon) || normalizados.canon < 0) {
-    throw new Error("El canon debe ser un importe válido mayor o igual a cero.");
+    throw new Error("El canon del contrato original debe ser un importe válido mayor o igual a cero.");
+  }
+  if (tieneProrroga && (!Number.isFinite(Number(normalizados.canonProrroga)) || Number(normalizados.canonProrroga) < 0)) {
+    throw new Error("El canon de la prórroga debe ser un importe válido mayor o igual a cero.");
   }
 
   if (usingMinisterioApi()) {
