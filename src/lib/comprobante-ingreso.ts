@@ -172,9 +172,37 @@ function crearDocumento(datos: DatosComprobanteIngreso) {
   return doc;
 }
 
+function sanitizarNombreArchivo(valor: string, fallback: string) {
+  const limpio = valor
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60);
+
+  return limpio || fallback;
+}
+
+function nombreArchivoComprobante(datos: DatosComprobanteIngreso) {
+  const concepto = sanitizarNombreArchivo(datos.rubro, "Concepto");
+  const numero = sanitizarNombreArchivo(datos.comprobante, "SinNumero");
+  const persona = datos.alumnoNombre.trim()
+    ? sanitizarNombreArchivo(datos.alumnoNombre, "")
+    : "";
+
+  return [
+    "Comprobante_Ingreso",
+    concepto,
+    numero,
+    persona,
+  ]
+    .filter(Boolean)
+    .join("_") + ".pdf";
+}
+
 export function generarComprobanteIngreso(datos: DatosComprobanteIngreso) {
   const doc = crearDocumento(datos);
-  const nombreArchivo = `comprobante-ingreso-${datos.comprobante.replace(/[^0-9-]/g, "")}.pdf`;
+  const nombreArchivo = nombreArchivoComprobante(datos);
 
   return {
     blob: doc.output("blob"),
@@ -184,7 +212,7 @@ export function generarComprobanteIngreso(datos: DatosComprobanteIngreso) {
 
 export function descargarComprobanteIngreso(datos: DatosComprobanteIngreso) {
   const doc = crearDocumento(datos);
-  const nombreArchivo = `comprobante-ingreso-${datos.comprobante.replace(/[^0-9-]/g, "")}.pdf`;
+  const nombreArchivo = nombreArchivoComprobante(datos);
   doc.save(nombreArchivo);
 }
 
