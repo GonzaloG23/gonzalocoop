@@ -952,7 +952,7 @@ function ConcesionPage() {
                     )}
                   </div>
                   <div className="rounded-sm border border-border bg-card px-3 py-3">
-                    <p className="text-xs text-muted-foreground">2.º canon actualizado</p>
+                    <p className="text-xs text-muted-foreground">Segunda actualización de canon (3er año de contrato)</p>
                     {actualizacionesCanon[1] ? (
                       <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                         <span className="text-sm font-medium">{money(actualizacionesCanon[1].valor)}</span>
